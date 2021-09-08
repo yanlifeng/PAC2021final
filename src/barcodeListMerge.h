@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <unordered_map>
+#include "robin_hood.h"
 #include <vector>
 #include <fstream>
 #include <boost/archive/binary_iarchive.hpp>
@@ -18,13 +19,13 @@ public:
     ~BarcodeListMerge();
     void mergeBarcodeLists();
 private:
-    void addBarcodeList(unordered_map<uint64, int>& dnbMap);
+    void addBarcodeList(robin_hood::unordered_map<uint64, int>& dnbMap);
     void dumpMergedBarcodeList(string& outfile);
 private:
     Options* mOptions;
     vector<string> dnbMapFiles;
     string mergedDnbMapFile;
-    unordered_map<uint64, int> mergedDnbMap;
+    robin_hood::unordered_map<uint64, int> mergedDnbMap;
 };
 
 #endif 

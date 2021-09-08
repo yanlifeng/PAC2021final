@@ -52,7 +52,7 @@ Result *Result::merge(vector<Result *> &list) {
         result->mBarcodeProcessor->umiQ10FilterReads += list[i]->mBarcodeProcessor->umiQ10FilterReads;
 
         if (!list[i]->mOptions->transBarcodeToPos.mappedDNBOutFile.empty()) {
-            unordered_map<uint64, int>::iterator mergeIter;
+            robin_hood::unordered_map<uint64, int>::iterator mergeIter;
             for (auto iter = list[i]->mBarcodeProcessor->mDNB.begin();
                  iter != list[i]->mBarcodeProcessor->mDNB.end(); iter++) {
                 mergeIter = result->mBarcodeProcessor->mDNB.find(iter->first);
@@ -63,7 +63,7 @@ Result *Result::merge(vector<Result *> &list) {
                 }
             }
             list[i]->mBarcodeProcessor->mDNB.clear();
-            unordered_map<uint64, int>().swap(list[i]->mBarcodeProcessor->mDNB);
+//            robin_hood::unordered_map<uint64, int>().swap(list[i]->mBarcodeProcessor->mDNB);
         }
     }
     return result;
@@ -135,7 +135,7 @@ void Result::dumpDNBs(string &mapOutFile) {
     mBarcodeProcessor->dumpDNBmap(mapOutFile);
 }
 
-void Result::setBarcodeProcessor(unordered_map<uint64, Position1> *bpmap) {
+void Result::setBarcodeProcessor(robin_hood::unordered_map<uint64, Position1> *bpmap) {
     mBarcodeProcessor = new BarcodeProcessor(mOptions, bpmap);
 }
 

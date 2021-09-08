@@ -9,6 +9,7 @@
 #include "options.h"
 #include "chipMaskHDF5.h"
 #include <unordered_map>
+#include "robin_hood.h"
 #include <iomanip>
 #include <set>
 #include <boost/archive/binary_iarchive.hpp>
@@ -31,9 +32,9 @@ public:
 	long getBarcodeTypes();
 	void dumpbpmap(string& mapOutFile);
 	void loadbpmap();
-	unordered_map<uint64, Position1>* getBpmap() { return &bpmap; };
+    robin_hood::unordered_map<uint64, Position1>* getBpmap() { return &bpmap; };
 public:
-	unordered_map<uint64,  Position1> bpmap;
+    robin_hood::unordered_map<uint64,  Position1> bpmap;
 	Options* mOptions;
 	set<uint64> dupBarcode;
 	long overlapBarcodes;

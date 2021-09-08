@@ -1,74 +1,83 @@
 #include "barcodeListMerge.h"
 
-BarcodeListMerge::BarcodeListMerge(Options* opt){
+BarcodeListMerge::BarcodeListMerge(Options *opt) {
     mOptions = opt;
     split(opt->in, dnbMapFiles, ",");
     mergedDnbMapFile = opt->out;
 }
 
-BarcodeListMerge::~BarcodeListMerge(){
+BarcodeListMerge::~BarcodeListMerge() {
     mergedDnbMap.clear();
-    unordered_map<uint64, int>().swap(mergedDnbMap);
+//    robin_hood::unordered_map<uint64, int>().swap(mergedDnbMap);
 }
 
-void BarcodeListMerge::mergeBarcodeLists(){
+void BarcodeListMerge::mergeBarcodeLists() {
     unordered_map<uint64, int> dnbMap;
+    robin_hood::unordered_map<uint64, int> dnbMap_tmp;
     ifstream inDnb;
-    for (auto dnbFile = dnbMapFiles.begin(); dnbFile!=dnbMapFiles.end(); dnbFile++){
+    for (auto dnbFile = dnbMapFiles.begin(); dnbFile != dnbMapFiles.end(); dnbFile++) {
         dnbMap.clear();
-        if (ends_with(*dnbFile, ".bin")){
+        dnbMap_tmp.clear();
+        if (ends_with(*dnbFile, ".bin")) {
             inDnb.open(dnbFile->c_str(), ios::binary);
             boost::archive::binary_iarchive ia(inDnb);
             ia >> dnbMap;
             inDnb.close();
-            addBarcodeList(dnbMap);
-        }else{
+            for (auto it:dnbMap) {
+                dnbMap_tmp[it.first] = it.second;
+            }
+            addBarcodeList(dnbMap_tmp);
+        } else {
             inDnb.open(dnbFile->c_str());
             int x;
             int y;
             int count;
             uint64 encodePos;
-            unordered_map<uint64, int>::iterator mergedDnbIter;
-            while(inDnb >> x >> y >> count){
-                encodePos = ((uint64)x << 32) | (uint64)y;
+            robin_hood::unordered_map<uint64, int>::iterator mergedDnbIter;
+            while (inDnb >> x >> y >> count) {
+                encodePos = ((uint64) x << 32) | (uint64) y;
                 mergedDnbIter = mergedDnbMap.find(encodePos);
-                if (mergedDnbIter != mergedDnbMap.end()){
+                if (mergedDnbIter != mergedDnbMap.end()) {
                     mergedDnbIter->second += count;
-                }else{
+                } else {
                     mergedDnbMap[encodePos] = count;
                 }
             }
             inDnb.close();
         }
     }
-    unordered_map<uint64, int>().swap(dnbMap);
+//    robin_hood::unordered_map<uint64, int>().swap(dnbMap);
     dumpMergedBarcodeList(mergedDnbMapFile);
 }
 
-void BarcodeListMerge::addBarcodeList(unordered_map<uint64, int>& dnbMap){
-    unordered_map<uint64, int>::iterator mergedDnbIter;
-    for (auto dnbIter = dnbMap.begin(); dnbIter != dnbMap.end(); dnbIter++){
+void BarcodeListMerge::addBarcodeList(robin_hood::unordered_map<uint64, int> &dnbMap) {
+    robin_hood::unordered_map<uint64, int>::iterator mergedDnbIter;
+    for (auto dnbIter = dnbMap.begin(); dnbIter != dnbMap.end(); dnbIter++) {
         mergedDnbIter = mergedDnbMap.find(dnbIter->first);
-        if (mergedDnbIter != mergedDnbMap.end()){
+        if (mergedDnbIter != mergedDnbMap.end()) {
             mergedDnbIter->second += dnbIter->second;
-        }else{
+        } else {
             mergedDnbMap[dnbIter->first] = dnbIter->second;
         }
     }
     dnbMap.clear();
 }
 
-void BarcodeListMerge::dumpMergedBarcodeList(string& outfile){
+void BarcodeListMerge::dumpMergedBarcodeList(string &outfile) {
     ofstream outDnb;
-    if (ends_with(outfile, ".bin")){
+    unordered_map<uint64, int> mergedDnbMap_tmp;
+    for (auto it :mergedDnbMap) {
+        mergedDnbMap_tmp[it.first] = it.second;
+    }
+    if (ends_with(outfile, ".bin")) {
         outDnb.open(outfile, ios::binary);
         boost::archive::binary_oarchive oa(outDnb);
-        oa << mergedDnbMap;
-    }else{
+        oa << mergedDnbMap_tmp;
+    } else {
         outDnb.open(outfile);
-        for (auto dnbIter = mergedDnbMap.begin(); dnbIter != mergedDnbMap.end(); dnbIter++){
+        for (auto dnbIter = mergedDnbMap.begin(); dnbIter != mergedDnbMap.end(); dnbIter++) {
             uint32 x = dnbIter->first >> 32;
-			uint32 y = dnbIter->first & 0x00000000FFFFFFFF;
+            uint32 y = dnbIter->first & 0x00000000FFFFFFFF;
             outDnb << x << "\t" << y << "\t" << dnbIter->second << endl;
         }
     }

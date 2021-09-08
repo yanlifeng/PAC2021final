@@ -1,6 +1,6 @@
 #include "barcodeProcessor.h"
 
-BarcodeProcessor::BarcodeProcessor(Options *opt, unordered_map <uint64, Position1> *mbpmap) {
+BarcodeProcessor::BarcodeProcessor(Options *opt, robin_hood::unordered_map<uint64, Position1> *mbpmap) {
     mOptions = opt;
     bpmap = mbpmap;
     mismatch = opt->transBarcodeToPos.mismatch;
@@ -36,7 +36,7 @@ bool BarcodeProcessor::process(Read *read1, Read *read2) {
         mMapToSlideRead++;
         bool umiPassFilter = true;
         if (mOptions->transBarcodeToPos.umiStart >= 0 && mOptions->transBarcodeToPos.umiLen > 0) {
-            pair <string, string> umi;
+            pair<string, string> umi;
             if (mOptions->transBarcodeToPos.umiRead == 1) {
                 getUMI(read1, umi);
             } else {
@@ -64,7 +64,7 @@ bool BarcodeProcessor::process(Read *read1, Read *read2) {
 
 }
 
-void BarcodeProcessor::addPositionToName(Read *r, Position1 *position, pair <string, string> *umi) {
+void BarcodeProcessor::addPositionToName(Read *r, Position1 *position, pair<string, string> *umi) {
     string position_tag = positionToString(position);
     int readTagPos = r->mName.find("/");
     string readName;
@@ -80,7 +80,7 @@ void BarcodeProcessor::addPositionToName(Read *r, Position1 *position, pair <str
     }
 }
 
-void BarcodeProcessor::addPositionToNames(Read *r1, Read *r2, Position1 *position, pair <string, string> *umi) {
+void BarcodeProcessor::addPositionToNames(Read *r1, Read *r2, Position1 *position, pair<string, string> *umi) {
     string position_tag = positionToString(position);
     int readTagPos = r1->mName.find("/");
     string readName;
@@ -111,7 +111,7 @@ void BarcodeProcessor::addPositionToNames(Read *r1, Read *r2, Position1 *positio
     }
 }
 
-void BarcodeProcessor::getUMI(Read *r, pair <string, string> &umi, bool isRead2) {
+void BarcodeProcessor::getUMI(Read *r, pair<string, string> &umi, bool isRead2) {
     string umiSeq = r->mSeq.mStr.substr(mOptions->transBarcodeToPos.umiStart, mOptions->transBarcodeToPos.umiLen);
     string umiQ = r->mQuality.substr(mOptions->transBarcodeToPos.umiStart, mOptions->transBarcodeToPos.umiLen);
     umi.first = umiSeq;
@@ -123,12 +123,12 @@ void BarcodeProcessor::getUMI(Read *r, pair <string, string> &umi, bool isRead2)
 }
 
 
-void BarcodeProcessor::decodePosition(const uint32 codePos, pair <uint16, uint16> &decodePos) {
+void BarcodeProcessor::decodePosition(const uint32 codePos, pair<uint16, uint16> &decodePos) {
     decodePos.first = codePos >> 16;
     decodePos.second = codePos & 0x0000FFFF;
 }
 
-void BarcodeProcessor::decodePosition(const uint64 codePos, pair <uint32, uint32> &decodePos) {
+void BarcodeProcessor::decodePosition(const uint64 codePos, pair<uint32, uint32> &decodePos) {
     decodePos.first = codePos >> 32;
     decodePos.second = codePos & 0x00000000FFFFFFFF;
 }
@@ -148,7 +148,7 @@ long BarcodeProcessor::getBarcodeTypes() {
 }
 
 Position1 *BarcodeProcessor::getPosition(uint64 barcodeInt) {
-    unordered_map<uint64, Position1>::iterator iter = bpmap->find(barcodeInt);
+    robin_hood::unordered_map<uint64, Position1>::iterator iter = bpmap->find(barcodeInt);
     if (iter != bpmap->end()) {
         overlapReads++;
         return &iter->second;
@@ -188,7 +188,7 @@ void BarcodeProcessor::misMaskGenerate() {
     }
 
     misMask = (uint64 *) malloc(misMaskLen * sizeof(uint64));
-    set <uint64> misMaskSet;
+    set<uint64> misMaskSet;
     int index = 0;
     if (mismatch > 0) {
         for (int i = 0; i < barcodeLen; i++) {
@@ -282,12 +282,12 @@ string BarcodeProcessor::positionToString(Position1 *position) {
     return positionString.str();
 }
 
-unordered_map<uint64, Position1>::iterator BarcodeProcessor::getMisOverlap(uint64 barcodeInt) {
+robin_hood::unordered_map<uint64, Position1>::iterator BarcodeProcessor::getMisOverlap(uint64 barcodeInt) {
     uint64 misBarcodeInt;
     int misCount = 0;
     int misMaskIndex = 0;
-    unordered_map<uint64, Position1>::iterator iter;
-    unordered_map<uint64, Position1>::iterator overlapIter;
+    robin_hood::unordered_map<uint64, Position1>::iterator iter;
+    robin_hood::unordered_map<uint64, Position1>::iterator overlapIter;
 
     for (int mis = 0; mis < mismatch; mis++) {
         misCount = 0;
@@ -314,8 +314,8 @@ Position1 *BarcodeProcessor::getNOverlap(string &barcodeString, uint8 Nindex) {
     //N has the same encode (11) with G
     int misCount = 0;
     uint64 barcodeInt = seqEncode(barcodeString.c_str(), 0, barcodeString.length());
-    unordered_map<uint64, Position1>::iterator iter;
-    unordered_map<uint64, Position1>::iterator overlapIter;
+    robin_hood::unordered_map<uint64, Position1>::iterator iter;
+    robin_hood::unordered_map<uint64, Position1>::iterator overlapIter;
     iter = bpmap->find(barcodeInt);
     if (iter != bpmap->end()) {
         misCount++;
@@ -357,7 +357,7 @@ void BarcodeProcessor::addDNB(uint64 barcodeInt) {
     }
 }
 
-bool BarcodeProcessor::barcodeStatAndFilter(pair <string, string> &barcode) {
+bool BarcodeProcessor::barcodeStatAndFilter(pair<string, string> &barcode) {
     for (int i = 0; i < barcodeLen; i++) {
         if (barcode.second[i] >= q30) {
             barcodeQ30++;
@@ -389,7 +389,7 @@ bool BarcodeProcessor::barcodeStatAndFilter(string &barcodeQ) {
     return true;
 }
 
-bool BarcodeProcessor::umiStatAndFilter(pair <string, string> &umi) {
+bool BarcodeProcessor::umiStatAndFilter(pair<string, string> &umi) {
     int q10BaseCount = 0;
     for (int i = 0; i < mOptions->transBarcodeToPos.umiLen; i++) {
         if (umi.second[i] >= q30) {
@@ -421,14 +421,18 @@ bool BarcodeProcessor::umiStatAndFilter(pair <string, string> &umi) {
 
 void BarcodeProcessor::dumpDNBmap(string &dnbMapFile) {
     ofstream writer;
+    unordered_map<uint64, int> mDNB_tmp;
+    for (auto it :mDNB) {
+        mDNB_tmp[it.first] = it.second;
+    }
     if (ends_with(dnbMapFile, ".bin")) {
-        mDNB.reserve(mDNB.size());
+        mDNB_tmp.reserve(mDNB_tmp.size());
         writer.open(dnbMapFile, ios::out | ios::binary);
         boost::archive::binary_oarchive oa(writer);
-        oa << mDNB;
+        oa << mDNB_tmp;
     } else {
         writer.open(dnbMapFile);
-        unordered_map<uint64, int>::iterator mapIter = mDNB.begin();
+        robin_hood::unordered_map<uint64, int>::iterator mapIter = mDNB.begin();
         while (mapIter != mDNB.end()) {
             uint32 x = mapIter->first >> 32;
             uint32 y = mapIter->first & 0x00000000FFFFFFFF;

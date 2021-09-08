@@ -7,6 +7,7 @@
 #include <fstream>
 #include <hdf5.h>
 #include <unordered_map>
+#include "robin_hood.h"
 #include <iomanip>
 #include "common.h"
 #include "util.h"
