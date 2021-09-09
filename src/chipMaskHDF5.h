@@ -34,7 +34,8 @@ public:
 
     void openFile();
 
-    void readDataSet(robin_hood::unordered_map<uint64, Position1> &bpMap, int index = 1);
+//    void readDataSet(robin_hood::unordered_map<uint64, Position1> &bpMap, int index = 1);
+    void readDataSet(int &headNum, int *&hashHead, node *&hashMap, int index = 1);
 
 public:
     std::string fileName;

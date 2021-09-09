@@ -31,7 +31,8 @@ void ChipMaskHDF5::openFile() {
     //}
 }
 
-herr_t ChipMaskHDF5::writeDataSet(std::string chipID, slideRange &sliderange, robin_hood::unordered_map<uint64, Position1> &bpMap,
+herr_t ChipMaskHDF5::writeDataSet(std::string chipID, slideRange &sliderange,
+                                  robin_hood::unordered_map<uint64, Position1> &bpMap,
                                   uint32_t barcodeLen, uint8_t segment, uint32_t slidePitch, uint compressionLevel,
                                   int index) {
     //generate dataSet space
@@ -118,7 +119,135 @@ herr_t ChipMaskHDF5::writeDataSet(std::string chipID, slideRange &sliderange, ro
     return status;
 }
 
-void ChipMaskHDF5::readDataSet(robin_hood::unordered_map<uint64, Position1> &bpMap, int index) {
+//void ChipMaskHDF5::readDataSet(robin_hood::unordered_map<uint64, Position1> &bpMap, int index) {
+//    herr_t status;
+//    //open dataset with datasetName
+//    std::string datasetName = DATASETNAME + std::to_string(index);
+//    auto t0 = HD5GetTime();
+//    hid_t datasetID = H5Dopen2(fileID, datasetName.c_str(), H5P_DEFAULT);
+//    printf("open cost %.3f\n", HD5GetTime() - t0);
+//    t0 = HD5GetTime();
+//
+//    //read attribute of the dataset
+//
+//    //uint32 attributeValues[ATTRIBUTEDIM];
+//    //hid_t attributeID = H5Aopen_by_name(fileID, datasetName.c_str(), ATTRIBUTENAME, H5P_DEFAULT, H5P_DEFAULT);
+//    //status = H5Aread(attributeID, H5T_NATIVE_UINT32, &attributeValues[0]);
+//    //uint32 rowOffset = attributeValues[0];
+//    //uint32 colOffset = attributeValues[1];
+//    //cout << "row offset: " << rowOffset << "\tcol offset: "<< colOffset << endl;
+//
+//    hid_t dspaceID = H5Dget_space(datasetID);
+//    printf("H5Dget_space cost %.3f\n", HD5GetTime() - t0);
+//    t0 = HD5GetTime();
+//    hid_t dtype_id = H5Dget_type(datasetID);
+//    printf("H5Dget_type cost %.3f\n", HD5GetTime() - t0);
+//    t0 = HD5GetTime();
+//    hid_t plistID = H5Dget_create_plist(datasetID);
+//    printf("H5Dget_create_plist cost %.3f\n", HD5GetTime() - t0);
+//    t0 = HD5GetTime();
+//    int rank = H5Sget_simple_extent_ndims(dspaceID);
+//    printf("H5Sget_simple_extent_ndims cost %.3f\n", HD5GetTime() - t0);
+//    t0 = HD5GetTime();
+//    hsize_t dims[rank];
+//    status = H5Sget_simple_extent_dims(dspaceID, dims, NULL);
+//    printf("H5Sget_simple_extent_dims cost %.3f\n", HD5GetTime() - t0);
+//    t0 = HD5GetTime();
+//    uint64 matrixLen = 1;
+//    for (int i = 0; i < rank; i++) {
+//        matrixLen *= dims[i];
+//    }
+//
+//    int segment = 1;
+//    if (rank >= 3) {
+//        segment = dims[2];
+//    }
+//
+//    uint64 *bpMatrix_buffer = new uint64[matrixLen]();
+//
+//    printf("new buffer cost %.3f\n", HD5GetTime() - t0);
+//    t0 = HD5GetTime();
+//    //cerr << "read bpMatrix finished..." <<endl;
+//
+//    /*
+//    bpMatrix = new uint64**[dims[0]];
+//    for (int i=0; i<dims[0]; i++){
+//        bpMatrix[i] = new uint64*[dims[1]];
+//        for (int j = 0; j < dims[1]; j++){
+//            bpMatrix[i][j] = bpMatrix_buffer + i*dims[1]*segment + j*segment;
+//        }
+//    }
+//    */
+//
+//    status = H5Dread(datasetID, H5T_NATIVE_UINT64, H5S_ALL, H5S_ALL, H5P_DEFAULT, bpMatrix_buffer);
+//    //status = H5Aclose(attributeID);
+//
+//    printf("H5Dread cost %.3f\n", HD5GetTime() - t0);
+//    t0 = HD5GetTime();
+//    status = H5Dclose(datasetID);
+//    status = H5Fclose(fileID);
+//    printf("close cost %.3f\n", HD5GetTime() - t0);
+//    t0 = HD5GetTime();
+//
+//    printf("dim size %d * %d * %d\n", dims[0], dims[1], dims[2]);
+//    printf("rank %d\n", rank);
+//    printf("matrixLen %lld\n", matrixLen);
+//
+//
+//
+//    hashNum = 0;
+//    hashHead = new int[1 << 30];
+//    memset(hashHead, 0, sizeof(int) * (1 << 30));
+//
+////#pragma omp parallel for num_threads(64)
+//    for (uint32 r = 0; r < dims[0]; r++) {
+//        //bpMatrix[r] = new uint64*[dims[1]];
+//        for (uint32 c = 0; c < dims[1]; c++) {
+//            //bpMatrix[r][c] = bpMatrix_buffer + r*dims[1]*dims[2] + c*dims[2];
+//            Position1 position = {c, r};
+//            if (rank >= 3) {
+//                segment = dims[2];
+//                for (int s = 0; s < segment; s++) {
+//                    uint64 barcodeInt = bpMatrix_buffer[r * dims[1] * segment + c * segment + s];
+//                    if (barcodeInt == 0) {
+//                        continue;
+//                    }
+//                    bpMap[barcodeInt] = position;
+//                }
+//            } else {
+//                uint64 barcodeInt = bpMatrix_buffer[r * dims[1] + c];
+//                if (barcodeInt == 0) {
+//                    continue;
+//                }
+//                bpMap[barcodeInt] = position;
+//            }
+//        }
+//    }
+//
+//    printf("for  cost %.3f\n", HD5GetTime() - t0);
+//    t0 = HD5GetTime();
+//
+//    /*
+//    for (int r = 0; r<dims[0]; r++){
+//        for (int c = 0; c<dims[1]; c++){
+//            for (int s = 0; s<dims[2]; s++){
+//                uint64 barcodeInt = bpMatrix[r][c][s];
+//                if (barcodeInt == 0){
+//                    continue;
+//                }
+//                Position1 position = {c, r};
+//                bpMap[barcodeInt] = position;
+//            }
+//        }
+//    }
+//    */
+//
+//    delete[] bpMatrix_buffer;
+//    //delete[] bpMatrix;
+//}
+
+
+void ChipMaskHDF5::readDataSet(int &hashNum, int *&hashHead, node *&hashMap, int index) {
     herr_t status;
     //open dataset with datasetName
     std::string datasetName = DATASETNAME + std::to_string(index);
@@ -192,6 +321,19 @@ void ChipMaskHDF5::readDataSet(robin_hood::unordered_map<uint64, Position1> &bpM
     printf("rank %d\n", rank);
     printf("matrixLen %lld\n", matrixLen);
 
+
+    hashNum = 0;
+    hashHead = new int[mod + 10];
+#pragma omp parallel for num_threads(64)
+    for (int i = 0; i < mod; i++) {
+        hashHead[i] = -1;
+    }
+    uint64 totSize = 1ll * dims[0] * dims[1] * dims[2];
+    hashMap = new node[totSize];
+    printf("new hash map cost %.3f\n", HD5GetTime() - t0);
+    t0 = HD5GetTime();
+
+
 //#pragma omp parallel for num_threads(64)
     for (uint32 r = 0; r < dims[0]; r++) {
         //bpMatrix[r] = new uint64*[dims[1]];
@@ -205,17 +347,60 @@ void ChipMaskHDF5::readDataSet(robin_hood::unordered_map<uint64, Position1> &bpM
                     if (barcodeInt == 0) {
                         continue;
                     }
-                    bpMap[barcodeInt] = position;
+                    //add item to hash map
+                    {
+                        int key = barcodeInt % mod;
+                        int ok = 0;
+                        //find item and update postion
+                        for (int i = hashHead[key]; i != -1; i = hashMap[i].pre)
+                            if (hashMap[i].v == barcodeInt) {
+                                hashMap[i].p1 = position;
+                                ok = 1;
+                                break;
+                            }
+                        //not find item, then add to map
+                        if (ok == 0) {
+                            hashMap[hashNum].v = barcodeInt;
+                            hashMap[hashNum].p1 = position;
+                            hashMap[hashNum].pre = hashHead[key];
+                            hashHead[key] = hashNum;
+                            hashNum++;
+                        }
+                    }
                 }
             } else {
                 uint64 barcodeInt = bpMatrix_buffer[r * dims[1] + c];
                 if (barcodeInt == 0) {
                     continue;
                 }
-                bpMap[barcodeInt] = position;
+                //add item to hash map
+                {
+                    int key = barcodeInt % mod;
+                    int ok = 0;
+                    //find item and update postion
+                    for (int i = hashHead[key]; i != -1; i = hashMap[i].pre)
+                        if (hashMap[i].v == barcodeInt) {
+                            hashMap[i].p1 = position;
+                            ok = 1;
+                            break;
+                        }
+                    //not find item, then add to map
+                    if (ok == 0) {
+                        hashMap[hashNum].v = barcodeInt;
+                        hashMap[hashNum].p1 = position;
+                        hashMap[hashNum].pre = hashHead[key];
+                        hashHead[key] = hashNum;
+                        hashNum++;
+                    }
+                }
             }
         }
     }
+
+
+//    printf("now hashHead postion is %d\n", hashHead);
+//    printf("test val is %d\n", hashHead[109547259]);
+//    printf("now map size is %d\n", hashNum);
 
     printf("for  cost %.3f\n", HD5GetTime() - t0);
     t0 = HD5GetTime();
@@ -238,3 +423,4 @@ void ChipMaskHDF5::readDataSet(robin_hood::unordered_map<uint64, Position1> &bpM
     delete[] bpMatrix_buffer;
     //delete[] bpMatrix;
 }
+

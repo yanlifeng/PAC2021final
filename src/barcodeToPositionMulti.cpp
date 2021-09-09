@@ -17,6 +17,8 @@ BarcodeToPositionMulti::BarcodeToPositionMulti(Options *opt) {
     mUnmappedWriter = NULL;
     bool isSeq500 = opt->isSeq500;
     mbpmap = new BarcodePositionMap(opt);
+//    printf("test4 val is %d\n", mbpmap->GetHashHead()[109547259]);
+
     //barcodeProcessor = new BarcodeProcessor(opt, &mbpmap->bpmap);
     if (!mOptions->transBarcodeToPos.fixedSequence.empty() || !mOptions->transBarcodeToPos.fixedSequenceFile.empty()) {
         fixedFilter = new FixedFilter(opt);
@@ -40,8 +42,11 @@ bool BarcodeToPositionMulti::process() {
     BarcodeProcessor **barcodeProcessors = new BarcodeProcessor *[mOptions->thread];
     for (int t = 0; t < mOptions->thread; t++) {
         results[t] = new Result(mOptions, true);
-        results[t]->setBarcodeProcessor(mbpmap->getBpmap());
+//        results[t]->setBarcodeProcessor(mbpmap->getBpmap());
+        results[t]->setBarcodeProcessor(mbpmap->GetHashNum(), mbpmap->GetHashHead(), mbpmap->GetHashMap());
     }
+
+    printf("new result done\n");
 
     std::thread **threads = new thread *[mOptions->thread];
     for (int t = 0; t < mOptions->thread; t++) {

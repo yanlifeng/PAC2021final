@@ -20,6 +20,8 @@ class BarcodeProcessor {
 public:
     BarcodeProcessor(Options *opt, robin_hood::unordered_map<uint64, Position1> *mbpmap);
 
+    BarcodeProcessor(Options *opt, int mhashNum, int *mhashHead, node *mhashMap);
+
     BarcodeProcessor();
 
     ~BarcodeProcessor();
@@ -55,7 +57,9 @@ private:
 
     string positionToString(Position *position);
 
-    robin_hood::unordered_map<uint64, Position1>::iterator getMisOverlap(uint64 barcodeInt);
+//    robin_hood::unordered_map<uint64, Position1>::iterator getMisOverlap(uint64 barcodeInt);
+
+    pair<int, Position1 *> getMisOverlap(uint64 barcodeInt);
 
     Position1 *getNOverlap(string &barcodeString, uint8 Nindex);
 
@@ -69,6 +73,8 @@ private:
 
     bool umiStatAndFilter(pair<string, string> &umi);
 
+    pair<int, Position1 *> queryMap(uint64 barcodeInt);
+
 private:
     uint64 *misMask;
     int misMaskLen;
@@ -81,6 +87,14 @@ private:
 public:
     Options *mOptions;
     robin_hood::unordered_map<uint64, Position1> *bpmap;
+
+    //***********list-hash add by ylf************//
+    int *hashHead;
+    node *hashMap;
+    int hashNum;
+    //******************************************//
+
+
     long totalReads = 0;
     long mMapToSlideRead = 0;
     long overlapReads = 0;
