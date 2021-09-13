@@ -31,7 +31,7 @@ public:
 
     void dumpDNBs(string &mappedDNBOutFile);
 
-    void setBarcodeProcessor(unordered_map<uint64, Position1> *bpmap);
+    void setBarcodeProcessor(robin_hood::unordered_map<uint64, Position1> *bpmap);
 
 private:
     void setBarcodeProcessor();

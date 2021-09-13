@@ -32,6 +32,11 @@ BarcodeToPositionMulti::~BarcodeToPositionMulti() {
 }
 
 bool BarcodeToPositionMulti::process() {
+
+
+
+    consumerTime=0;
+
     initOutput();
     initPackRepositoey();
     std::thread producer(std::bind(&BarcodeToPositionMulti::producerTask, this));
@@ -58,11 +63,15 @@ bool BarcodeToPositionMulti::process() {
     }
 
     producer.join();
-    cout << "producer done" << endl;
+    cerr << "producer done" << endl;
     for (int t = 0; t < mOptions->thread; t++) {
         threads[t]->join();
     }
-    cout << "consumer done" << endl;
+
+    long long out_consumerTime = consumerTime/1e6;
+    fprintf(stderr,"Map in Consumer Task time is %d sec\n",out_consumerTime);
+
+    cerr << "consumer done" << endl;
 
     if (writerThread)
         writerThread->join();
@@ -105,6 +114,9 @@ bool BarcodeToPositionMulti::process() {
 
     closeOutput();
 
+
+
+
     return true;
 }
 
@@ -127,6 +139,10 @@ void BarcodeToPositionMulti::closeOutput() {
 }
 
 bool BarcodeToPositionMulti::processPairEnd(ReadPairPack *pack, Result *result) {
+
+    TDEF(MAP)
+    TSTART(MAP)
+
     string outstr;
     string unmappedOut;
     bool hasPosition;
@@ -151,6 +167,12 @@ bool BarcodeToPositionMulti::processPairEnd(ReadPairPack *pack, Result *result) 
         }
         delete pair;
     }
+
+    TEND(MAP)
+    long long now_time = (long long)TINT(MAP);
+
+    consumerTime+=now_time;
+
     mOutputMtx.lock();
     if (mUnmappedWriter && !unmappedOut.empty()) {
         //write reads that can't be mapped to the slide

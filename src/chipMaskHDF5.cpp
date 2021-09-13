@@ -31,7 +31,7 @@ void ChipMaskHDF5::openFile() {
     //}  
 }
 
-herr_t ChipMaskHDF5::writeDataSet(std::string chipID, slideRange &sliderange, unordered_map<uint64, Position1> &bpMap,
+herr_t ChipMaskHDF5::writeDataSet(std::string chipID, slideRange &sliderange, robin_hood::unordered_map<uint64, Position1> &bpMap,
                                   uint32_t barcodeLen, uint8_t segment, uint32_t slidePitch, uint compressionLevel,
                                   int index) {
     //generate dataSet space
@@ -118,14 +118,14 @@ herr_t ChipMaskHDF5::writeDataSet(std::string chipID, slideRange &sliderange, un
     return status;
 }
 
-void ChipMaskHDF5::readDataSet(unordered_map<uint64, Position1> &bpMap, int index) {
+void ChipMaskHDF5::readDataSet(robin_hood::unordered_map<uint64, Position1> &bpMap, int index) {
     herr_t status;
     //open dataset with datasetName
     std::string datasetName = DATASETNAME + std::to_string(index);
     auto t0 = HD5GetTime();
     hid_t datasetID = H5Dopen2(fileID, datasetName.c_str(), H5P_DEFAULT);
-    printf("open cost %.3f\n", HD5GetTime() - t0);
-    t0 = HD5GetTime();
+//    printf("open cost %.3f\n", HD5GetTime() - t0);
+//    t0 = HD5GetTime();
 
     //read attribute of the dataset
 
@@ -137,20 +137,20 @@ void ChipMaskHDF5::readDataSet(unordered_map<uint64, Position1> &bpMap, int inde
     //cout << "row offset: " << rowOffset << "\tcol offset: "<< colOffset << endl;
 
     hid_t dspaceID = H5Dget_space(datasetID);
-    printf("H5Dget_space cost %.3f\n", HD5GetTime() - t0);
+//    printf("H5Dget_space cost %.3f\n", HD5GetTime() - t0);
     t0 = HD5GetTime();
     hid_t dtype_id = H5Dget_type(datasetID);
-    printf("H5Dget_type cost %.3f\n", HD5GetTime() - t0);
+//    printf("H5Dget_type cost %.3f\n", HD5GetTime() - t0);
     t0 = HD5GetTime();
     hid_t plistID = H5Dget_create_plist(datasetID);
-    printf("H5Dget_create_plist cost %.3f\n", HD5GetTime() - t0);
+//    printf("H5Dget_create_plist cost %.3f\n", HD5GetTime() - t0);
     t0 = HD5GetTime();
     int rank = H5Sget_simple_extent_ndims(dspaceID);
-    printf("H5Sget_simple_extent_ndims cost %.3f\n", HD5GetTime() - t0);
+//    printf("H5Sget_simple_extent_ndims cost %.3f\n", HD5GetTime() - t0);
     t0 = HD5GetTime();
     hsize_t dims[rank];
     status = H5Sget_simple_extent_dims(dspaceID, dims, NULL);
-    printf("H5Sget_simple_extent_dims cost %.3f\n", HD5GetTime() - t0);
+//    printf("H5Sget_simple_extent_dims cost %.3f\n", HD5GetTime() - t0);
     t0 = HD5GetTime();
     uint64 matrixLen = 1;
     for (int i = 0; i < rank; i++) {
@@ -164,8 +164,8 @@ void ChipMaskHDF5::readDataSet(unordered_map<uint64, Position1> &bpMap, int inde
 
     uint64 *bpMatrix_buffer = new uint64[matrixLen]();
 
-    printf("new buffer cost %.3f\n", HD5GetTime() - t0);
-    t0 = HD5GetTime();
+//    printf("new buffer cost %.3f\n", HD5GetTime() - t0);
+//    t0 = HD5GetTime();
     //cerr << "read bpMatrix finished..." <<endl;
 
     /*
@@ -181,16 +181,16 @@ void ChipMaskHDF5::readDataSet(unordered_map<uint64, Position1> &bpMap, int inde
     status = H5Dread(datasetID, H5T_NATIVE_UINT64, H5S_ALL, H5S_ALL, H5P_DEFAULT, bpMatrix_buffer);
     //status = H5Aclose(attributeID);
 
-    printf("H5Dread cost %.3f\n", HD5GetTime() - t0);
-    t0 = HD5GetTime();
+//    printf("H5Dread cost %.3f\n", HD5GetTime() - t0);
+//    t0 = HD5GetTime();
     status = H5Dclose(datasetID);
     status = H5Fclose(fileID);
-    printf("close cost %.3f\n", HD5GetTime() - t0);
-    t0 = HD5GetTime();
+//    printf("close cost %.3f\n", HD5GetTime() - t0);
+//    t0 = HD5GetTime();
 
-    printf("dim size %d * %d * %d\n", dims[0], dims[1], dims[2]);
-    printf("rank %d\n", rank);
-    printf("matrixLen %lld\n", matrixLen);
+//    printf("dim size %d * %d * %d\n", dims[0], dims[1], dims[2]);
+//    printf("rank %d\n", rank);
+//    printf("matrixLen %lld\n", matrixLen);
 
 //#pragma omp parallel for num_threads(64)
     for (uint32 r = 0; r < dims[0]; r++) {
@@ -217,8 +217,8 @@ void ChipMaskHDF5::readDataSet(unordered_map<uint64, Position1> &bpMap, int inde
         }
     }
 
-    printf("for  cost %.3f\n", HD5GetTime() - t0);
-    t0 = HD5GetTime();
+//    printf("for  cost %.3f\n", HD5GetTime() - t0);
+//    t0 = HD5GetTime();
 
     /*
     for (int r = 0; r<dims[0]; r++){

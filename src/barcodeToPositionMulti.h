@@ -72,6 +72,7 @@ private:
     void writeTask(WriterThread *config);
 
 public:
+    atomic<long long> consumerTime;
     Options *mOptions;
     BarcodePositionMap *mbpmap;
     FixedFilter *fixedFilter;

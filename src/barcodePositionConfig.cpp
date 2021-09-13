@@ -14,11 +14,11 @@ BarcodePositionConfig::~BarcodePositionConfig()
 {
 	if (!barcodeSet.empty()) {
 		barcodeSet.clear();
-		unordered_set<uint64>().swap(barcodeSet);
+		robin_hood::unordered_set<uint64>().swap(barcodeSet);
 	}
 	if (!bpmap.empty()) {
 		bpmap.clear();
-		unordered_map<uint64, Position1>().swap(bpmap);
+		robin_hood::unordered_map<uint64, Position1>().swap(bpmap);
 	}
 }
 
@@ -43,9 +43,9 @@ BarcodePositionConfig* BarcodePositionConfig::merge(BarcodePositionConfig** conf
 			}
 		}
 		configs[i]->barcodeSet.clear();
-		unordered_set<uint64>().swap(configs[i]->barcodeSet);
+		robin_hood::unordered_set<uint64>().swap(configs[i]->barcodeSet);
 		configs[i]->bpmap.clear();
-		unordered_map<uint64, Position1>().swap(configs[i]->bpmap);
+		robin_hood::unordered_map<uint64, Position1>().swap(configs[i]->bpmap);
 	}
 	return config;
 }

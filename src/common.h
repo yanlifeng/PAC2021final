@@ -7,6 +7,19 @@
 
 #include <boost/serialization/string.hpp>
 #include <boost/serialization/unordered_map.hpp>
+#include <unordered_map>
+#include "robin_hood.h"
+
+
+#include <chrono>
+typedef std::chrono::high_resolution_clock Clock;
+#define TDEF(x_) chrono::high_resolution_clock::time_point x_##_t0, x_##_t1;
+#define TSTART(x_) x_##_t0 = Clock::now();
+#define TEND(x_) x_##_t1 = Clock::now();
+#define TPRINT(x_, str) fprintf(stderr,"%-20s \t%.6f\t sec\n", str, chrono::duration_cast<chrono::microseconds>(x_##_t1 - x_##_t0).count()/1e6);
+#define TINT(x_) chrono::duration_cast<chrono::microseconds>(x_##_t1 - x_##_t0).count()
+
+
 
 typedef long long int int64;
 typedef unsigned long long int uint64;
@@ -71,6 +84,11 @@ typedef struct slideRange {
     uint32 rowEnd;
 } slideRange;
 
+
+
+
+
+
 typedef struct Position {
     friend class boost::serialization::access;
 
@@ -101,6 +119,12 @@ typedef struct Position1 {
     }
 } Position1;
 
+
+typedef struct bpmap_segment_value{
+    uint32 minvalue = -1;
+    uint32 maxvalue = -1;
+    robin_hood::unordered_map<uint32,Position1> segment;
+}bpmap_segment_value;
 
 
 

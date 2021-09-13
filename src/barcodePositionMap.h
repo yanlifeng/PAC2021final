@@ -18,6 +18,7 @@
 
 using namespace std;
 
+
 class BarcodePositionMap {
 public:
 	//BarcodePositionMap(vector<string>& InFile, string MaskFile, int BarcodeStart, int BarcodeLen, int Segment, int TurnFovDegree, bool IsSeq500, int RC, string readidSep = "/");
@@ -31,9 +32,13 @@ public:
 	long getBarcodeTypes();
 	void dumpbpmap(string& mapOutFile);
 	void loadbpmap();
-	unordered_map<uint64, Position1>* getBpmap() { return &bpmap; };
+	robin_hood::unordered_map<uint64, Position1>* getBpmap() { return &bpmap; };
 public:
-	unordered_map<uint64,  Position1> bpmap;
+	robin_hood::unordered_map<uint64,  Position1> bpmap;
+	/*
+	 *  当前先处理25长度的问题，其他有情况在进行处理
+	 */
+    robin_hood::unordered_map<uint32,  bpmap_segment_value> bpmap_segment;
 	Options* mOptions;
 	set<uint64> dupBarcode;
 	long overlapBarcodes;
@@ -49,5 +54,9 @@ public:
 	vector<std::string> inMasks;
 	int slidePitch = 500;
 };
+
+
+
+
 
 #endif // ! BARCODEPOSITIONMAP_H

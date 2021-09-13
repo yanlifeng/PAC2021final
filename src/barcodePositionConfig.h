@@ -24,8 +24,8 @@ public:
 	long dupReads;
 	long withoutPositionRead;
 	int mThreadId;
-	unordered_set<uint64> barcodeSet;
-	unordered_map<uint64, Position1> bpmap;
+    robin_hood::unordered_set<uint64> barcodeSet;
+	robin_hood::unordered_map<uint64, Position1> bpmap;
 };
 
 #endif 

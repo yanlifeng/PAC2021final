@@ -4,6 +4,7 @@
 #include <iostream>
 #include <hdf5.h>
 #include <unordered_map>
+#include "robin_hood.h"
 #include "common.h"
 #include "util.h"
 
@@ -24,9 +25,10 @@ public:
     ~ChipMaskHDF5();
 
     void creatFile();
-    herr_t writeDataSet(std::string chipID, slideRange& sliderange, unordered_map<uint64, Position1>& bpMap, uint32_t BarcodeLen, uint8_t segment, uint32_t slidePitch, uint compressionLevel = 6, int index = 1);
+    herr_t writeDataSet(std::string chipID, slideRange& sliderange, robin_hood::unordered_map<uint64, Position1>& bpMap, uint32_t BarcodeLen, uint8_t segment, uint32_t slidePitch, uint compressionLevel = 6, int index = 1);
     void openFile();
-    void readDataSet(unordered_map<uint64, Position1>& bpMap, int index = 1); 
+    void readDataSet(robin_hood::unordered_map<uint64, Position1>& bpMap, int index = 1);
+    void readDataSetSegment(robin_hood::unordered_map<uint64, bpmap_segment_value>& bpMapSegment, int index = 1);
 
 public:
     std::string fileName;

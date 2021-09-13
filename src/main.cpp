@@ -116,22 +116,52 @@ int main(int argc, char *argv[]) {
     opt.init();
     opt.validate();
 
-    cout << "action : " << opt.actionInt << endl;
+//    cout << "action : " << opt.actionInt << endl;
+    /*
+     *  action : 1
+     */
 
     if (opt.actionInt == 1) {
         if (opt.transBarcodeToPos.PEout) {
-            cout << "has pe" << endl;
-            auto t_t0 = MainGetTime();
             BarcodeToPositionMultiPE barcodeToPosMultiPE(&opt);
-            cout << "new cost " << MainGetTime() - t_t0 << endl;
-            t_t0 = MainGetTime();
             barcodeToPosMultiPE.process();
-            cout << "process cost " << MainGetTime() - t_t0 << endl;
         } else {
-            cout << "no pe" << endl;
+            /*
+             * In this
+             */
             auto t_t0 = MainGetTime();
             BarcodeToPositionMulti barcodeToPosMulti(&opt);
+            /*
+             *  stl:unordered_map              17756 sec
+             *  robin_hood:unordered_map
+             */
 
+            cerr << "new cost " << MainGetTime() - t_t0 << endl;
+            t_t0 = MainGetTime();
+            barcodeToPosMulti.process();
+            cerr << "process cost " << MainGetTime() - t_t0 << endl;
+        }
+    } else if (opt.actionInt == 2) {
+        BarcodeListMerge barcodeListMerge(&opt);
+        barcodeListMerge.mergeBarcodeLists();
+    } else if (opt.actionInt == 3) {
+        ChipMaskFormatChange chipMaskFormatChange(&opt);
+        chipMaskFormatChange.change();
+    } else if (opt.actionInt == 4) {
+        ChipMaskMerge chipMaskMerge(&opt);
+        chipMaskMerge.maskMerge();
+    } else {
+        cerr << endl << "wrong action has been choosed." << endl;
+    }
+
+    cout << "my time : " << MainGetTime() - t_t0 << endl;
+    time_t t2 = time(NULL);
+
+    cerr << endl << command << endl;
+    cerr << "spatialRNADrawMap" << ", time used: " << (t2 - t1) << " seconds" << endl;
+
+    return 0;
+}
 
 //            /*
 //             *  没计划好，根本跑不完，尬住了啊
@@ -177,30 +207,3 @@ int main(int argc, char *argv[]) {
 //            for (int i=0;i<MisNum;i++){
 //                printf("MisMatch %d Num is %d\n",i,MisMatchNum[0][i]/2);
 //            }
-
-            cout << "new cost " << MainGetTime() - t_t0 << endl;
-            t_t0 = MainGetTime();
-            barcodeToPosMulti.process();
-            cout << "process cost " << MainGetTime() - t_t0 << endl;
-        }
-    } else if (opt.actionInt == 2) {
-        BarcodeListMerge barcodeListMerge(&opt);
-        barcodeListMerge.mergeBarcodeLists();
-    } else if (opt.actionInt == 3) {
-        ChipMaskFormatChange chipMaskFormatChange(&opt);
-        chipMaskFormatChange.change();
-    } else if (opt.actionInt == 4) {
-        ChipMaskMerge chipMaskMerge(&opt);
-        chipMaskMerge.maskMerge();
-    } else {
-        cerr << endl << "wrong action has been choosed." << endl;
-    }
-
-    cout << "my time : " << MainGetTime() - t_t0 << endl;
-    time_t t2 = time(NULL);
-
-    cerr << endl << command << endl;
-    cerr << "spatialRNADrawMap" << ", time used: " << (t2 - t1) << " seconds" << endl;
-
-    return 0;
-}
