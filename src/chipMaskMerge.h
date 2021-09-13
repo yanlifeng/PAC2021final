@@ -8,7 +8,7 @@
 #include <vector>
 #include <hdf5.h>
 #include <unordered_map>
-#include "robin_hood.h"
+//#include "robin_hood.h"
 #include <iomanip>
 #include <set>
 #include "common.h"
@@ -32,7 +32,7 @@ public:
     Options* mOptions;
     vector<std::string> inMasks;
     std::string outMask;
-    robin_hood::unordered_map<uint64, Position1> bpmap;
+    unordered_map<uint64, Position1> bpmap;
     set<uint64> dupBarcode;
     long dupBarcodes = 0;
     long overlapBarcodes = 0;

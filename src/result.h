@@ -7,7 +7,7 @@
 #include <fstream>
 #include <map>
 #include <unordered_map>
-#include "robin_hood.h"
+//#include "robin_hood.h"
 #include <iomanip>
 #include "common.h"
 #include "options.h"
@@ -32,7 +32,7 @@ public:
 
     void dumpDNBs(string &mappedDNBOutFile);
 
-    void setBarcodeProcessor(robin_hood::unordered_map<uint64, Position1> *bpmap);
+    void setBarcodeProcessor(unordered_map<uint64, Position1> *bpmap);
 
     void setBarcodeProcessor(int headNum, int *hashHead, node *hashMap);
 

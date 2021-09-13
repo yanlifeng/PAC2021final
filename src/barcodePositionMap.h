@@ -9,7 +9,7 @@
 #include "options.h"
 #include "chipMaskHDF5.h"
 #include <unordered_map>
-#include "robin_hood.h"
+//#include "robin_hood.h"
 #include <iomanip>
 #include <set>
 #include <boost/archive/binary_iarchive.hpp>
@@ -38,7 +38,7 @@ public:
 
     void loadbpmap();
 
-    robin_hood::unordered_map<uint64, Position1> *getBpmap() { return &bpmap; };
+    unordered_map<uint64, Position1> *getBpmap() { return &bpmap; };
 
     int *GetHashHead() const;
 
@@ -47,7 +47,7 @@ public:
     int GetHashNum() const;
 
 public:
-    robin_hood::unordered_map<uint64, Position1> bpmap;
+    unordered_map<uint64, Position1> bpmap;
 
     //***********list-hash add by ylf************//
     int *hashHead;

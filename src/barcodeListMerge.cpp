@@ -8,12 +8,12 @@ BarcodeListMerge::BarcodeListMerge(Options *opt) {
 
 BarcodeListMerge::~BarcodeListMerge() {
     mergedDnbMap.clear();
-//    robin_hood::unordered_map<uint64, int>().swap(mergedDnbMap);
+//    unordered_map<uint64, int>().swap(mergedDnbMap);
 }
 
 void BarcodeListMerge::mergeBarcodeLists() {
     unordered_map<uint64, int> dnbMap;
-    robin_hood::unordered_map<uint64, int> dnbMap_tmp;
+    unordered_map<uint64, int> dnbMap_tmp;
     ifstream inDnb;
     for (auto dnbFile = dnbMapFiles.begin(); dnbFile != dnbMapFiles.end(); dnbFile++) {
         dnbMap.clear();
@@ -33,7 +33,7 @@ void BarcodeListMerge::mergeBarcodeLists() {
             int y;
             int count;
             uint64 encodePos;
-            robin_hood::unordered_map<uint64, int>::iterator mergedDnbIter;
+            unordered_map<uint64, int>::iterator mergedDnbIter;
             while (inDnb >> x >> y >> count) {
                 encodePos = ((uint64) x << 32) | (uint64) y;
                 mergedDnbIter = mergedDnbMap.find(encodePos);
@@ -46,12 +46,12 @@ void BarcodeListMerge::mergeBarcodeLists() {
             inDnb.close();
         }
     }
-//    robin_hood::unordered_map<uint64, int>().swap(dnbMap);
+//    unordered_map<uint64, int>().swap(dnbMap);
     dumpMergedBarcodeList(mergedDnbMapFile);
 }
 
-void BarcodeListMerge::addBarcodeList(robin_hood::unordered_map<uint64, int> &dnbMap) {
-    robin_hood::unordered_map<uint64, int>::iterator mergedDnbIter;
+void BarcodeListMerge::addBarcodeList(unordered_map<uint64, int> &dnbMap) {
+    unordered_map<uint64, int>::iterator mergedDnbIter;
     for (auto dnbIter = dnbMap.begin(); dnbIter != dnbMap.end(); dnbIter++) {
         mergedDnbIter = mergedDnbMap.find(dnbIter->first);
         if (mergedDnbIter != mergedDnbMap.end()) {

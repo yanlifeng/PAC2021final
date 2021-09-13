@@ -1,6 +1,6 @@
 #include "barcodeProcessor.h"
 
-BarcodeProcessor::BarcodeProcessor(Options *opt, robin_hood::unordered_map<uint64, Position1> *mbpmap) {
+BarcodeProcessor::BarcodeProcessor(Options *opt, unordered_map<uint64, Position1> *mbpmap) {
     mOptions = opt;
     bpmap = mbpmap;
     mismatch = opt->transBarcodeToPos.mismatch;
@@ -165,7 +165,7 @@ long BarcodeProcessor::getBarcodeTypes() {
 }
 
 //Position1 *BarcodeProcessor::getPosition(uint64 barcodeInt) {
-//    robin_hood::unordered_map<uint64, Position1>::iterator iter = bpmap->find(barcodeInt);
+//    unordered_map<uint64, Position1>::iterator iter = bpmap->find(barcodeInt);
 //    if (iter != bpmap->end()) {
 //        overlapReads++;
 //        return &iter->second;
@@ -339,12 +339,12 @@ string BarcodeProcessor::positionToString(Position1 *position) {
     return positionString.str();
 }
 
-//robin_hood::unordered_map<uint64, Position1>::iterator BarcodeProcessor::getMisOverlap(uint64 barcodeInt) {
+//unordered_map<uint64, Position1>::iterator BarcodeProcessor::getMisOverlap(uint64 barcodeInt) {
 //    uint64 misBarcodeInt;
 //    int misCount = 0;
 //    int misMaskIndex = 0;
-//    robin_hood::unordered_map<uint64, Position1>::iterator iter;
-//    robin_hood::unordered_map<uint64, Position1>::iterator overlapIter;
+//    unordered_map<uint64, Position1>::iterator iter;
+//    unordered_map<uint64, Position1>::iterator overlapIter;
 //
 //    for (int mis = 0; mis < mismatch; mis++) {
 //        misCount = 0;
@@ -402,8 +402,8 @@ pair<int, Position1 *> BarcodeProcessor::getMisOverlap(uint64 barcodeInt) {
 //    //N has the same encode (11) with G
 //    int misCount = 0;
 //    uint64 barcodeInt = seqEncode(barcodeString.c_str(), 0, barcodeString.length());
-//    robin_hood::unordered_map<uint64, Position1>::iterator iter;
-//    robin_hood::unordered_map<uint64, Position1>::iterator overlapIter;
+//    unordered_map<uint64, Position1>::iterator iter;
+//    unordered_map<uint64, Position1>::iterator overlapIter;
 //    iter = bpmap->find(barcodeInt);
 //    if (iter != bpmap->end()) {
 //        misCount++;
@@ -549,7 +549,7 @@ void BarcodeProcessor::dumpDNBmap(string &dnbMapFile) {
         oa << mDNB_tmp;
     } else {
         writer.open(dnbMapFile);
-        robin_hood::unordered_map<uint64, int>::iterator mapIter = mDNB.begin();
+        unordered_map<uint64, int>::iterator mapIter = mDNB.begin();
         while (mapIter != mDNB.end()) {
             uint32 x = mapIter->first >> 32;
             uint32 y = mapIter->first & 0x00000000FFFFFFFF;

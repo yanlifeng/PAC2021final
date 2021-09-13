@@ -12,13 +12,13 @@
 #include "barcodePositionMap.h"
 #include "options.h"
 #include "util.h"
-#include "robin_hood.h"
+//#include "robin_hood.h"
 
 using namespace std;
 
 class BarcodeProcessor {
 public:
-    BarcodeProcessor(Options *opt, robin_hood::unordered_map<uint64, Position1> *mbpmap);
+    BarcodeProcessor(Options *opt, unordered_map<uint64, Position1> *mbpmap);
 
     BarcodeProcessor(Options *opt, int mhashNum, int *mhashHead, node *mhashMap);
 
@@ -57,7 +57,7 @@ private:
 
     string positionToString(Position *position);
 
-//    robin_hood::unordered_map<uint64, Position1>::iterator getMisOverlap(uint64 barcodeInt);
+//    unordered_map<uint64, Position1>::iterator getMisOverlap(uint64 barcodeInt);
 
     pair<int, Position1 *> getMisOverlap(uint64 barcodeInt);
 
@@ -86,7 +86,7 @@ private:
     uint64 polyTInt;
 public:
     Options *mOptions;
-    robin_hood::unordered_map<uint64, Position1> *bpmap;
+    unordered_map<uint64, Position1> *bpmap;
 
     //***********list-hash add by ylf************//
     int *hashHead;
@@ -109,7 +109,7 @@ public:
     long umiQ10FilterReads = 0;
     long umiNFilterReads = 0;
     long umiPloyAFilterReads = 0;
-    robin_hood::unordered_map<uint64, int> mDNB;
+    unordered_map<uint64, int> mDNB;
     int mismatch;
     int barcodeLen;
 };

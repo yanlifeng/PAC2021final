@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 #include <unordered_map>
-#include "robin_hood.h"
+//#include "robin_hood.h"
 #include <unordered_set>
 #include "common.h"
 #include "options.h"
@@ -26,7 +26,7 @@ public:
 	long withoutPositionRead;
 	int mThreadId;
 	unordered_set<uint64> barcodeSet;
-    robin_hood::unordered_map<uint64, Position1> bpmap;
+    unordered_map<uint64, Position1> bpmap;
 };
 
 #endif 

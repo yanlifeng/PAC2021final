@@ -13,7 +13,7 @@ BarcodePositionMap::BarcodePositionMap(Options *opt) {
 
 BarcodePositionMap::~BarcodePositionMap() {
     bpmap.clear();
-//    robin_hood::unordered_map<uint64, Position1>().swap(bpmap);
+//    unordered_map<uint64, Position1>().swap(bpmap);
     dupBarcode.clear();
     set<uint64>().swap(dupBarcode);
 }
@@ -39,7 +39,7 @@ void BarcodePositionMap::dumpbpmap(string &mapOutFile) {
     time_t start = time(NULL);
     cout << "##########dump barcodeToPosition map begin..." << endl;
     if (ends_with(mapOutFile, ".bin")) {
-        robin_hood::unordered_map<uint64, Position1>::iterator mapIter = bpmap.begin();
+        unordered_map<uint64, Position1>::iterator mapIter = bpmap.begin();
         bpmap.reserve(bpmap.size());
         ofstream writer(mapOutFile, ios::out | ios::binary);
         //boost::archive::binary_oarchive oa(writer);
@@ -63,7 +63,7 @@ void BarcodePositionMap::dumpbpmap(string &mapOutFile) {
                                 mOptions->compression);
     } else {
         ofstream writer(mapOutFile);
-        robin_hood::unordered_map<uint64, Position1>::iterator mapIter = bpmap.begin();
+        unordered_map<uint64, Position1>::iterator mapIter = bpmap.begin();
         while (mapIter != bpmap.end()) {
             writer << seqDecode(mapIter->first, barcodeLen) << "\t" << mapIter->second.x << "\t" << mapIter->second.y
                    << endl;
