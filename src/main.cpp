@@ -133,7 +133,7 @@ int main(int argc, char *argv[]) {
             BarcodeToPositionMulti barcodeToPosMulti(&opt);
             /*
              *  stl:unordered_map              17756 sec
-             *  robin_hood:unordered_map
+             *  robin_hood:unordered_map        8981 sec
              */
 
             cerr << "new cost " << MainGetTime() - t_t0 << endl;

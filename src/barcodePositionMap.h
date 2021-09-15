@@ -33,6 +33,7 @@ public:
 	void dumpbpmap(string& mapOutFile);
 	void loadbpmap();
 	robin_hood::unordered_map<uint64, Position1>* getBpmap() { return &bpmap; };
+    robin_hood::unordered_map<uint32, bpmap_segment_value>* getBpmapsegment() {return &bpmap_segment;};
 public:
 	robin_hood::unordered_map<uint64,  Position1> bpmap;
 	/*

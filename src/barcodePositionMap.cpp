@@ -107,7 +107,8 @@ void BarcodePositionMap::loadbpmap()
 	else if (ends_with(barcodePositionMapFile, "h5") || ends_with(barcodePositionMapFile, "hdf5")){
 		ChipMaskHDF5 chipMaskH5(barcodePositionMapFile);
 		chipMaskH5.openFile();
-		chipMaskH5.readDataSet(bpmap);
+//		chipMaskH5.readDataSet(bpmap);
+		chipMaskH5.readDataSetSegment(bpmap_segment);
 
 
 

@@ -126,6 +126,16 @@ typedef struct bpmap_segment_value{
     robin_hood::unordered_map<uint32,Position1> segment;
 }bpmap_segment_value;
 
+#define getMapKey(x) (uint32)(x&0x00FFFFFF)
+#define getMapValue(x) (uint32)((x>>24)&0x03FFFFFF)
+
+//inline::uint32 getMapKey(uint64 x){
+//    return (uint32) x&0xFFFFFF;
+//}
+
+//inline::uint32 getMapValue(uint64 x){
+//    return (uint32) (x>>12)&0x3FFFFFF;
+//}
 
 
 

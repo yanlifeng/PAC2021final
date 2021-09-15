@@ -9,6 +9,25 @@ BarcodeProcessor::BarcodeProcessor(Options *opt, robin_hood::unordered_map <uint
     misMaskGenerate();
 }
 
+BarcodeProcessor::BarcodeProcessor(Options *opt, robin_hood::unordered_map <uint32, bpmap_segment_value> *mbpmap_segment) {
+    mOptions = opt;
+    bpmap_segment = mbpmap_segment;
+    mismatch = opt->transBarcodeToPos.mismatch;
+    barcodeLen = opt->barcodeLen;
+    polyTInt = seqEncode(polyT.c_str(), 0, barcodeLen, mOptions->rc);
+    misMaskGenerateSegment();
+}
+
+BarcodeProcessor::BarcodeProcessor(Options *opt, robin_hood::unordered_map <uint64, Position1> *mbpmap, robin_hood::unordered_map <uint32, bpmap_segment_value> *mbpmap_segment) {
+    mOptions = opt;
+    bpmap = mbpmap;
+    bpmap_segment = mbpmap_segment;
+    mismatch = opt->transBarcodeToPos.mismatch;
+    barcodeLen = opt->barcodeLen;
+    polyTInt = seqEncode(polyT.c_str(), 0, barcodeLen, mOptions->rc);
+    misMaskGenerateSegment();
+}
+
 BarcodeProcessor::BarcodeProcessor() {
 }
 
@@ -30,7 +49,9 @@ bool BarcodeProcessor::process(Read *read1, Read *read2) {
         error_exit("barcodeRead must be 1 or 2 . please check the --barcodeRead option you give");
     }
     barcodeStatAndFilter(barcodeQ);
-    Position1 *position = getPosition(barcode);
+    Position1 *position = getPositionSegmentClassification(barcode);
+//    Position1 *position = getPosition(barcode);
+
 
     if (position != nullptr) {
         mMapToSlideRead++;
@@ -164,6 +185,62 @@ Position1 *BarcodeProcessor::getPosition(uint64 barcodeInt) {
     return nullptr;
 }
 
+
+Position1 *BarcodeProcessor::getPositionSegment(uint64 barcodeInt){
+    robin_hood::unordered_map<uint32, bpmap_segment_value>::iterator iter_key = bpmap_segment->find(getMapKey(barcodeInt));
+    robin_hood::unordered_map<uint32, Position1>::iterator iter_value;
+
+    if (iter_key != bpmap_segment->end()) {
+        iter_value = iter_key->second.segment.find(getMapValue(barcodeInt));
+        if (iter_value != iter_key->second.segment.end()) {
+            overlapReads++;
+            return &iter_value->second;
+        }
+    }
+
+
+    if (mismatch > 0) {
+//        printf("In this Segment!\n");
+        int mis_status = getMisOverlapSegment(barcodeInt,iter_value);
+        if (mis_status == 0) {
+            overlapReadsWithMis++;
+            return &iter_value->second;
+        } else {
+            return nullptr;
+        }
+    }
+
+    return nullptr;
+}
+
+Position1 *BarcodeProcessor::getPositionSegmentClassification(uint64 barcodeInt){
+    robin_hood::unordered_map<uint32, bpmap_segment_value>::iterator iter_key = bpmap_segment->find(getMapKey(barcodeInt));
+    robin_hood::unordered_map<uint32, Position1>::iterator iter_value;
+
+    if (iter_key != bpmap_segment->end()) {
+        iter_value = iter_key->second.segment.find(getMapValue(barcodeInt));
+        if (iter_value != iter_key->second.segment.end()) {
+            overlapReads++;
+            return &iter_value->second;
+        }
+    }
+
+
+    if (mismatch > 0) {
+//        printf("In this Segment!\n");
+        int mis_status = getMisOverlapSegmentClassification(barcodeInt,iter_value);
+        if (mis_status == 0) {
+            overlapReadsWithMis++;
+            return &iter_value->second;
+        } else {
+            return nullptr;
+        }
+    }
+
+    return nullptr;
+}
+
+
 Position1 *BarcodeProcessor::getPosition(string &barcodeString) {
     int Nindex = getNindex(barcodeString);
     if (Nindex == -1) {
@@ -175,10 +252,46 @@ Position1 *BarcodeProcessor::getPosition(string &barcodeString) {
     } else if (Nindex == -2) {
         return nullptr;
     } else if (mismatch > 0) {
+
         return getNOverlap(barcodeString, Nindex);
     }
     return nullptr;
 }
+
+Position1 *BarcodeProcessor::getPositionSegment(string &barcodeString) {
+    int Nindex = getNindex(barcodeString);
+    if (Nindex == -1) {
+        uint64 barcodeInt = seqEncode(barcodeString.c_str(), 0, barcodeLen);
+        if (barcodeInt == polyTInt) {
+            return nullptr;
+        }
+        return getPositionSegment(barcodeInt);
+    } else if (Nindex == -2) {
+        return nullptr;
+    } else if (mismatch > 0) {
+        printf("In this !!!!\n");
+        return getNOverlap(barcodeString, Nindex);
+    }
+    return nullptr;
+}
+
+Position1 *BarcodeProcessor::getPositionSegmentClassification(string &barcodeString) {
+    int Nindex = getNindex(barcodeString);
+    if (Nindex == -1) {
+        uint64 barcodeInt = seqEncode(barcodeString.c_str(), 0, barcodeLen);
+        if (barcodeInt == polyTInt) {
+            return nullptr;
+        }
+        return getPositionSegmentClassification(barcodeInt);
+    } else if (Nindex == -2) {
+        return nullptr;
+    } else if (mismatch > 0) {
+        printf("In this !!!!\n");
+        return getNOverlap(barcodeString, Nindex);
+    }
+    return nullptr;
+}
+
 
 void BarcodeProcessor::misMaskGenerate() {
     misMaskLen = possibleMis(barcodeLen, mismatch);
@@ -270,6 +383,50 @@ void BarcodeProcessor::misMaskGenerate() {
     }
 }
 
+void BarcodeProcessor::misMaskGenerateSegment() {
+    misMaskLen = barcodeLen*3;
+    misMask = new uint64[misMaskLen];
+    int index=0;
+    for (int i = 0; i < barcodeLen; i++) {
+        for (uint64 j = 1; j < 4; j++) {
+            uint64 misMaskInt = j << (i * 2);
+            misMask[index] = misMaskInt;
+            index++;
+        }
+    }
+    /*
+     *  int misMaskClassificationNumber;
+	 *  int* misMaskClassification;
+	 *  int* misMaskLensSegmentL;
+     *  int* misMaskLensSegmentR;
+     */
+
+    misMaskClassificationNumber = 79;
+    misMaskClassification = new int[misMaskClassificationNumber];
+    misMaskLensSegmentL = new uint32[9*(barcodeLen*barcodeLen-1)/2];
+    misMaskLensSegmentR = new uint32[9*(barcodeLen*barcodeLen-1)/2];
+    index = 0;
+    int Classificationindex = 0;
+    for (int i=0;i<barcodeLen-1;i++){
+        for (int j=i+1;j<barcodeLen;j++){
+            for (int k1=1;k1<4;k1++){
+                for (int k2=1;k2<4;k2++){
+                    uint64 misMaskInt = (k1<<(i*2)) | (k2<<(j*2));
+                    misMaskLensSegmentL[index] = getMapKey(misMaskInt);
+                    misMaskLensSegmentR[index] = getMapValue(misMaskInt);
+                    index++;
+                }
+            }
+            if (j<=11) {
+                misMaskClassification[Classificationindex] = index;
+                Classificationindex++;
+            }
+        }
+        misMaskClassification[Classificationindex] = index;
+        Classificationindex++;
+    }
+}
+
 string BarcodeProcessor::positionToString(Position *position) {
     stringstream positionString;
     positionString << position->x << "_" << position->y;
@@ -307,8 +464,117 @@ robin_hood::unordered_map<uint64, Position1>::iterator BarcodeProcessor::getMisO
             return overlapIter;
         }
     }
+
     return bpmap->end();
 }
+
+int BarcodeProcessor::getMisOverlapSegment(uint64 barcodeInt,
+                                           robin_hood::unordered_map<uint32, Position1>::iterator &result_iter_value) {
+    uint64 misBarcodeInt;
+    int misCount = 0;
+    int misMaskIndex = 0;
+    robin_hood::unordered_map<uint32, bpmap_segment_value>::iterator iter_key;
+    robin_hood::unordered_map<uint32, Position1>::iterator iter_value;
+//    robin_hood::unordered_map<uint32, Position1>::iterator overlapIter_value;
+
+    for (int mis = 0; mis < mismatch; mis++) {
+        misCount = 0;
+        while (misMaskIndex < misMaskLens[mis]) {
+
+            misBarcodeInt = barcodeInt ^ misMask[misMaskIndex];
+
+            misMaskIndex++;
+
+            iter_key = bpmap_segment->find(getMapKey(misBarcodeInt));
+
+            if (iter_key != bpmap_segment->end()) {
+
+                iter_value = iter_key->second.segment.find(getMapValue(misBarcodeInt));
+
+                if (iter_value != iter_key->second.segment.end()){
+                    result_iter_value = iter_value;
+                    misCount++;
+                    if (misCount > 1) {
+                        return -1;
+                    }
+                }
+
+            }
+        }
+        if (misCount == 1) {
+            return 0;
+        }
+    }
+
+
+
+    return -1;
+}
+
+int BarcodeProcessor::getMisOverlapSegmentClassification(uint64 barcodeInt,
+                                           robin_hood::unordered_map<uint32, Position1>::iterator &result_iter_value) {
+    uint64 misBarcodeInt;
+    int misCount = 0;
+    int misMaskIndex = 0;
+    robin_hood::unordered_map<uint32, bpmap_segment_value>::iterator iter_key;
+    robin_hood::unordered_map<uint32, Position1>::iterator iter_value;
+//    robin_hood::unordered_map<uint32, Position1>::iterator overlapIter_value;
+
+/*
+ *  处理mismatch == 1 的情况
+ */
+
+    misCount = 0;
+    for (int i=0;i<misMaskLen;i++){
+        misBarcodeInt = barcodeInt ^ misMask[i];
+        iter_key = bpmap_segment->find(getMapKey(misBarcodeInt));
+        if (iter_key != bpmap_segment->end()) {
+            iter_value = iter_key->second.segment.find(getMapValue(misBarcodeInt));
+            if (iter_value != iter_key->second.segment.end()){
+                result_iter_value = iter_value;
+                misCount++;
+                if (misCount > 1) {
+                    return -1;
+                }
+            }
+        }
+    }
+    if (misCount == 1) {
+        return 0;
+    }
+
+    if (mismatch < 2) return -1;
+
+    uint64 mapkey   = getMapKey(barcodeInt);
+    uint64 mapValue = getMapValue(barcodeInt);
+
+    for (int i=0;i<misMaskClassificationNumber;i++){
+
+        iter_key = bpmap_segment->find(mapkey^misMaskLensSegmentL[misMaskIndex]);
+        if (iter_key == bpmap_segment->end()){
+            continue;
+        }
+        while (misMaskIndex < misMaskClassification[i]){
+            iter_value = iter_key->second.segment.find(mapValue^misMaskLensSegmentR[misMaskIndex]);
+            misMaskIndex++;
+            if (iter_value != iter_key->second.segment.end()){
+                result_iter_value = iter_value;
+                misCount++;
+                if (misCount > 1) {
+                    return -1;
+                }
+            }
+        }
+    }
+
+    if (misCount == 1) {
+        return 0;
+    }
+
+
+    return -1;
+}
+
 
 Position1 *BarcodeProcessor::getNOverlap(string &barcodeString, uint8 Nindex) {
     //N has the same encode (11) with G

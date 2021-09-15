@@ -45,7 +45,8 @@ bool BarcodeToPositionMulti::process() {
     BarcodeProcessor **barcodeProcessors = new BarcodeProcessor *[mOptions->thread];
     for (int t = 0; t < mOptions->thread; t++) {
         results[t] = new Result(mOptions, true);
-        results[t]->setBarcodeProcessor(mbpmap->getBpmap());
+        results[t]->setBarcodeProcessor(mbpmap->getBpmap(),mbpmap->getBpmapsegment());
+//        results[t]->setBarcodeProcessorSegment(mbpmap->getBpmapSegment());
     }
 
     std::thread **threads = new thread *[mOptions->thread];
