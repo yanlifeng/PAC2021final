@@ -1,0 +1,1 @@
+make && rm -rf data/combine_read.fq.gz && ./ST_BarcodeMap-0.0.1 --in ~/shz/data/DP8400016231TR_D1.barcodeToPos.h5 --in1 ~/shz/data/V300091300_L03_read_1.fq.gz  --in2 ~/shz/data/V300091300_L04_read_1.fq.gz --out combine_read.fq.gz --mismatch 2 --thread 64 > stat.txt

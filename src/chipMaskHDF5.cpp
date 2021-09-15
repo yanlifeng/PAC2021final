@@ -1,4 +1,6 @@
 #include "chipMaskHDF5.h"
+#include "mytime.h"
+
 
 ChipMaskHDF5::ChipMaskHDF5(std::string FileName){
     fileName = FileName;
@@ -106,6 +108,7 @@ herr_t ChipMaskHDF5::writeDataSet(std::string chipID, slideRange& sliderange, un
 }
 
 void ChipMaskHDF5::readDataSet(unordered_map<uint64, Position1>& bpMap, int index){
+    clock_t t0=clock();
     herr_t status;
     //open dataset with datasetName
     std::string datasetName = DATASETNAME + std::to_string(index);
@@ -154,8 +157,11 @@ void ChipMaskHDF5::readDataSet(unordered_map<uint64, Position1>& bpMap, int inde
     //status = H5Aclose(attributeID);
     status = H5Dclose(datasetID);
     status = H5Fclose(fileID);
+
+    PTIME("h5Read")
     
-    
+    t0=clock();
+
     for (uint32 r = 0; r < dims[0]; r++){
         //bpMatrix[r] = new uint64*[dims[1]];
         for (uint32 c = 0; c< dims[1]; c++){
@@ -180,6 +186,7 @@ void ChipMaskHDF5::readDataSet(unordered_map<uint64, Position1>& bpMap, int inde
         }
     }
     
+    PTIME("build bpmap")
     /*
     for (int r = 0; r<dims[0]; r++){
         for (int c = 0; c<dims[1]; c++){

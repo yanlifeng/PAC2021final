@@ -19,28 +19,38 @@ using namespace std;
 
 class Result {
 public:
-	Result(Options* opt, int threadId, bool paired = true);
-	~Result();
-	Writer* getWriter() { return mWriter; }
-	static Result* merge(vector<Result*>& list);
-	void print();
-	void dumpDNBs(string& mappedDNBOutFile);
-	void setBarcodeProcessor(unordered_map<uint64, Position1>* bpmap);
+    Result(Options *opt, int threadId, bool paired = true);
+
+    ~Result();
+
+    Writer *getWriter() { return mWriter; }
+
+    static Result *merge(vector<Result *> &list);
+
+    void print();
+
+    void dumpDNBs(string &mappedDNBOutFile);
+
+    void setBarcodeProcessor(unordered_map<uint64, Position1> *bpmap);
+
 private:
-	void setBarcodeProcessor();
+    void setBarcodeProcessor();
+
 public:
-	Options* mOptions;
-	bool mPaired;
-	long mTotalRead;
-	long mFxiedFilterRead;
-	long mDupRead;
-	long mLowQuaRead;
-	long mWithoutPositionReads;
-	long overlapReadsWithMis = 0;
-	long overlapReadsWithN = 0;
-	Writer* mWriter;
-	BarcodeProcessor* mBarcodeProcessor;
-	int mThreadId;
+    Options *mOptions;
+    bool mPaired;
+    long mTotalRead;
+    long mFxiedFilterRead;
+    long mDupRead;
+    long mLowQuaRead;
+    long mWithoutPositionReads;
+    long overlapReadsWithMis = 0;
+    long overlapReadsWithN = 0;
+    Writer *mWriter;
+    BarcodeProcessor *mBarcodeProcessor;
+    int mThreadId;
+    double costFormat;
+
 };
 
 #endif // ! RESULT_H
