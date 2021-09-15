@@ -19,6 +19,8 @@
 
 #include "FastqIo.h"
 #include "FastqStream.h"
+#include "readerwriterqueue.h"
+#include "atomicops.h"
 
 class FastqReader {
 public:
@@ -102,9 +104,19 @@ public:
 
     uint64 GetNextRecordPos(dsrc::uchar *data_, uint64 pos_, const uint64 size_);
 
+    ChunkPair *readNextChunkPair(moodycamel::ReaderWriterQueue<std::pair<char *, int>> *q1,
+                                 moodycamel::ReaderWriterQueue<std::pair<char *, int>> *q2,
+                                 atomic_int &d1, atomic_int &d2,
+                                 pair<char *, int> &last1, pair<char *, int> &last2);
+
     ChunkPair *readNextChunkPair();
 
     ChunkPair *readNextChunkPair_interleaved();
+
+    ChunkPair *readNextChunkPair_interleaved(moodycamel::ReaderWriterQueue<std::pair<char *, int>> *q1,
+                                             moodycamel::ReaderWriterQueue<std::pair<char *, int>> *q2,
+                                             atomic_int &d1, atomic_int &d2,
+                                             pair<char *, int> &last1, pair<char *, int> &last2);
 
 public:
     dsrc::fq::FastqDataPool *fastqPool_left;

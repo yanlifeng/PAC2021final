@@ -14,12 +14,16 @@
 #ifndef H_FASTQSTREAM
 #define H_FASTQSTREAM
 
+#include <unistd.h>
+#include <cstring>
 #include "Globals.h"
 
 #include "Fastq.h"
 #include "Buffer.h"
 #include "zlib/zlib.h"
 #include "util.h"
+#include "readerwriterqueue.h"
+#include "atomicops.h"
 
 #if defined (_WIN32)
 #   define _CRT_SECURE_NO_WARNINGS
@@ -118,8 +122,64 @@ namespace dsrc {
                     int64 n = fread(memory_, 1, size_, mFile);
                     return n;
                 }
+            }
 
+            int64 Read(byte *memory_, uint64 size_, moodycamel::ReaderWriterQueue<std::pair<char *, int>> *q,
+                       atomic_int &done, pair<char *, int> &lastInfo) {
+//                printf("===============================\n");
+//                printf("now ready to read %lld data\n", size_);
+//                printf("now last info size is %d\n", lastInfo.second);
+                int64 resSum = 0;
+                int64 numFor = 0;
+                //TODO lastInfo.size > size_
+                if (lastInfo.second != 0) {
+                    memcpy(memory_, lastInfo.first, lastInfo.second);
+                    resSum += lastInfo.second;
+                    memory_ += lastInfo.second;
+                }
+                while (resSum < size_) {
 
+                    if (numFor > 5000) {
+                        printf("num for > 5000 ,break\n");
+                        break;
+                    }
+                    if (q->size_approx() == 0 && done == 1) {
+                        break;
+                    }
+                    if (q->size_approx() == 0) {
+                        numFor++;
+                        usleep(100);
+                    }
+                    std::pair<char *, int> now;
+                    if (q->try_dequeue(now)) {
+
+//                        printf("get one small chunk, size is %d\n", now.second);
+                        if (resSum + now.second <= size_) {
+//                            printf("read all small chunk to memory_...\n");
+                            memcpy(memory_, now.first, now.second);
+                            resSum += now.second;
+                            memory_ += now.second;
+//                            printf("read after res sum is %lld\n\n", resSum);
+                            delete[] now.first;
+                        } else {
+//                            printf("read part of small chunk to memory_...\n");
+                            int canCpoy = size_ - resSum;
+                            memcpy(memory_, now.first, canCpoy);
+                            resSum += canCpoy;
+                            memory_ += canCpoy;
+                            lastInfo.second = now.second - canCpoy;
+                            memcpy(lastInfo.first, now.first + canCpoy, lastInfo.second);
+//                            printf("read after res sum is %lld\n\n", resSum);
+
+                            delete[] now.first;
+                            break;
+                        }
+                    }
+                }
+//                printf("ok of one read, now res sum is %lld, need to read is %lld, leave %d to read next time\n",
+//                       resSum, size_, lastInfo.second);
+//                printf("===============================\n");
+                return resSum;
             }
 
         private:

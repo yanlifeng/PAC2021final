@@ -361,6 +361,20 @@ ChunkPair *FastqChunkReaderPair::readNextChunkPair() {
         return readNextChunkPair_interleaved();
     }
 }
+
+ChunkPair *FastqChunkReaderPair::readNextChunkPair(moodycamel::ReaderWriterQueue<std::pair<char *, int>> *q1,
+                                                   moodycamel::ReaderWriterQueue<std::pair<char *, int>> *q2,
+                                                   atomic_int &d1, atomic_int &d2,
+                                                   pair<char *, int> &last1, pair<char *, int> &last2) {
+    if (mInterleaved) {
+        //interleaved code here
+        return NULL;
+
+    } else {
+        //not interleaved
+        return readNextChunkPair_interleaved(q1, q2, d1, d2, last1, last2);
+    }
+}
 //ChunkPair* FastqChunkReaderPair::readNextChunkPair(){
 //ChunkPair* pair = new ChunkPair;
 //dsrc::fq::FastqDataChunk* leftPart = NULL;
@@ -631,4 +645,174 @@ ChunkPair *FastqChunkReaderPair::readNextChunkPair_interleaved() {
     return pair;
 
 }
+
+ChunkPair *
+FastqChunkReaderPair::readNextChunkPair_interleaved(moodycamel::ReaderWriterQueue<std::pair<char *, int>> *q1,
+                                                    moodycamel::ReaderWriterQueue<std::pair<char *, int>> *q2,
+                                                    atomic_int &d1, atomic_int &d2,
+                                                    pair<char *, int> &last1, pair<char *, int> &last2) {
+    ChunkPair *pair = new ChunkPair;
+    dsrc::fq::FastqDataChunk *leftPart = NULL;
+    fastqPool_left->Acquire(leftPart);
+
+    dsrc::fq::FastqDataChunk *rightPart = NULL;
+    fastqPool_right->Acquire(rightPart);
+
+    int64 left_line_count = 0;
+    int64 right_line_count = 0;
+    int64 chunkEnd_right = 0;
+    int64 chunkEnd = 0;
+//------read left chunk------//
+    if (eof) {
+        leftPart->size = 0;
+        rightPart->size = 0;
+        //return false;
+        fastqPool_left->Release(leftPart);
+        fastqPool_right->Release(rightPart);
+        return NULL;
+    }
+
+    //flush the data from previous incomplete chunk
+    dsrc::uchar *data = leftPart->data.Pointer();
+    const uint64 cbufSize = leftPart->data.Size();
+    leftPart->size = 0;
+    int64 toRead;
+    toRead = cbufSize - bufferSize_left;
+    if (bufferSize_left > 0) {
+        std::copy(swapBuffer_left.Pointer(), swapBuffer_left.Pointer() + bufferSize_left, data);
+        leftPart->size = bufferSize_left;
+        bufferSize_left = 0;
+    }
+    int64 r;
+    r = mLeft->Read(data + leftPart->size, toRead, q1, d1, last1);
+//    printf("now read once done, read %lld / %lld\n", r, toRead);
+    if (r > 0) {
+        if (r == toRead) {
+            chunkEnd = cbufSize -
+                       (1 << 13);//SwapBufferSize; // SwapBuffersize defined in FastqStream.h as constant value : 1<<13;
+            chunkEnd = GetNextRecordPos(data, chunkEnd, cbufSize);
+            //leftPart->size = chunkEnd - 1;
+            //if(usesCrlf)
+            //	leftPart->size -= 1;
+
+            //std::copy(data + chunkEnd, data + cbufSize, swapBuffer_left.Pointer());
+            //bufferSize_left = cbufSize - chunkEnd;
+        } else {
+            //chunkEnd = r;
+            leftPart->size += r - 1;
+            if (usesCrlf)
+                leftPart->size -= 1;
+            eof = true;
+        }
+    } else {
+        eof = true;
+        //fastqPool_left -> Release(leftPart);
+        //fastqPool_right->Release(rightPart);
+        return NULL;
+    }
+//------read left chunk end------//
+
+//-----------------read right chunk---------------------//
+    dsrc::uchar *data_right = rightPart->data.Pointer();
+    const uint64 cbufSize_right = rightPart->data.Size();
+    rightPart->size = 0;
+    toRead = cbufSize_right - bufferSize_right;
+    if (bufferSize_right > 0) {
+        std::copy(swapBuffer_right.Pointer(), swapBuffer_right.Pointer() + bufferSize_right, data_right);
+        rightPart->size = bufferSize_right;
+        bufferSize_right = 0;
+    }
+    r = mRight->Read(data_right + rightPart->size, toRead, q2, d2, last2);
+//    printf("now read once done, read %lld / %lld\n", r, toRead);
+
+    if (r > 0) {
+        if (!eof && r == toRead) {
+            chunkEnd_right = cbufSize_right - (1
+                    << 13); //SwapBufferSize; // SwapBuffersize defined in FastqStream.h as constant value : 1<<13;
+            chunkEnd_right = GetNextRecordPos(data_right, chunkEnd_right, cbufSize_right);
+            //leftPart->size = chunkEnd - 1;
+            //if(usesCrlf)
+            //	leftPart->size -= 1;
+
+            //std::copy(data + chunkEnd, data + cbufSize, swapBuffer_left.Pointer());
+            //bufferSize_left = cbufSize - chunkEnd;
+        } else {
+            //chunkEnd_right += r;
+            rightPart->size += r - 1;
+            if (usesCrlf)
+                rightPart->size -= 1;
+            eof = true;
+        }
+    } else {
+        eof = true;
+        return NULL;
+    }
+//--------------read right chunk end---------------------//
+
+    if (!eof) {
+        //std::cout << "chunkEnd chunkEnd_right: " << chunkEnd <<" "<< chunkEnd_right << std::endl;
+        left_line_count = count_line(data, chunkEnd);
+        right_line_count = count_line(data_right, chunkEnd_right);
+        //int64 difference = right_line_count - left_line_count;
+        int64 difference = left_line_count - right_line_count;
+        //if((r != toRead) && (difference != 0)){
+        //	cerr << "read error! inconsistent end!!";
+        //	exit(0);
+        //}
+        //std::cout<<"left right difference: " << left_line_count <<" "<< right_line_count <<" "<< difference << std::endl;
+        if (difference > 0) {
+
+            //move rightPart difference lines before
+            //std::cout << "difference > 0 "<<left_line_count <<" " <<right_line_count << " " << difference <<std::endl;
+            std::cout << "left_line_count: " << left_line_count << std::endl;
+            std::cout << "right_line_count: " << right_line_count << std::endl;
+            std::cout << "start: " << chunkEnd_right << std::endl;
+            //while(true){
+            while (chunkEnd_right < cbufSize) {
+                if (data_right[chunkEnd_right] == '\n') {
+                    difference--;
+                    if (difference == 0) {
+                        chunkEnd_right++;
+                        break;
+                    }
+                }
+                chunkEnd_right++;
+            }
+            std::cout << "end: " << chunkEnd_right << std::endl;
+
+        } else if (difference < 0) {
+            //move leftPart difference lines before
+            //std::cout << "difference < 0 "  <<left_line_count <<" " <<right_line_count << " " << difference << std::endl;
+            //while(true){
+            while (chunkEnd < cbufSize) {
+                if (data[chunkEnd] == '\n') {
+                    difference++;
+                    if (difference == 0) {
+                        chunkEnd++;
+                        break;
+                    }
+                }
+                chunkEnd++;
+            }
+        }
+
+        leftPart->size = chunkEnd - 1;
+        if (usesCrlf)
+            leftPart->size -= 1;
+
+        std::copy(data + chunkEnd, data + cbufSize, swapBuffer_left.Pointer());
+        bufferSize_left = cbufSize - chunkEnd;
+
+        rightPart->size = chunkEnd_right - 1;
+        if (usesCrlf)
+            rightPart->size -= 1;
+        std::copy(data_right + chunkEnd_right, data_right + cbufSize_right, swapBuffer_right.Pointer());
+        bufferSize_right = cbufSize_right - chunkEnd_right;
+    }
+    pair->leftpart = leftPart;
+    pair->rightpart = rightPart;
+    return pair;
+
+}
+
 

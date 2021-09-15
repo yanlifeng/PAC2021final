@@ -15,12 +15,14 @@
 #include "fixedfilter.h"
 #include "writerThread.h"
 #include "result.h"
+#include "readerwriterqueue.h"
+#include "atomicops.h"
 
 using namespace std;
 
 struct ReadPairPack {
     //ReadPair** data;
-    vector<ReadPair*> data;
+    vector<ReadPair *> data;
     int count;
 };
 
@@ -66,6 +68,10 @@ private:
 
     void consumePack(Result *result);
 
+    void pugzTask1();
+
+    void pugzTask2();
+
     void producerTask();
 
     void consumerTask(Result *result);
@@ -76,6 +82,11 @@ public:
     Options *mOptions;
     BarcodePositionMap *mbpmap;
     FixedFilter *fixedFilter;
+    moodycamel::ReaderWriterQueue<std::pair<char *, int>> pugzQueue1;
+    moodycamel::ReaderWriterQueue<std::pair<char *, int>> pugzQueue2;
+    std::atomic_int pugz1Done;
+    std::atomic_int pugz2Done;
+
     //unordered_map<uint64, Position*> misBarcodeMap;
 
 private:

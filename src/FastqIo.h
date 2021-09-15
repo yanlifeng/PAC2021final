@@ -18,6 +18,9 @@
 #include "DataPool.h"
 #include "FastqStream.h"
 #include "read.h"
+#include "readerwriterqueue.h"
+#include "atomicops.h"
+
 #include <vector>
 
 namespace dsrc {
@@ -45,6 +48,14 @@ namespace dsrc {
                 int64 n = fileReader.Read(memory_, size_);
                 return n;
             }
+
+            int64
+            Read(byte *memory_, uint64 size_, moodycamel::ReaderWriterQueue<std::pair<char *, int>> *q,
+                 atomic_int &done, pair<char *, int> &lastInfo) {
+                int64 n = fileReader.Read(memory_, size_, q, done, lastInfo);
+                return n;
+            }
+
 
         private:
 

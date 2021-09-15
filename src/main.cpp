@@ -67,7 +67,9 @@ int main(int argc, char *argv[]) {
                  "chose one action you want to run [map_barcode_to_slide = 1, merge_barcode_list = 2, mask_format_change = 3, mask_merge = 4].",
                  false, 1);
     cmd.add<int>("thread", 'w', "number of thread that will be used to run.", false, 2);
+    cmd.add<int>("pugzThread", 0, "number of thread that will be used to pugz.", false, 1);
     cmd.add("verbose", 'V', "output verbose log information (i.e. when every 1M reads are processed).");
+    cmd.add("usePugz", 0, "use pugz to decompress\n");
 
     cmd.parse_check(argc, argv);
 
@@ -85,7 +87,9 @@ int main(int argc, char *argv[]) {
     opt.mapSize = cmd.get<long>("mapSize");
     opt.actionInt = cmd.get<int>("action");
     opt.verbose = cmd.exist("verbose");
+    opt.usePugz = cmd.exist("usePugz");
     opt.thread = cmd.get<int>("thread");
+    opt.pugzThread = cmd.get<int>("pugzThread");
     opt.report = cmd.get<string>("report");
     opt.barcodeSegment = cmd.get<int>("barcodeSegment");
     opt.transBarcodeToPos.in = cmd.get<string>("in");
@@ -105,6 +109,11 @@ int main(int argc, char *argv[]) {
     opt.transBarcodeToPos.fixedStart = cmd.get<int>("fixedStart");
     opt.transBarcodeToPos.fixedSequenceFile = cmd.get<string>("fixedSequenceFile");
     opt.transBarcodeToPos.PEout = cmd.exist("PEout");
+
+
+    if (ends_with(opt.transBarcodeToPos.in1, ".gz") == 0) {
+        opt.usePugz = 0;
+    }
 
     stringstream ss;
     for (int i = 0; i < argc; i++) {
