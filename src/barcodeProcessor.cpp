@@ -401,30 +401,41 @@ void BarcodeProcessor::misMaskGenerateSegment() {
      *  int* misMaskLensSegmentR;
      */
 
-    misMaskClassificationNumber = 79;
-    misMaskClassification = new int[misMaskClassificationNumber];
-    misMaskLensSegmentL = new uint32[9*(barcodeLen*barcodeLen-1)/2];
-    misMaskLensSegmentR = new uint32[9*(barcodeLen*barcodeLen-1)/2];
+
+    misMaskClassification = new int[700];
+    misMaskLensSegmentL = new uint32[9*(barcodeLen*(barcodeLen-1))/2];
+    misMaskLensSegmentR = new uint32[9*(barcodeLen*(barcodeLen-1))/2];
     index = 0;
     int Classificationindex = 0;
     for (int i=0;i<barcodeLen-1;i++){
-        for (int j=i+1;j<barcodeLen;j++){
-            for (int k1=1;k1<4;k1++){
-                for (int k2=1;k2<4;k2++){
+        for (uint64 k1=1;k1<4;k1++){
+            for (int j=i+1;j<barcodeLen;j++){
+                for (uint64 k2=1;k2<4;k2++){
                     uint64 misMaskInt = (k1<<(i*2)) | (k2<<(j*2));
                     misMaskLensSegmentL[index] = getMapKey(misMaskInt);
                     misMaskLensSegmentR[index] = getMapValue(misMaskInt);
                     index++;
+                    if (j<=11) {
+                        misMaskClassification[Classificationindex] = index;
+                        Classificationindex++;
+                    }
                 }
             }
-            if (j<=11) {
+            if (i<=11){
                 misMaskClassification[Classificationindex] = index;
                 Classificationindex++;
             }
         }
-        misMaskClassification[Classificationindex] = index;
-        Classificationindex++;
     }
+    misMaskClassification[Classificationindex] = index;
+    Classificationindex++;
+    misMaskClassificationNumber = Classificationindex;
+//    cerr << "misMaskClassificationNumber is" << misMaskClassificationNumber << endl;
+//    for (int i=0;i<misMaskClassificationNumber;i++){
+//        printf("Class is %d , index is %d\n",i,misMaskClassification[i]);
+//    }
+//    cerr << "Index is " << index << endl;
+//    cerr << "Classificationindex is " << Classificationindex << endl;
 }
 
 string BarcodeProcessor::positionToString(Position *position) {
@@ -515,7 +526,7 @@ int BarcodeProcessor::getMisOverlapSegmentClassification(uint64 barcodeInt,
                                            robin_hood::unordered_map<uint32, Position1>::iterator &result_iter_value) {
     uint64 misBarcodeInt;
     int misCount = 0;
-    int misMaskIndex = 0;
+
     robin_hood::unordered_map<uint32, bpmap_segment_value>::iterator iter_key;
     robin_hood::unordered_map<uint32, Position1>::iterator iter_value;
 //    robin_hood::unordered_map<uint32, Position1>::iterator overlapIter_value;
@@ -524,7 +535,6 @@ int BarcodeProcessor::getMisOverlapSegmentClassification(uint64 barcodeInt,
  *  处理mismatch == 1 的情况
  */
 
-    misCount = 0;
     for (int i=0;i<misMaskLen;i++){
         misBarcodeInt = barcodeInt ^ misMask[i];
         iter_key = bpmap_segment->find(getMapKey(misBarcodeInt));
@@ -539,24 +549,31 @@ int BarcodeProcessor::getMisOverlapSegmentClassification(uint64 barcodeInt,
             }
         }
     }
-    if (misCount == 1) {
-        return 0;
-    }
+    if (misCount== 1) return 0;
 
     if (mismatch < 2) return -1;
 
-    uint64 mapkey   = getMapKey(barcodeInt);
-    uint64 mapValue = getMapValue(barcodeInt);
+    int misMaskIndex = 0;
+
+    uint32 mapkey   = getMapKey(barcodeInt);
+    uint32 mapValue = getMapValue(barcodeInt);
+
+//    cerr << "misMaskClassificationNumber is " << misMaskClassificationNumber << endl;
 
     for (int i=0;i<misMaskClassificationNumber;i++){
 
         iter_key = bpmap_segment->find(mapkey^misMaskLensSegmentL[misMaskIndex]);
         if (iter_key == bpmap_segment->end()){
+            misMaskIndex = misMaskClassification[i];
             continue;
         }
         while (misMaskIndex < misMaskClassification[i]){
-            iter_value = iter_key->second.segment.find(mapValue^misMaskLensSegmentR[misMaskIndex]);
+            uint32 misBarcodeIntValue = mapValue^misMaskLensSegmentR[misMaskIndex];
             misMaskIndex++;
+            if (misBarcodeIntValue < iter_key->second.minvalue || misBarcodeIntValue > iter_key->second.maxvalue) {
+                continue;
+            }
+            iter_value = iter_key->second.segment.find(misBarcodeIntValue);
             if (iter_value != iter_key->second.segment.end()){
                 result_iter_value = iter_value;
                 misCount++;
@@ -567,10 +584,7 @@ int BarcodeProcessor::getMisOverlapSegmentClassification(uint64 barcodeInt,
         }
     }
 
-    if (misCount == 1) {
-        return 0;
-    }
-
+    if (misCount== 1) return 0;
 
     return -1;
 }

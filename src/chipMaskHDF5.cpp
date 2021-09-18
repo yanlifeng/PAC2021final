@@ -318,10 +318,14 @@ void ChipMaskHDF5::readDataSetSegment(robin_hood::unordered_map<uint32, bpmap_se
                     x1=bpMapSegment.find(getMapKey(barcodeInt));
                     if (x1 != bpMapSegment.end()){
                         x1->second.segment[getMapValue(barcodeInt)] = position;
+                        x1->second.maxvalue = getMapValue(barcodeInt) > x1->second.maxvalue ? getMapValue(barcodeInt):x1->second.maxvalue;
+                        x1->second.minvalue = getMapValue(barcodeInt) < x1->second.minvalue ? getMapValue(barcodeInt):x1->second.minvalue;
                     }else{
 //                        <uint32,bpmap_segment_value>
                         bpmap_segment_value *map_temp = new bpmap_segment_value;
                         map_temp->segment[getMapValue(barcodeInt)] = position;
+                        map_temp->maxvalue = getMapValue(barcodeInt);
+                        map_temp->minvalue = getMapValue(barcodeInt);
                         bpMapSegment[getMapKey(barcodeInt)] = *map_temp;
                     }
 //                    bpMap[barcodeInt] = position;
