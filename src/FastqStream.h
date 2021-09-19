@@ -125,7 +125,7 @@ namespace dsrc {
             }
 
             int64 Read(byte *memory_, uint64 size_, moodycamel::ReaderWriterQueue<std::pair<char *, int>> *q,
-                       atomic_int &done, pair<char *, int> &lastInfo) {
+                       atomic_int &done, pair<char *, int> &lastInfo, int num) {
 //                printf("===============================\n");
 //                printf("now ready to read %lld data\n", size_);
 //                printf("now last info size is %d\n", lastInfo.second);
@@ -137,23 +137,30 @@ namespace dsrc {
                     resSum += lastInfo.second;
                     memory_ += lastInfo.second;
                 }
+                int cntt = 0;
+
                 while (resSum < size_) {
 
-                    if (numFor > 5000) {
-                        printf("num for > 5000 ,break\n");
-                        break;
-                    }
+//                    if (numFor > 5000) {
+//                        printf("num for > 5000 ,break\n");
+//                        break;
+//                    }
                     if (q->size_approx() == 0 && done == 1) {
                         break;
                     }
                     if (q->size_approx() == 0) {
                         numFor++;
-                        usleep(100);
+//                        printf("prudocer wait pugz %d\n", cntt++);
+//                        cout << "prudocer " << num << " wait pugz " << cntt++ << " q->size_approx() "
+//                             << q->size_approx() << endl;
+                        usleep(1000);
                     }
                     std::pair<char *, int> now;
                     if (q->try_dequeue(now)) {
 
-//                        printf("get one small chunk, size is %d\n", now.second);
+                        cntt = 0;
+//                        cout << "get one small chunk, size is " << now.second << "queue size " << q->size_approx()
+//                             << endl;
                         if (resSum + now.second <= size_) {
 //                            printf("read all small chunk to memory_...\n");
                             memcpy(memory_, now.first, now.second);

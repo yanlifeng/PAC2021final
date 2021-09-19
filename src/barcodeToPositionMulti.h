@@ -82,10 +82,15 @@ public:
     Options *mOptions;
     BarcodePositionMap *mbpmap;
     FixedFilter *fixedFilter;
-    moodycamel::ReaderWriterQueue<std::pair<char *, int>> pugzQueue1;
-    moodycamel::ReaderWriterQueue<std::pair<char *, int>> pugzQueue2;
+
+    moodycamel::ReaderWriterQueue<std::pair<char *, int>> *pugzQueue1;
+
+    moodycamel::ReaderWriterQueue<std::pair<char *, int>> *pugzQueue2;
+
     std::atomic_int pugz1Done;
     std::atomic_int pugz2Done;
+
+    std::atomic_int producerDone;
 
     //unordered_map<uint64, Position*> misBarcodeMap;
 

@@ -239,8 +239,13 @@ BarcodeToPositionMulti::BarcodeToPositionMulti(Options *opt) {
         fixedFilter = new FixedFilter(opt);
         filterFixedSequence = true;
     }
+    if (mOptions->usePugz) {
+        pugzQueue1 = new moodycamel::ReaderWriterQueue<pair<char *, int>>(128 * 128);
+        pugzQueue2 = new moodycamel::ReaderWriterQueue<pair<char *, int>>(128 * 128);
+    }
     pugz1Done = 0;
     pugz2Done = 0;
+    producerDone = 0;
 }
 
 BarcodeToPositionMulti::~BarcodeToPositionMulti() {
@@ -587,7 +592,9 @@ void BarcodeToPositionMulti::pugzTask1() {
 //    }
     OutputConsumer output{};
 //    output.G = &G;
-    output.P = &pugzQueue1;
+    output.P = pugzQueue1;
+    output.num = 1;
+    output.pDone = &producerDone;
     ConsumerSync sync{};
     libdeflate_gzip_decompress(in_p, in.mmap_size, mOptions->pugzThread, output, &sync);
 
@@ -640,7 +647,9 @@ void BarcodeToPositionMulti::pugzTask2() {
 //    }
     OutputConsumer output{};
 //    output.G = &G;
-    output.P = &pugzQueue2;
+    output.P = pugzQueue2;
+    output.num = 2;
+    output.pDone = &producerDone;
     ConsumerSync sync{};
     libdeflate_gzip_decompress(in_p, in.mmap_size, mOptions->pugzThread, output, &sync);
 
@@ -678,16 +687,19 @@ void BarcodeToPositionMulti::producerTask() {
         last2.first = new char[1 << 20];
         last2.second = 0;
 
-        while ((chunk_pair = pairReader->readNextChunkPair(&pugzQueue1, &pugzQueue2, pugz1Done, pugz2Done,
+        while ((chunk_pair = pairReader->readNextChunkPair(pugzQueue1, pugzQueue2, pugz1Done, pugz2Done,
                                                            last1, last2)) != NULL) {
             //cerr << (char*)chunk_pair->leftpart->data.Pointer();
             if (mOptions->verbose)
                 loginfo("producer read one chunk");
-            printf("read %d chunk done, size is %lld %lld\n", cnt++,
-                   chunk_pair->leftpart->size, chunk_pair->rightpart->size);
+//            printf("read %d chunk done, size is %lld %lld\n", cnt++,
+//                   chunk_pair->leftpart->size, chunk_pair->rightpart->size);
+//            cout << "read " << (cnt++) << " chunk done, size is " << chunk_pair->leftpart->size << " "
+//                 << chunk_pair->rightpart->size << endl;
             producePack(chunk_pair);
             while (mRepo.writePos - mRepo.readPos > PACK_IN_MEM_LIMIT) {
-                printf("producer waiting...\n");
+//                printf("producer wait consumer\n");
+//                cout << "producer wait consumer" << endl;
                 slept++;
                 usleep(100);
             }
@@ -698,11 +710,11 @@ void BarcodeToPositionMulti::producerTask() {
             //cerr << (char*)chunk_pair->leftpart->data.Pointer();
             if (mOptions->verbose)
                 loginfo("producer read one chunk");
-            printf("read %d chunk done, size is %lld %lld\n", cnt++,
-                   chunk_pair->leftpart->size, chunk_pair->rightpart->size);
+//            printf("read %d chunk done, size is %lld %lld\n", cnt++,
+//                   chunk_pair->leftpart->size, chunk_pair->rightpart->size);
             producePack(chunk_pair);
             while (mRepo.writePos - mRepo.readPos > PACK_IN_MEM_LIMIT) {
-                printf("producer waiting...\n");
+//                printf("producer waiting...\n");
                 slept++;
                 usleep(100);
             }
@@ -717,6 +729,7 @@ void BarcodeToPositionMulti::producerTask() {
     //lock.unlock();
 
     printf("producer cost %.5f\n", GetTime() - t0);
+    producerDone = 1;
 
 
 }

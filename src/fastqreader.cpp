@@ -684,7 +684,7 @@ FastqChunkReaderPair::readNextChunkPair_interleaved(moodycamel::ReaderWriterQueu
         bufferSize_left = 0;
     }
     int64 r;
-    r = mLeft->Read(data + leftPart->size, toRead, q1, d1, last1);
+    r = mLeft->Read(data + leftPart->size, toRead, q1, d1, last1, 1);
 //    printf("now read once done, read %lld / %lld\n", r, toRead);
     if (r > 0) {
         if (r == toRead) {
@@ -722,7 +722,7 @@ FastqChunkReaderPair::readNextChunkPair_interleaved(moodycamel::ReaderWriterQueu
         rightPart->size = bufferSize_right;
         bufferSize_right = 0;
     }
-    r = mRight->Read(data_right + rightPart->size, toRead, q2, d2, last2);
+    r = mRight->Read(data_right + rightPart->size, toRead, q2, d2, last2, 2);
 //    printf("now read once done, read %lld / %lld\n", r, toRead);
 
     if (r > 0) {
