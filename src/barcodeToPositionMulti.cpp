@@ -222,6 +222,12 @@ stat_file(struct file_stream *in, stat_t *stbuf, bool allow_hard_links) {
 //}
 
 
+void BarcodeToPositionMulti::getMbpmap() {
+    mbpmap = new BarcodePositionMap(mOptions);
+
+}
+
+
 BarcodeToPositionMulti::BarcodeToPositionMulti(Options *opt) {
     mOptions = opt;
     mProduceFinished = false;
@@ -231,7 +237,7 @@ BarcodeToPositionMulti::BarcodeToPositionMulti(Options *opt) {
     mWriter = NULL;
     mUnmappedWriter = NULL;
     bool isSeq500 = opt->isSeq500;
-    mbpmap = new BarcodePositionMap(opt);
+//    mbpmap = new BarcodePositionMap(opt);
 //    printf("test4 val is %d\n", mbpmap->GetHashHead()[109547259]);
 
     //barcodeProcessor = new BarcodeProcessor(opt, &mbpmap->bpmap);
@@ -240,8 +246,8 @@ BarcodeToPositionMulti::BarcodeToPositionMulti(Options *opt) {
         filterFixedSequence = true;
     }
     if (mOptions->usePugz) {
-        pugzQueue1 = new moodycamel::ReaderWriterQueue<pair<char *, int>>(128 * 128);
-        pugzQueue2 = new moodycamel::ReaderWriterQueue<pair<char *, int>>(128 * 128);
+        pugzQueue1 = new moodycamel::ReaderWriterQueue<pair<char *, int>>(1 << 20);
+        pugzQueue2 = new moodycamel::ReaderWriterQueue<pair<char *, int>>(1 << 20);
     }
     pugz1Done = 0;
     pugz2Done = 0;
@@ -263,10 +269,16 @@ bool BarcodeToPositionMulti::process() {
 //    pugzer2.join();
 
 
+    auto t00 = GetTime();
+
     initOutput();
     initPackRepositoey();
     thread *pugzer1;
     thread *pugzer2;
+    auto getMbp = new thread(bind(&BarcodeToPositionMulti::getMbpmap, this));
+//    getMbp->join();
+
+
 
     if (mOptions->usePugz) {
         pugzer1 = new thread(bind(&BarcodeToPositionMulti::pugzTask1, this));
@@ -276,6 +288,12 @@ bool BarcodeToPositionMulti::process() {
 
     thread producer(bind(&BarcodeToPositionMulti::producerTask, this));
 
+    printf("wait get map thread done...\n");
+    getMbp->join();
+    printf("get map thread done\n");
+
+    printf("get map cost %.4f\n", GetTime() - t00);
+
     Result **results = new Result *[mOptions->thread];
     BarcodeProcessor **barcodeProcessors = new BarcodeProcessor *[mOptions->thread];
     for (int t = 0; t < mOptions->thread; t++) {
@@ -283,6 +301,10 @@ bool BarcodeToPositionMulti::process() {
 //        results[t]->setBarcodeProcessor(mbpmap->getBpmap());
         results[t]->setBarcodeProcessor(mbpmap->GetHashNum(), mbpmap->GetHashHead(), mbpmap->GetHashMap());
     }
+
+
+    printf("consumer thread begin...\n");
+
 
     printf("new result done\n");
 
@@ -314,6 +336,7 @@ bool BarcodeToPositionMulti::process() {
         threads[t]->join();
     }
     cout << "consumer done" << endl;
+    printf("consumer cost %.4f\n", GetTime() - t00);
 
     if (writerThread)
         writerThread->join();
@@ -355,6 +378,7 @@ bool BarcodeToPositionMulti::process() {
         delete unMappedWriterThread;
 
     closeOutput();
+    printf("final and delete cost %.4f\n", GetTime() - t00);
 
     return true;
 }

@@ -78,6 +78,8 @@ private:
 
     void writeTask(WriterThread *config);
 
+    void getMbpmap();
+
 public:
     Options *mOptions;
     BarcodePositionMap *mbpmap;
