@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include "fastqreader.h"
 #include <time.h>
+#include <sys/timeb.h>
 #include "cmdline.h"
 #include <sstream>
 #include "util.h"
@@ -11,7 +12,7 @@
 #include "chipMaskFormatChange.h"
 #include "chipMaskMerge.h"
 #include <mutex>
-#include "mytime.h"
+// #include "mytime.h"
 
 
 
@@ -105,7 +106,10 @@ int main(int argc, char *argv[]) {
         ss << argv[i] << " ";
     }
     command = ss.str();
-    clock_t t0=clock();
+    // clock_t t0=clock();
+    struct timeb start,end;
+    double startTime,endTime;
+    ftime(&start);
     time_t t1 = time(NULL);
     opt.init();
     opt.validate();
@@ -133,7 +137,11 @@ int main(int argc, char *argv[]) {
     
     
     time_t t2 = time(NULL);
-    PTIME("total")
+    // PTIME("total")
+    ftime(&end);
+    startTime = start.time + start.millitm / 1000.0;
+    endTime = end.time + end.millitm / 1000.0;
+    printf("total:%.3fs\n",endTime-startTime);
 
     cerr << endl << command << endl;
     cerr << "spatialRNADrawMap" << ", time used: " << (t2 - t1) << " seconds" << endl;

@@ -12,12 +12,13 @@
 #include "barcodePositionMap.h"
 #include "options.h"
 #include "util.h"
+#include "myhash.h"
 
 using namespace std;
 
 class BarcodeProcessor {
 public:
-	BarcodeProcessor(Options* opt, unordered_map<uint64, Position1>* mbpmap);
+	BarcodeProcessor(Options* opt, hash_map* mbpmap);
 	BarcodeProcessor();
 	~BarcodeProcessor();
 	bool process(Read* read1, Read* read2);
@@ -36,7 +37,7 @@ private:
 	void misMaskGenerate();
 	string positionToString(Position1* position);
 	string positionToString(Position* position);
-	unordered_map<uint64, Position1>::iterator getMisOverlap(uint64 barcodeInt);
+	Position1* getMisOverlap(uint64 barcodeInt);
 	Position1* getNOverlap(string& barcodeString, uint8 Nindex);
 	int getNindex(string& barcodeString);
 	void addDNB(uint64 barcodeInt);
@@ -54,7 +55,7 @@ private:
 	uint64 polyTInt;
 public:
 	Options* mOptions;
-	unordered_map<uint64, Position1>* bpmap;
+	hash_map* bpmap;
 	long totalReads = 0;
 	long mMapToSlideRead = 0;
 	long overlapReads = 0;

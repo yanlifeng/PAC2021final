@@ -107,7 +107,7 @@ herr_t ChipMaskHDF5::writeDataSet(std::string chipID, slideRange& sliderange, un
     return status;
 }
 
-void ChipMaskHDF5::readDataSet(unordered_map<uint64, Position1>& bpMap, int index){
+void ChipMaskHDF5::readDataSet(hash_map& bpMap, int index){
     clock_t t0=clock();
     herr_t status;
     //open dataset with datasetName
@@ -152,13 +152,15 @@ void ChipMaskHDF5::readDataSet(unordered_map<uint64, Position1>& bpMap, int inde
         }
     }
     */
-    
+    PTIME("H5getdims")
+    t0=clock();
     status = H5Dread(datasetID, H5T_NATIVE_UINT64, H5S_ALL, H5S_ALL, H5P_DEFAULT, bpMatrix_buffer);
+    PTIME("H5Dread")
     //status = H5Aclose(attributeID);
     status = H5Dclose(datasetID);
     status = H5Fclose(fileID);
 
-    PTIME("h5Read")
+
     
     t0=clock();
 
@@ -174,19 +176,21 @@ void ChipMaskHDF5::readDataSet(unordered_map<uint64, Position1>& bpMap, int inde
                     if (barcodeInt == 0){
                         continue;
                     }
-                    bpMap[barcodeInt] = position;
+                    bpMap.insert(barcodeInt,position);
                 }
             }else{
                 uint64 barcodeInt = bpMatrix_buffer[r*dims[1]+c];
                 if (barcodeInt == 0){
                     continue;
                 }
-                bpMap[barcodeInt] = position;
+                // bpMap[barcodeInt] = position;
+                bpMap.insert(barcodeInt,position);
             }           
         }
     }
     
     PTIME("build bpmap")
+    // bpMap.stat();
     /*
     for (int r = 0; r<dims[0]; r++){
         for (int c = 0; c<dims[1]; c++){

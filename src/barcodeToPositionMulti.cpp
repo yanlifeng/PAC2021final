@@ -31,7 +31,10 @@ bool BarcodeToPositionMulti::process() {
     initOutput();
     initPackRepositoey();
     // cout<<"producer start"<<endl;
-    clock_t t0=clock();
+    // clock_t t0=clock();
+    timeb start,endp,endc,endw;
+    ftime(&start);
+    
 
     std::thread producer(std::bind(&BarcodeToPositionMulti::producerTask, this));
 
@@ -57,18 +60,21 @@ bool BarcodeToPositionMulti::process() {
     }
 
     producer.join();
-    PTIME("producer finish")
+    ftime(&endp);
 
     for (int t = 0; t < mOptions->thread; t++) {
         threads[t]->join();
     }
-    PTIME("consumer finish")
+    ftime(&endc);
 
     if (writerThread)
         writerThread->join();
     if (unMappedWriterThread)
         unMappedWriterThread->join();
-    PTIME("writer finish")
+    ftime(&endw);
+    printTime(start,endp,"producer finish");
+    printTime(start,endc,"consumer finish");
+    printTime(start,endw,"writer finish");
 
     if (mOptions->verbose)
         loginfo("start to generate reports\n");

@@ -11,10 +11,8 @@
 #include <unordered_map>
 #include <iomanip>
 #include <set>
-#include <boost/archive/binary_iarchive.hpp>
-#include <boost/archive/binary_oarchive.hpp>
-#include <boost/serialization/string.hpp>
-#include <boost/serialization/unordered_map.hpp>
+#include "myhash.h"
+
 
 using namespace std;
 
@@ -31,9 +29,10 @@ public:
 	long getBarcodeTypes();
 	void dumpbpmap(string& mapOutFile);
 	void loadbpmap();
-	unordered_map<uint64, Position1>* getBpmap() { return &bpmap; };
+	hash_map* getBpmap() { return &bpmap; };
 public:
-	unordered_map<uint64,  Position1> bpmap;
+	// unordered_map<uint64,  Position1> bpmap;
+	hash_map bpmap;
 	Options* mOptions;
 	set<uint64> dupBarcode;
 	long overlapBarcodes;

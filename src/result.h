@@ -14,6 +14,7 @@
 #include "barcodeProcessor.h"
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/serialization/map.hpp>
+#include "myhash.h"
 
 using namespace std;
 
@@ -31,7 +32,7 @@ public:
 
     void dumpDNBs(string &mappedDNBOutFile);
 
-    void setBarcodeProcessor(unordered_map<uint64, Position1> *bpmap);
+    void setBarcodeProcessor(hash_map *bpmap);
 
 private:
     void setBarcodeProcessor();

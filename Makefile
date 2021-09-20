@@ -15,7 +15,7 @@ TARGET := ST_BarcodeMap-0.0.1
 BIN_TARGET := ${TARGET}
 
 CXX = g++
-CXXFLAGS := -std=c++11 -g -O3 -I${DIR_INC} $(foreach includedir,$(INCLUDE_DIRS),-I$(includedir)) ${CXXFLAGS}
+CXXFLAGS := -std=c++11 -g -O3 -march=native -I${DIR_INC} $(foreach includedir,$(INCLUDE_DIRS),-I$(includedir)) ${CXXFLAGS}
 LIBS := -lz -lpthread -lhdf5 -lboost_serialization
 LD_FLAGS := $(foreach librarydir,$(LIBRARY_DIRS),-L$(librarydir)) $(LIBS) $(LD_FLAGS)
 
@@ -23,7 +23,7 @@ LD_FLAGS := $(foreach librarydir,$(LIBRARY_DIRS),-L$(librarydir)) $(LIBS) $(LD_F
 ${BIN_TARGET}:${OBJ}
 	$(CXX) $(OBJ) -o $@ $(LD_FLAGS)
 
-${DIR_OBJ}/%.o:${DIR_SRC}/%.cpp make_obj_dir
+${DIR_OBJ}/%.o:${DIR_SRC}/%.cpp 
 	$(CXX) -c $< -o $@ $(CXXFLAGS)
 
 .PHONY:clean

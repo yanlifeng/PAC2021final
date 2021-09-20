@@ -13,8 +13,9 @@ BarcodePositionMap::BarcodePositionMap(Options* opt)
 
 BarcodePositionMap::~BarcodePositionMap()
 {
-	bpmap.clear();
-	unordered_map<uint64, Position1>().swap(bpmap);
+	// bpmap.clear();
+	// unordered_map<uint64, Position1>().swap(bpmap);
+	bpmap.~hash_map();
 	dupBarcode.clear();
 	set<uint64>().swap(dupBarcode);
 }
@@ -36,44 +37,44 @@ long BarcodePositionMap::getBarcodeTypes()
 {
 	return bpmap.size();
 }
-
-void BarcodePositionMap::dumpbpmap(string& mapOutFile) {
-	time_t start = time(NULL);
-	cout << "##########dump barcodeToPosition map begin..." << endl;
-	if (ends_with(mapOutFile, ".bin")) {
-		unordered_map<uint64, Position1>::iterator mapIter = bpmap.begin();
-		bpmap.reserve(bpmap.size());
-		ofstream writer(mapOutFile, ios::out | ios::binary);
-		//boost::archive::binary_oarchive oa(writer);
-		//oa << bpmap;
-		while (mapIter != bpmap.end()) {
-			writer.write((char*)&mapIter->first, sizeof(uint64));
-			writer.write((char*)&mapIter->second, sizeof(uint32));
-			writer.write((char*)&mapIter->second, sizeof(uint32));
-			mapIter++;
-		}
-		writer.close();
-	}else if (ends_with(mapOutFile, "h5") || ends_with(mapOutFile, "hdf5")){
-		ChipMaskHDF5 chipMaskH5(mapOutFile);
-		chipMaskH5.creatFile();
-		uint8_t segment = mOptions->barcodeSegment;
-		if (mOptions->rc == 2){
-			segment *= 2;
-		}
-		slideRange sliderange{minX, maxX, minY, maxY};
-		chipMaskH5.writeDataSet(mOptions->chipID, sliderange, bpmap, barcodeLen, segment, slidePitch, mOptions->compression);
-	}
-	else {
-		ofstream writer(mapOutFile);
-		unordered_map<uint64, Position1>::iterator mapIter = bpmap.begin();
-		while (mapIter != bpmap.end()) {
-			writer << seqDecode(mapIter->first, barcodeLen) << "\t" << mapIter->second.x << "\t" << mapIter->second.y << endl;
-			mapIter++;
-		}
-		writer.close();
-	}	
-	cout << "##########dump barcodeToPosition map finished, time used: " << time(NULL) - start << " seconds" << endl;
-}
+//TODO dumpmap
+// void BarcodePositionMap::dumpbpmap(string& mapOutFile) {
+// 	time_t start = time(NULL);
+// 	cout << "##########dump barcodeToPosition map begin..." << endl;
+// 	if (ends_with(mapOutFile, ".bin")) {
+// 		unordered_map<uint64, Position1>::iterator mapIter = bpmap.begin();
+// 		bpmap.reserve(bpmap.size());
+// 		ofstream writer(mapOutFile, ios::out | ios::binary);
+// 		//boost::archive::binary_oarchive oa(writer);
+// 		//oa << bpmap;
+// 		while (mapIter != bpmap.end()) {
+// 			writer.write((char*)&mapIter->first, sizeof(uint64));
+// 			writer.write((char*)&mapIter->second, sizeof(uint32));
+// 			writer.write((char*)&mapIter->second, sizeof(uint32));
+// 			mapIter++;
+// 		}
+// 		writer.close();
+// 	}else if (ends_with(mapOutFile, "h5") || ends_with(mapOutFile, "hdf5")){
+// 		ChipMaskHDF5 chipMaskH5(mapOutFile);
+// 		chipMaskH5.creatFile();
+// 		uint8_t segment = mOptions->barcodeSegment;
+// 		if (mOptions->rc == 2){
+// 			segment *= 2;
+// 		}
+// 		slideRange sliderange{minX, maxX, minY, maxY};
+// 		chipMaskH5.writeDataSet(mOptions->chipID, sliderange, bpmap, barcodeLen, segment, slidePitch, mOptions->compression);
+// 	}
+// 	else {
+// 		ofstream writer(mapOutFile);
+// 		unordered_map<uint64, Position1>::iterator mapIter = bpmap.begin();
+// 		while (mapIter != bpmap.end()) {
+// 			writer << seqDecode(mapIter->first, barcodeLen) << "\t" << mapIter->second.x << "\t" << mapIter->second.y << endl;
+// 			mapIter++;
+// 		}
+// 		writer.close();
+// 	}	
+// 	cout << "##########dump barcodeToPosition map finished, time used: " << time(NULL) - start << " seconds" << endl;
+// }
 
 void BarcodePositionMap::loadbpmap()
 {
@@ -99,7 +100,7 @@ void BarcodePositionMap::loadbpmap()
 			mapReader.read((char*)&barcodeInt, sizeof(barcodeInt));
 			mapReader.read((char*)&position.x, sizeof(position.x));
 			mapReader.read((char*)&position.y, sizeof(position.y));
-			bpmap[barcodeInt] = position;
+			// bpmap[barcodeInt] = position;
 			rangeRefresh(position);
 		}
 		mapReader.close();
@@ -135,7 +136,7 @@ void BarcodePositionMap::loadbpmap()
 				position.y = std::stoi(splitLine[4]);
 			}
 			barcodeInt = seqEncode(splitLine[0].c_str(), barcodeStart, barcodeLen);
-			bpmap[barcodeInt] = position;
+			// bpmap[barcodeInt] = position;
 			rangeRefresh(position);
 			//cout << "barcode: " << barcodeInt << " position: " << position.x << " " << position.y <<endl;
 		}

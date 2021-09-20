@@ -1,6 +1,6 @@
 #include "barcodeProcessor.h"
 
-BarcodeProcessor::BarcodeProcessor(Options *opt, unordered_map <uint64, Position1> *mbpmap) {
+BarcodeProcessor::BarcodeProcessor(Options *opt, hash_map *mbpmap) {
     mOptions = opt;
     bpmap = mbpmap;
     mismatch = opt->transBarcodeToPos.mismatch;
@@ -29,6 +29,7 @@ bool BarcodeProcessor::process(Read *read1, Read *read2) {
     } else {
         error_exit("barcodeRead must be 1 or 2 . please check the --barcodeRead option you give");
     }
+    
     barcodeStatAndFilter(barcodeQ);
     Position1 *position = getPosition(barcode);
 
@@ -148,15 +149,15 @@ long BarcodeProcessor::getBarcodeTypes() {
 }
 
 Position1 *BarcodeProcessor::getPosition(uint64 barcodeInt) {
-    unordered_map<uint64, Position1>::iterator iter = bpmap->find(barcodeInt);
-    if (iter != bpmap->end()) {
+    Position1* p = bpmap->find(barcodeInt);
+    if (p != NULL) {
         overlapReads++;
-        return &iter->second;
+        return p;
     } else if (mismatch > 0) {
-        iter = getMisOverlap(barcodeInt);
-        if (iter != bpmap->end()) {
+        p = getMisOverlap(barcodeInt);
+        if (p != NULL) {
             overlapReadsWithMis++;
-            return &iter->second;
+            return p;
         } else {
             return nullptr;
         }
@@ -172,7 +173,7 @@ Position1 *BarcodeProcessor::getPosition(string &barcodeString) {
             return nullptr;
         }
         return getPosition(barcodeInt);
-    } else if (Nindex == -2) {
+    } else if (Nindex == -2) {//大于1个N不处理
         return nullptr;
     } else if (mismatch > 0) {
         return getNOverlap(barcodeString, Nindex);
@@ -282,12 +283,12 @@ string BarcodeProcessor::positionToString(Position1 *position) {
     return positionString.str();
 }
 
-unordered_map<uint64, Position1>::iterator BarcodeProcessor::getMisOverlap(uint64 barcodeInt) {
+Position1* BarcodeProcessor::getMisOverlap(uint64 barcodeInt) {
     uint64 misBarcodeInt;
     int misCount = 0;
     int misMaskIndex = 0;
-    unordered_map<uint64, Position1>::iterator iter;
-    unordered_map<uint64, Position1>::iterator overlapIter;
+    Position1* iter;
+    Position1* overlapIter;
 
     for (int mis = 0; mis < mismatch; mis++) {
         misCount = 0;
@@ -295,11 +296,11 @@ unordered_map<uint64, Position1>::iterator BarcodeProcessor::getMisOverlap(uint6
             misBarcodeInt = barcodeInt ^ misMask[misMaskIndex];
             misMaskIndex++;
             iter = bpmap->find(misBarcodeInt);
-            if (iter != bpmap->end()) {
+            if (iter != NULL) {
                 overlapIter = iter;
                 misCount++;
-                if (misCount > 1) {
-                    return bpmap->end();
+                if (misCount > 1) {//只允许唯一匹配
+                    return NULL;
                 }
             }
         }
@@ -307,24 +308,24 @@ unordered_map<uint64, Position1>::iterator BarcodeProcessor::getMisOverlap(uint6
             return overlapIter;
         }
     }
-    return bpmap->end();
+    return NULL;
 }
 
 Position1 *BarcodeProcessor::getNOverlap(string &barcodeString, uint8 Nindex) {
     //N has the same encode (11) with G
     int misCount = 0;
     uint64 barcodeInt = seqEncode(barcodeString.c_str(), 0, barcodeString.length());
-    unordered_map<uint64, Position1>::iterator iter;
-    unordered_map<uint64, Position1>::iterator overlapIter;
+    Position1* iter;
+    Position1* overlapIter;
     iter = bpmap->find(barcodeInt);
-    if (iter != bpmap->end()) {
+    if (iter != NULL) {
         misCount++;
         overlapIter = iter;
     }
     for (uint64 j = 1; j < 4; j++) {
         uint64 misBarcodeInt = barcodeInt ^ (j << Nindex * 2);
         iter = bpmap->find(misBarcodeInt);
-        if (iter != bpmap->end()) {
+        if (iter != NULL) {
             misCount++;
             if (misCount > 1) {
                 return nullptr;
@@ -334,7 +335,7 @@ Position1 *BarcodeProcessor::getNOverlap(string &barcodeString, uint8 Nindex) {
     }
     if (misCount == 1) {
         overlapReadsWithN++;
-        return &overlapIter->second;
+        return overlapIter;
     }
     return nullptr;
 }
@@ -424,8 +425,8 @@ void BarcodeProcessor::dumpDNBmap(string &dnbMapFile) {
     if (ends_with(dnbMapFile, ".bin")) {
         mDNB.reserve(mDNB.size());
         writer.open(dnbMapFile, ios::out | ios::binary);
-        boost::archive::binary_oarchive oa(writer);
-        oa << mDNB;
+        // boost::archive::binary_oarchive oa(writer);
+        // oa << mDNB;
     } else {
         writer.open(dnbMapFile);
         unordered_map<uint64, int>::iterator mapIter = mDNB.begin();

@@ -10,7 +10,8 @@ ChipMaskFormatChange::~ChipMaskFormatChange(){
 
 void ChipMaskFormatChange::change(){
 	bpmap = new BarcodePositionMap(mOptions);
-	bpmap->dumpbpmap(mOptions->out);
+    cout<<"bpmap->dumpbpmap"<<endl;
+	// bpmap->dumpbpmap(mOptions->out);
 }
 
 void ChipMaskFormatChange::H5ToBin(){
