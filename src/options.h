@@ -150,6 +150,10 @@ public:
     bool usePugz;
     int thread;
     int pugzThread;
+    int usePigz;
+    int pigzThread;
+
+
     string rcString;
     int rc;
     DrawHeatMapOptions drawHeatMap;

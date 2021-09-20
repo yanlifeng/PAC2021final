@@ -80,14 +80,18 @@ private:
 
     void getMbpmap();
 
+    void pigzWrite();
+
 public:
     Options *mOptions;
     BarcodePositionMap *mbpmap;
     FixedFilter *fixedFilter;
 
     moodycamel::ReaderWriterQueue<std::pair<char *, int>> *pugzQueue1;
-
     moodycamel::ReaderWriterQueue<std::pair<char *, int>> *pugzQueue2;
+
+    moodycamel::ReaderWriterQueue<std::pair<char *, int>> *pigzQueue;
+
 
     std::atomic_int pugz1Done;
     std::atomic_int pugz2Done;

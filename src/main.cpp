@@ -68,8 +68,10 @@ int main(int argc, char *argv[]) {
                  false, 1);
     cmd.add<int>("thread", 'w', "number of thread that will be used to run.", false, 2);
     cmd.add<int>("pugzThread", 0, "number of thread that will be used to pugz.", false, 1);
+    cmd.add<int>("pigzThread", 0, "number of thread that will be used to pigz.", false, 1);
     cmd.add("verbose", 'V', "output verbose log information (i.e. when every 1M reads are processed).");
     cmd.add("usePugz", 0, "use pugz to decompress\n");
+    cmd.add("usePigz", 0, "use pigz to decompress\n");
 
     cmd.parse_check(argc, argv);
 
@@ -88,8 +90,10 @@ int main(int argc, char *argv[]) {
     opt.actionInt = cmd.get<int>("action");
     opt.verbose = cmd.exist("verbose");
     opt.usePugz = cmd.exist("usePugz");
+    opt.usePigz = cmd.exist("usePigz");
     opt.thread = cmd.get<int>("thread");
     opt.pugzThread = cmd.get<int>("pugzThread");
+    opt.pigzThread = cmd.get<int>("pigzThread");
     opt.report = cmd.get<string>("report");
     opt.barcodeSegment = cmd.get<int>("barcodeSegment");
     opt.transBarcodeToPos.in = cmd.get<string>("in");
@@ -110,6 +114,13 @@ int main(int argc, char *argv[]) {
     opt.transBarcodeToPos.fixedSequenceFile = cmd.get<string>("fixedSequenceFile");
     opt.transBarcodeToPos.PEout = cmd.exist("PEout");
 
+
+    if (opt.usePugz) {
+        printf("now use pugz, %d threads\n", opt.pugzThread);
+    }
+    if (opt.usePigz) {
+        printf("now use pigz, %d threads\n", opt.pigzThread);
+    }
 
     if (ends_with(opt.transBarcodeToPos.in1, ".gz") == 0) {
         opt.usePugz = 0;
