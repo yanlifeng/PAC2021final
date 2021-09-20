@@ -5,6 +5,11 @@
 
 #define _DEBUG false
 
+// 政治正确啊！！！
+#define HashTable 33554439
+//1073807359
+//73939133
+
 #include <boost/serialization/string.hpp>
 #include <boost/serialization/unordered_map.hpp>
 #include <unordered_map>
@@ -126,8 +131,8 @@ typedef struct bpmap_segment_value{
     robin_hood::unordered_map<uint32,Position1> segment;
 }bpmap_segment_value;
 
-#define getMapKey(x) (uint32)(x&0x00FFFFFF)
-#define getMapValue(x) (uint32)((x>>24)&0x03FFFFFF)
+#define getMapKey(x) ((uint32)(x&0x00FFFFFF))
+#define getMapValue(x) ((uint32)((x>>24)&0x03FFFFFF))
 
 //inline::uint32 getMapKey(uint64 x){
 //    return (uint32) x&0xFFFFFF;

@@ -29,6 +29,7 @@ public:
     void openFile();
     void readDataSet(robin_hood::unordered_map<uint64, Position1>& bpMap, int index = 1);
     void readDataSetSegment(robin_hood::unordered_map<uint32, bpmap_segment_value>& bpMapSegment, int index = 1);
+    void readDataSetHash(robin_hood::unordered_map<uint64,  Position1> **&bpmap_hash, int index = 1);
 
 public:
     std::string fileName;

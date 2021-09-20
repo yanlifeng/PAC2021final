@@ -108,8 +108,8 @@ void BarcodePositionMap::loadbpmap()
 		ChipMaskHDF5 chipMaskH5(barcodePositionMapFile);
 		chipMaskH5.openFile();
 //		chipMaskH5.readDataSet(bpmap);
-		chipMaskH5.readDataSetSegment(bpmap_segment);
-
+//		chipMaskH5.readDataSetSegment(bpmap_segment);
+        chipMaskH5.readDataSetHash(bpmap_hash);
 
 
 	}
@@ -148,6 +148,5 @@ void BarcodePositionMap::loadbpmap()
 	}
 	cout << "###############load barcodeToPosition map finished, time used: " << time(NULL) - start << " seconds" << endl;
 	cout << resetiosflags(ios::fixed) << setprecision(2);
-	cout << "getBarcodePositionMap_uniqBarcodeTypes: " << bpmap.size() << endl;
 }
 

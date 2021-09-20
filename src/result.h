@@ -37,6 +37,8 @@ public:
 
     void setBarcodeProcessorSegment(robin_hood::unordered_map<uint32,  bpmap_segment_value> *bpmap_segment);
 
+    void setBarcodeProcessorHash(robin_hood::unordered_map<uint64,Position1> **bpmap_hash);
+
 private:
     void setBarcodeProcessor();
 

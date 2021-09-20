@@ -137,6 +137,12 @@ int main(int argc, char *argv[]) {
              *  嵌套 MAP                         9000 sec
              */
 
+            /*
+             *    118394902 直接完全匹配       550
+             *     21275225 mismatch==1      850
+             *      4976251+51148304 mismatch==2 && dont map      7600
+             *
+             */
             cerr << "new cost " << MainGetTime() - t_t0 << endl;
             t_t0 = MainGetTime();
             barcodeToPosMulti.process();
