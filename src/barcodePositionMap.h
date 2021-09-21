@@ -35,6 +35,8 @@ public:
 	robin_hood::unordered_map<uint64, Position1>* getBpmap() { return &bpmap; };
     robin_hood::unordered_map<uint32, bpmap_segment_value>* getBpmapsegment() {return &bpmap_segment;};
     robin_hood::unordered_map<uint64, Position1>** getBpmaphash() {return bpmap_hash;};
+    robin_hood::unordered_map<uint32, uint32>**  getBpmapHashIndex() {return bpmap_hash_index;}
+    Position1*                                   getPosition() {return position_index;}
 
 public:
 	robin_hood::unordered_map<uint64,  Position1> bpmap;
@@ -50,7 +52,15 @@ public:
 	 */
     robin_hood::unordered_map<uint64,  Position1> **bpmap_hash;
 
-	Options* mOptions;
+    /*
+	 *  当前先处理25长度的问题，其他有情况在进行处理
+	 *  HashTable 嵌套 MAP ，只存储index，Position1集中存储
+	 */
+    robin_hood::unordered_map<uint32,  uint32> **bpmap_hash_index;
+    Position1* position_index;
+
+
+    Options* mOptions;
 	set<uint64> dupBarcode;
 	long overlapBarcodes;
 	long dupBarcodes;

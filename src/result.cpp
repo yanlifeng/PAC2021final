@@ -151,6 +151,12 @@ void Result::setBarcodeProcessorHash(robin_hood::unordered_map<uint64, Position1
     mBarcodeProcessor = new BarcodeProcessor(mOptions, bpmap_hash);
 }
 
+void Result::setBarcodeProcessorHashIndex(robin_hood::unordered_map<uint32, uint32> **bpmap_hash_index,
+                                          Position1 *position1_index){
+    mBarcodeProcessor = new BarcodeProcessor(mOptions, bpmap_hash_index,position1_index);
+}
+
+
 void Result::setBarcodeProcessor() {
     mBarcodeProcessor = new BarcodeProcessor();
 }

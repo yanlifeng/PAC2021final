@@ -134,7 +134,11 @@ int main(int argc, char *argv[]) {
             /*
              *  stl:unordered_map              17756 sec
              *  robin_hood:unordered_map        8981 sec
-             *  嵌套 MAP                         9000 sec
+             *  嵌套 MAP 直接枚举                10000 sec
+             *  嵌套 MAP 优化枚举方式              9000 sec
+             *  HashTab 嵌套 MAP                 7300 sec
+             *  HashTab 嵌套 MAP Position单存     6450 sec
+             *  单独HashTab                      5600 sec
              */
 
             /*

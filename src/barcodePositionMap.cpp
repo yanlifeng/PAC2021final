@@ -109,8 +109,8 @@ void BarcodePositionMap::loadbpmap()
 		chipMaskH5.openFile();
 //		chipMaskH5.readDataSet(bpmap);
 //		chipMaskH5.readDataSetSegment(bpmap_segment);
-        chipMaskH5.readDataSetHash(bpmap_hash);
-
+//      chipMaskH5.readDataSetHash(bpmap_hash);
+        chipMaskH5.readDataSetHashIndex(bpmap_hash_index,position_index);
 
 	}
 	else {

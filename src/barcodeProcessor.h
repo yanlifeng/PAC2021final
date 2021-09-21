@@ -21,7 +21,7 @@ public:
     BarcodeProcessor(Options* opt, robin_hood::unordered_map<uint32, bpmap_segment_value>* mbpmap_segment);
     BarcodeProcessor(Options* opt, robin_hood::unordered_map<uint64, Position1>* mbpmap, robin_hood::unordered_map<uint32, bpmap_segment_value>* mbpmap_segment);
     BarcodeProcessor(Options* opt, robin_hood::unordered_map<uint64, Position1>** mbpmap_hash);
-
+    BarcodeProcessor(Options* opt, robin_hood::unordered_map<uint32, uint32>** mbpmap_hash_index, Position1* mposition1_index);
 
     BarcodeProcessor();
 	~BarcodeProcessor();
@@ -40,10 +40,14 @@ private:
 	Position1* getPositionSegment(uint64 barcodeInt);
     Position1* getPositionSegmentClassification(uint64 barcodeInt);
     Position1* getPositionHash(uint64 barcodeInt);
+    Position1* getPositionHashIndex(uint64 barcodeInt);
     Position1* getPosition(string& barcodeString);
     Position1* getPositionSegment(string& barcodeString);
     Position1* getPositionSegmentClassification(string& barcodeString);
     Position1* getPositionHash(string& barcodeString);
+    Position1* getPositionHashIndex(string& barcodeString);
+
+
 	void misMaskGenerate();
 	void misMaskGenerateSegment();
 	void misMaskGenerateHash();
@@ -58,6 +62,8 @@ private:
     int getMisOverlapSegment(uint64 barcodeInt,robin_hood::unordered_map<uint32, Position1>::iterator &result_iter_value);
     int getMisOverlapSegmentClassification(uint64 barcodeInt,robin_hood::unordered_map<uint32, Position1>::iterator &result_iter_value);
     int getMisOverlapHash(uint64 barcodeInt,robin_hood::unordered_map<uint64, Position1>::iterator &result_iter_value);
+    int getMisOverlapHashIndex(uint64 barcodeInt,robin_hood::unordered_map<uint32, uint32>::iterator &result_iter_value);
+
     Position1* getNOverlap(string& barcodeString, uint8  Nindex);
 	int getNindex(string& barcodeString);
 	void addDNB(uint64 barcodeInt);
@@ -86,6 +92,9 @@ public:
 	 */
     robin_hood::unordered_map<uint32,  bpmap_segment_value>* bpmap_segment;
     robin_hood::unordered_map<uint64,Position1> **bpmap_hash;
+
+    robin_hood::unordered_map<uint32,uint32> **bpmap_hash_index;
+    Position1* position_index;
 
 	long totalReads = 0;
 	long mMapToSlideRead = 0;

@@ -7,6 +7,7 @@
 #include "robin_hood.h"
 #include "common.h"
 #include "util.h"
+#include <atomic>
 
 #define RANK 3
 #define CDIM0 1537
@@ -30,6 +31,7 @@ public:
     void readDataSet(robin_hood::unordered_map<uint64, Position1>& bpMap, int index = 1);
     void readDataSetSegment(robin_hood::unordered_map<uint32, bpmap_segment_value>& bpMapSegment, int index = 1);
     void readDataSetHash(robin_hood::unordered_map<uint64,  Position1> **&bpmap_hash, int index = 1);
+    void readDataSetHashIndex(robin_hood::unordered_map<uint32,  uint32> **&bpmap_hash_index, Position1 *& position_index, int index = 1);
 
 public:
     std::string fileName;
