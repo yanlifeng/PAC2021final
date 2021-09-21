@@ -182,6 +182,8 @@ Position1 *BarcodeProcessor::getPosition(string &barcodeString) {
 }
 
 void BarcodeProcessor::misMaskGenerate() {
+    timeb start,end;
+    ftime(&start);
     misMaskLen = possibleMis(barcodeLen, mismatch);
     misMaskLens = new int[mismatch];
     for (int i = 0; i < mismatch; i++) {
@@ -269,6 +271,8 @@ void BarcodeProcessor::misMaskGenerate() {
         string msg = "total mismatch mask length: " + to_string(misMaskLen);
         loginfo(msg);
     }
+    ftime(&end);
+    printTime(start,end,"misMaskGen")
 }
 
 string BarcodeProcessor::positionToString(Position *position) {

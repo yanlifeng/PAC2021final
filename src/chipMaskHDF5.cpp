@@ -1,4 +1,5 @@
 #include "chipMaskHDF5.h"
+#include <omp.h>
 #include "mytime.h"
 
 
@@ -161,15 +162,20 @@ void ChipMaskHDF5::readDataSet(hash_map& bpMap, int index){
     status = H5Fclose(fileID);
 
 
-    
-    t0=clock();
-
-    for (uint32 r = 0; r < dims[0]; r++){
+    cout<<"rank:"<<rank<<endl;
+    cout<<"dims[0]:"<<dims[0]<<endl;
+    cout<<"dims[1]:"<<dims[1]<<endl;
+    if(rank>=3)
+        cout<<"dims[2]:"<<dims[2]<<endl;
+    timeb start,end;
+    ftime(&start);
+    // if(rank>=3){
+        #pragma omp parallel for num_threads(8)
+        for (uint32 r = 0; r < dims[0]; r++){
         //bpMatrix[r] = new uint64*[dims[1]];
-        for (uint32 c = 0; c< dims[1]; c++){
-            //bpMatrix[r][c] = bpMatrix_buffer + r*dims[1]*dims[2] + c*dims[2];
-            Position1 position = {c, r};
-            if (rank >= 3 ){               
+            for (uint32 c = 0; c< dims[1]; c++){
+                //bpMatrix[r][c] = bpMatrix_buffer + r*dims[1]*dims[2] + c*dims[2];
+                Position1 position = {c, r};             
                 segment = dims[2];
                 for (int s = 0; s<segment; s++){
                     uint64 barcodeInt = bpMatrix_buffer[r*dims[1]*segment + c*segment + s];
@@ -177,19 +183,28 @@ void ChipMaskHDF5::readDataSet(hash_map& bpMap, int index){
                         continue;
                     }
                     bpMap.insert(barcodeInt,position);
-                }
-            }else{
-                uint64 barcodeInt = bpMatrix_buffer[r*dims[1]+c];
-                if (barcodeInt == 0){
-                    continue;
-                }
-                // bpMap[barcodeInt] = position;
-                bpMap.insert(barcodeInt,position);
-            }           
+                }          
+            }
         }
-    }
+    ftime(&end);
+    printTime(start,end,"buildMap");
+    // }else{
+    //     for (uint32 r = 0; r < dims[0]; r++){
+    //     //bpMatrix[r] = new uint64*[dims[1]];
+    //         for (uint32 c = 0; c< dims[1]; c++){
+    //             //bpMatrix[r][c] = bpMatrix_buffer + r*dims[1]*dims[2] + c*dims[2];
+    //             Position1 position = {c, r};
+    //             uint64 barcodeInt = bpMatrix_buffer[r*dims[1]+c];
+    //             if (barcodeInt == 0){
+    //                 continue;
+    //             }
+    //             bpMap.insert(barcodeInt,position);     
+    //         }
+    //     }
+    // }
     
-    PTIME("build bpmap")
+    
+    // PTIME("build bpmap")
     // bpMap.stat();
     /*
     for (int r = 0; r<dims[0]; r++){
@@ -207,5 +222,6 @@ void ChipMaskHDF5::readDataSet(hash_map& bpMap, int index){
     */
 
     delete[] bpMatrix_buffer;
+    exit(0);
     //delete[] bpMatrix;
 }
