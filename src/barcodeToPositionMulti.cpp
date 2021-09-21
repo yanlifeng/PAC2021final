@@ -4956,17 +4956,18 @@ argv p.fq
     printf("th num s is %s\n", th_num_s.c_str());
     printf("th num s len is %d\n", th_num_s.length());
 
-    infos[2] = new char[th_num_s.length()];
+    infos[2] = new char[th_num_s.length() + 1];
     memcpy(infos[2], th_num_s.c_str(), th_num_s.length());
+    infos[2][th_num_s.length()] = '\0';
     infos[3] = "-k";
     infos[4] = "-4";
     infos[5] = "-f";
     string out_file = mOptions->transBarcodeToPos.out1;
     printf("th out_file is %s\n", out_file.c_str());
     printf("th out_file len is %d\n", out_file.length());
-    infos[6] = new char[out_file.length()];
+    infos[6] = new char[out_file.length() + 1];
     memcpy(infos[6], out_file.c_str(), out_file.length());
-
+    infos[6][out_file.length()] = '\0';
 
     main_pigz(cnt, infos);
 
