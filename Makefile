@@ -14,9 +14,9 @@ OBJ := $(patsubst %.cpp,${DIR_OBJ}/%.o,$(notdir ${SRC}))
 SRC2 := $(wildcard ${DIR_SRC}/*.c)
 OBJ += $(patsubst %.c,${DIR_OBJ}/%.o,$(notdir ${SRC2}))
 
-$(info SRC $(SRC))
-$(info SRC2 $(SRC2))
-$(info OBJ $(OBJ))
+#$(info SRC $(SRC))
+#$(info SRC2 $(SRC2))
+#$(info OBJ $(OBJ))
 
 
 TARGET := ST_BarcodeMap-0.0.1
@@ -42,11 +42,11 @@ endif
 
 
 CXX = g++
-CXXFLAGS := -std=c++11 -g -O3 -I${DIR_INC} -mssse3 -I./ -I./common $(foreach includedir,$(INCLUDE_DIRS),-I$(includedir)) ${CXXFLAGS} \
+CXXFLAGS := -std=c++11 -g -O3 -w -I${DIR_INC} -mssse3 -I./ -I./common $(foreach includedir,$(INCLUDE_DIRS),-I$(includedir)) ${CXXFLAGS} \
 $(call cc-option,-flto=jobserver,-flto) -march=native -mtune=native
 
 CXX2 = gcc
-CXXFLAGS2 := -O3 -Wall -Wextra -Wno-unknown-pragmas -Wcast-qual
+CXXFLAGS2 := -O3 -w -Wall -Wextra -Wno-unknown-pragmas -Wcast-qual
 
 LIBS := -lz -lpthread -lhdf5 -lboost_serialization -fopenmp -lrt
 #LD_FLAGS := $(foreach librarydir,$(LIBRARY_DIRS),-L$(librarydir)) $(LIBS) $(LD_FLAGS)

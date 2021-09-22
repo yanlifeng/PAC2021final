@@ -1365,7 +1365,7 @@ struct OutputConsumer {
             }
 //            printf("pugz waitint\n");
 //            cout << "pugz " << num << " wait producer" << " queue size " << P->size_approx() << endl;
-            usleep(1000);
+            usleep(100);
 //            cout << "sleep " << cntt++ << endl;
         }
 //        if (cntt)cout << "sleep done" << endl;

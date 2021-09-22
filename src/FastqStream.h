@@ -132,6 +132,10 @@ namespace dsrc {
                 int64 resSum = 0;
                 int64 numFor = 0;
                 //TODO lastInfo.size > size_
+                if (lastInfo.second > size_) {
+                    printf("lastInfo.second>size_\n");
+                    exit(0);
+                }
                 if (lastInfo.second != 0) {
                     memcpy(memory_, lastInfo.first, lastInfo.second);
                     resSum += lastInfo.second;
@@ -153,7 +157,7 @@ namespace dsrc {
 //                        printf("prudocer wait pugz %d\n", cntt++);
 //                        cout << "prudocer " << num << " wait pugz " << cntt++ << " q->size_approx() "
 //                             << q->size_approx() << endl;
-                        usleep(1000);
+                        usleep(100);
                     }
                     std::pair<char *, int> now;
                     if (q->try_dequeue(now)) {

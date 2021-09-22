@@ -226,7 +226,7 @@ void BarcodeToPositionMultiPE::consumePack(Result* result) {
 	ReadPairPack1* data;
 	mInputMutx.lock();
 	while (mRepo.writePos <= mRepo.readPos) {
-		usleep(1000);
+		usleep(100);
 		if (mProduceFinished) {
 			mInputMutx.unlock();
 			return;
@@ -291,7 +291,7 @@ void BarcodeToPositionMultiPE::producerTask() {
 			if (readNum % (PACK_SIZE * PACK_IN_MEM_LIMIT) == 0 && mWriter1) {
 				while ((mWriter1 && mWriter1->bufferLength() > PACK_IN_MEM_LIMIT) || (mWriter2 && mWriter2->bufferLength() > PACK_IN_MEM_LIMIT)) {
 					slept++;
-					usleep(1000);
+					usleep(100);
 				}
 			}
 			// reset count to 0
@@ -311,7 +311,7 @@ void BarcodeToPositionMultiPE::consumerTask(Result* result) {
 		while (mRepo.writePos <= mRepo.readPos) {
 			if (mProduceFinished)
 				break;
-			usleep(1000);
+			usleep(100);
 		}
 		if (mProduceFinished && mRepo.writePos == mRepo.readPos) {
 			mFinishedThreads++;

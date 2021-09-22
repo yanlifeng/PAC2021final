@@ -1023,23 +1023,75 @@ local size_t readn(int desc, unsigned char *buf, size_t len) {
 
 // Read up to len bytes into buf from queue, repeating read() calls as needed.
 // Add by ylf
-//local size_t readFromQueue(moo) {
-//    ssize_t ret;
-//    size_t got;
-//
-//    got = 0;
-//    while (len) {
+local size_t
+readFromQueue(moodycamel::ReaderWriterQueue<pair<char *, int>> *Q, atomic_int *wDone,
+              pair<char *, int> &L, unsigned char *buf, size_t len) {
+    ssize_t ret;
+    size_t got;
+
+    got = 0;
+    std::pair<char *, int> now;
+
+    if (L.second > 0) {
+//        printf("put last data to buf, size is %d\n", L.second);
+        if (L.second >= len) {
+//            printf("L.second > len\n");
+            memcpy(buf, L.first, len);
+            char *tmp = new char[L.second - len];
+            memcpy(tmp, L.first + len, L.second - len);
+            memcpy(L.first, tmp, L.second - len);
+            delete[]tmp;
+            L.second = L.second - len;
+            ret = len;
+            buf += ret;
+            len -= (size_t) ret;
+            got += (size_t) ret;
+            return got;
+        } else {
+//            printf("L.second < len\n");
+            memcpy(buf, L.first, L.second);
+            ret = L.second;
+            L.second = 0;
+            buf += ret;
+            len -= (size_t) ret;
+            got += (size_t) ret;
+        }
+    }
+    while (len) {
+        if (Q->size_approx() == 0 && *wDone == 1) {
+            ret = 0;
+            break;
+        }
 //        ret = read(desc, buf, len);
-//        if (ret < 0)
-//            throw (errno, "read error on %s (%s)", g.inf, strerror(errno));
-//        if (ret == 0)
-//            break;
-//        buf += ret;
-//        len -= (size_t) ret;
-//        got += (size_t) ret;
-//    }
-//    return got;
-//}
+        while (Q->try_dequeue(now) == 0) {
+            usleep(100);
+        }
+//        printf("get a chunk from pigz queue, now queue size is %d\n", Q->size_approx());
+        if (now.second <= len) {
+            memcpy(buf, now.first, now.second);
+            delete[] now.first;
+            ret = now.second;
+        } else {
+            int move_last = now.second - len;
+            memcpy(buf, now.first, len);
+            memcpy(L.first, now.first + len, move_last);
+            L.second = move_last;
+            delete[] now.first;
+            ret = len;
+        }
+
+        if (ret < 0)
+            throw (errno, "read error on %s (%s)", g.inf, strerror(errno));
+        if (ret == 0)
+            break;
+
+        buf += ret;
+        len -= (size_t) ret;
+        got += (size_t) ret;
+    }
+
+    return got;
+}
 
 // Write len bytes, repeating write() calls as needed. Return len.
 local size_t writen(int desc, void const *buf, size_t len) {
@@ -2088,7 +2140,8 @@ local void append_len(struct job *job, size_t len) {
 // value calculations and one other threadPigz for writing the output. Compress
 // threads will be launched and left running (waiting actually) to support
 // subsequent calls of parallel_compress().
-local void parallel_compress(void) {
+local void parallel_compress(moodycamel::ReaderWriterQueue<pair<char *, int>> *Q, atomic_int *wDone,
+                             pair<char *, int> &L) {
     long seq;                       // sequence number
     struct space *curr;             // input data to compress
     struct space *next;             // input data that follows curr
@@ -2113,7 +2166,8 @@ local void parallel_compress(void) {
     // the output of the compress threads)
     seq = 0;
     next = get_space(&in_pool);
-    next->len = readn(g.ind, next->buf, next->size);
+    next->len = readFromQueue(Q, wDone, L, next->buf, next->size);
+//    next->len = readn(g.ind, next->buf, next->size);
     hold = NULL;
     dict = NULL;
     scan = next->buf;
@@ -2132,7 +2186,9 @@ local void parallel_compress(void) {
         // get more input if we don't already have some
         if (next == NULL) {
             next = get_space(&in_pool);
-            next->len = readn(g.ind, next->buf, next->size);
+//            next->len = readn(g.ind, next->buf, next->size);
+            next->len = readFromQueue(Q, wDone, L, next->buf, next->size);
+
         }
 
         // if rsyncable, generate block lengths and prepare curr for job to
@@ -3895,7 +3951,8 @@ local void out_push(void) {
 
 // Process provided input file, or stdin if path is NULL. process() can call
 // itself for recursive directory processing.
-local void process(char *path) {
+local void process(char *path, moodycamel::ReaderWriterQueue<pair<char *, int>> *Q, atomic_int *wDone,
+                   pair<char *, int> &L) {
     volatile int method = -1;       // get_header() return value
     size_t len;                     // length of base name (minus suffix)
     struct stat st;                 // to get file type and mod time
@@ -3938,7 +3995,7 @@ local void process(char *path) {
 #endif
             if (errno) {
                 g.inf[len] = 0;
-//                complain("skipping: %s does not exist", g.inf);
+                complain("skipping: %s does not exist", g.inf);
                 return;
             }
             len = strlen(g.inf);
@@ -3950,15 +4007,15 @@ local void process(char *path) {
             (st.st_mode & S_IFMT) != S_IFIFO &&
             (st.st_mode & S_IFMT) != S_IFLNK &&
             (st.st_mode & S_IFMT) != S_IFDIR) {
-//            complain("skipping: %s is a special file or device", g.inf);
+            complain("skipping: %s is a special file or device", g.inf);
             return;
         }
         if ((st.st_mode & S_IFMT) == S_IFLNK && !g.force && !g.pipeout) {
-//            complain("skipping: %s is a symbolic link", g.inf);
+            complain("skipping: %s is a symbolic link", g.inf);
             return;
         }
         if ((st.st_mode & S_IFMT) == S_IFDIR && !g.recurse) {
-//            complain("skipping: %s is a directory", g.inf);
+            complain("skipping: %s is a directory", g.inf);
             return;
         }
 
@@ -3989,7 +4046,7 @@ local void process(char *path) {
                    vstrcpy(&g.inf, &g.inz, len, (void *) "/") - 1 : len;
             for (off = 0; roll[off]; off += strlen(roll + off) + 1) {
                 vstrcpy(&g.inf, &g.inz, base, roll + off);
-                process(g.inf);
+                process(g.inf, Q, wDone, L);
             }
             g.inf[len] = 0;
 
@@ -4001,7 +4058,7 @@ local void process(char *path) {
         // don't compress .gz (or provided suffix) files, unless -f
         if (!(g.force || g.list || g.decode) && len >= strlen(g.sufx) &&
             strcmp(g.inf + len - strlen(g.sufx), g.sufx) == 0) {
-//            complain("skipping: %s ends with %s", g.inf, g.sufx);
+            complain("skipping: %s ends with %s", g.inf, g.sufx);
             return;
         }
 
@@ -4009,8 +4066,7 @@ local void process(char *path) {
         if (g.decode == 1 && !g.pipeout && !g.list) {
             size_t suf = compressed_suffix(g.inf);
             if (suf == 0) {
-//                complain("skipping: %s does not have compressed suffix",
-//                         g.inf);
+                complain("skipping: %s does not have compressed suffix", g.inf);
                 return;
             }
             len -= suf;
@@ -4060,7 +4116,7 @@ local void process(char *path) {
             catch (err) {
                 if (err.code != EDOM)
                             punt (err);
-//                complain("skipping: %s", err.why);
+                complain("skipping: %s", err.why);
                         drop(err);
                 outb(NULL, NULL, 0);
             }
@@ -4135,7 +4191,7 @@ local void process(char *path) {
                 } while (ch != EOF && ch != '\n' && ch != '\r');
             }
             if (!overwrite) {
-//                complain("skipping: %s exists", g.outf);
+                complain("skipping: %s exists", g.outf);
                 RELEASE(g.outf);
                 load_end();
                 return;
@@ -4168,7 +4224,7 @@ local void process(char *path) {
         catch (err) {
             if (err.code != EDOM)
                         punt (err);
-//            complain("skipping: %s", err.why);
+            complain("skipping: %s", err.why);
                     drop(err);
             outb(NULL, NULL, 0);
             if (g.outd != -1 && g.outd != 1) {
@@ -4181,7 +4237,7 @@ local void process(char *path) {
     }
 #ifndef NOTHREAD
     else if (g.procs > 1)
-        parallel_compress();
+        parallel_compress(Q, wDone, L);
 #endif
     else
         single_compress(0);
@@ -4650,7 +4706,8 @@ local void cut_yarn(int err) {
 #endif
 
 // Process command line arguments.
-int main_pigz(int argc, char **argv) {
+int main_pigz(int argc, char **argv, moodycamel::ReaderWriterQueue<pair<char *, int>> *Q, atomic_int *wDone,
+              pair<char *, int> &L) {
     printf("argc %d\n", argc);
     for (int i = 0; i < argc; i++) {
         printf("argv %s\n", argv[i]);
@@ -4788,14 +4845,14 @@ int main_pigz(int argc, char **argv) {
                                 //                                         " -- %s will not be able to extract", g.prog);}
 
                             }
-                            process(n < nop && strcmp(argv[n], "-") == 0 ? NULL : argv[n]);
+                            process(n < nop && strcmp(argv[n], "-") == 0 ? NULL : argv[n], Q, wDone, L);
                             done++;
                         }
                     printf("777\n");
 
                     // list stdin or compress stdin to stdout if no file names provided
                     if (done == 0)
-                        process(NULL);
+                        process(NULL, Q, wDone, L);
                     printf("888\n");
                 }
         always
@@ -4918,11 +4975,14 @@ BarcodeToPositionMulti::BarcodeToPositionMulti(Options *opt) {
     }
     if (mOptions->usePigz) {
         pigzQueue = new moodycamel::ReaderWriterQueue<pair<char *, int>>(1 << 20);
+        pigzLast.first = new char[1 << 23];
+        pigzLast.second = 0;
     }
 
     pugz1Done = 0;
     pugz2Done = 0;
     producerDone = 0;
+    writerDone = 0;
 }
 
 BarcodeToPositionMulti::~BarcodeToPositionMulti() {
@@ -4935,19 +4995,21 @@ BarcodeToPositionMulti::~BarcodeToPositionMulti() {
 
 void BarcodeToPositionMulti::pigzWrite() {
 /*
- argc 6
+ argc 9
 argv ./pigz
 argv -p
 argv 16
 argv -k
 argv -4
 argv -f
+argv -b
+argv -4096
 argv p.fq
  */
-    int cnt = 7;
+    int cnt = 9;
     string outFile = mOptions->transBarcodeToPos.out1;
 
-    char **infos = new char *[7];
+    char **infos = new char *[9];
     infos[0] = "./pigz";
     infos[1] = "-p";
     int th_num = mOptions->pigzThread;
@@ -4962,14 +5024,16 @@ argv p.fq
     infos[3] = "-k";
     infos[4] = "-4";
     infos[5] = "-f";
+    infos[6] = "-b";
+    infos[7] = "4096";
     string out_file = mOptions->transBarcodeToPos.out1;
     printf("th out_file is %s\n", out_file.c_str());
     printf("th out_file len is %d\n", out_file.length());
-    infos[6] = new char[out_file.length() + 1];
-    memcpy(infos[6], out_file.c_str(), out_file.length());
-    infos[6][out_file.length()] = '\0';
+    infos[8] = new char[out_file.length() + 1];
+    memcpy(infos[8], out_file.c_str(), out_file.length());
+    infos[8][out_file.length()] = '\0';
 
-    main_pigz(cnt, infos);
+    main_pigz(cnt, infos, pigzQueue, &writerDone, pigzLast);
 
 
 }
@@ -5018,7 +5082,6 @@ bool BarcodeToPositionMulti::process() {
         threads[t] = new thread(bind(&BarcodeToPositionMulti::consumerTask, this, results[t]));
     }
 
-//    auto pigzThread = new thread(bind(&BarcodeToPositionMulti::pigzWrite, this));
 
     thread *writerThread = NULL;
     thread *unMappedWriterThread = NULL;
@@ -5027,6 +5090,12 @@ bool BarcodeToPositionMulti::process() {
     }
     if (mUnmappedWriter) {
         unMappedWriterThread = new thread(bind(&BarcodeToPositionMulti::writeTask, this, mUnmappedWriter));
+    }
+
+    thread *pigzThread;
+    if (mOptions->usePigz) {
+        pigzThread = new thread(bind(&BarcodeToPositionMulti::pigzWrite, this));
+
     }
 
     producer.join();
@@ -5047,17 +5116,20 @@ bool BarcodeToPositionMulti::process() {
 
     if (writerThread) {
         writerThread->join();
+        writerDone = 1;
         printf("writer done\n");
         printf("writer cost %.4f\n", GetTime() - t00);
+        if (mOptions->usePigz) {
+            pigzThread->join();
+            printf("pigz done\n");
+            printf("pigz cost %.4f\n", GetTime() - t00);
+        }
+
+
     }
     if (unMappedWriterThread)
         unMappedWriterThread->join();
-//
-//    if (mOptions->usePigz) {
-//        pigzThread->join();
-//        printf("pigz done\n");
-//        printf("pigz cost %.4f\n", GetTime() - t00);
-//    }
+
 
     if (mOptions->verbose)
         loginfo("start to generate reports\n");
@@ -5094,16 +5166,6 @@ bool BarcodeToPositionMulti::process() {
         delete unMappedWriterThread;
 
     closeOutput();
-
-
-    printf("now start pigz thread\n");
-    auto tt00 = GetTime();
-    auto pigzThread = new thread(bind(&BarcodeToPositionMulti::pigzWrite, this));
-
-    pigzThread->join();
-    printf("pigz thread done\n");
-    printf("pigz thread cost %.4f\n", GetTime() - tt00);
-
     printf("final and delete cost %.4f\n", GetTime() - t00);
 
     return true;
@@ -5162,6 +5224,7 @@ bool BarcodeToPositionMulti::processPairEnd(ReadPairPack *pack, Result *result) 
     if (mWriter && !outstr.empty()) {
         char *data = new char[outstr.size()];
         memcpy(data, outstr.c_str(), outstr.size());
+        //TODO add pigz queue here
         mWriter->input(data, outstr.size());
     }
     mOutputMtx.unlock();
@@ -5195,7 +5258,7 @@ void BarcodeToPositionMulti::consumePack(Result *result) {
     ReadPack *rightPack = new ReadPack;
     mInputMutx.lock();
     while (mRepo.writePos <= mRepo.readPos) {
-        usleep(1000);
+        usleep(100);
         if (mProduceFinished) {
             mInputMutx.unlock();
             return;
@@ -5409,7 +5472,7 @@ void BarcodeToPositionMulti::consumerTask(Result *result) {
             if (mProduceFinished)
                 break;
 //            printf("consumer waiting...\n");
-            usleep(1000);
+            usleep(100);
         }
         //unique_lock<mutex> lock(mRepo.readCounterMtx);
         if (mProduceFinished && mRepo.writePos == mRepo.readPos) {
@@ -5450,13 +5513,24 @@ void BarcodeToPositionMulti::consumerTask(Result *result) {
 
 
 void BarcodeToPositionMulti::writeTask(WriterThread *config) {
-    while (true) {
-        //loginfo("writeTask running: " + config->getFilename());
-        if (config->isCompleted()) {
-            config->output();
-            break;
+    if (mOptions->usePigz) {
+        while (true) {
+            //loginfo("writeTask running: " + config->getFilename());
+            if (config->isCompleted()) {
+                config->output(pigzQueue);
+                break;
+            }
+            config->output(pigzQueue);
         }
-        config->output();
+    } else {
+        while (true) {
+            //loginfo("writeTask running: " + config->getFilename());
+            if (config->isCompleted()) {
+                config->output();
+                break;
+            }
+            config->output();
+        }
     }
 
     if (mOptions->verbose) {

@@ -119,7 +119,18 @@ int main(int argc, char *argv[]) {
         printf("now use pugz, %d threads\n", opt.pugzThread);
     }
     if (opt.usePigz) {
+
+        if (opt.pigzThread == 1) {
+            printf("pigz thread number must >1\n");
+            exit(0);
+        }
         printf("now use pigz, %d threads\n", opt.pigzThread);
+        string out_name = opt.transBarcodeToPos.out1;
+        printf("ori out name is %s\n", out_name.c_str());
+        printf(".gz pos is %lu\n", out_name.find(".gz"));
+        opt.transBarcodeToPos.out1 = out_name.substr(0, out_name.find(".gz"));
+        opt.out = opt.transBarcodeToPos.out1;
+        printf("now out name is %s\n", opt.transBarcodeToPos.out1.c_str());
     }
 
     if (ends_with(opt.transBarcodeToPos.in1, ".gz") == 0) {

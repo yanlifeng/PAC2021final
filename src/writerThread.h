@@ -9,44 +9,55 @@
 #include "writer.h"
 #include <atomic>
 #include <mutex>
+#include "atomicops.h"
+#include "readerwriterqueue.h"
 
 using namespace std;
 
 class WriterThread {
 public:
-	WriterThread(string filename, int compressionLevel = 4);
-	~WriterThread();
+    WriterThread(string filename, int compressionLevel = 4);
 
-	void initWriter(string filename1);
-	void initWriter(ofstream* stream);
-	void initWriter(gzFile gzfile);
+    ~WriterThread();
 
-	void cleanup();
+    void initWriter(string filename1);
 
-	bool isCompleted();
-	void output();
-	void input(char* data, size_t size);
-	bool setInputCompleted();
+    void initWriter(ofstream *stream);
 
-	long bufferLength();
-	string getFilename() { return mFilename; }
+    void initWriter(gzFile gzfile);
+
+    void cleanup();
+
+    bool isCompleted();
+
+    void output();
+
+    void output(moodycamel::ReaderWriterQueue<pair<char *, int>> *Q);
+
+    void input(char *data, size_t size);
+
+    bool setInputCompleted();
+
+    long bufferLength();
+
+    string getFilename() { return mFilename; }
 
 private:
-	void deleteWriter();
+    void deleteWriter();
 
 private:
-	Writer* mWriter1;
-	int compression;
-	string mFilename;
+    Writer *mWriter1;
+    int compression;
+    string mFilename;
 
-	//for split output
-	bool mInputCompleted;
-	atomic_long mInputCounter;
-	atomic_long mOutputCounter;
-	char** mRingBuffer;
-	size_t* mRingBufferSizes;
+    //for split output
+    bool mInputCompleted;
+    atomic_long mInputCounter;
+    atomic_long mOutputCounter;
+    char **mRingBuffer;
+    size_t *mRingBufferSizes;
 
-	mutex mtx;
+    mutex mtx;
 };
 
 #endif

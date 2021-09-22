@@ -92,11 +92,15 @@ public:
 
     moodycamel::ReaderWriterQueue<std::pair<char *, int>> *pigzQueue;
 
+    pair<char *, int> pigzLast;
+
 
     std::atomic_int pugz1Done;
     std::atomic_int pugz2Done;
 
     std::atomic_int producerDone;
+
+    std::atomic_int writerDone;
 
     //unordered_map<uint64, Position*> misBarcodeMap;
 
