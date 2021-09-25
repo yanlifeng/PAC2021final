@@ -22,7 +22,7 @@ public:
     BarcodeProcessor(Options* opt, robin_hood::unordered_map<uint64, Position1>* mbpmap, robin_hood::unordered_map<uint32, bpmap_segment_value>* mbpmap_segment);
     BarcodeProcessor(Options* opt, robin_hood::unordered_map<uint64, Position1>** mbpmap_hash);
     BarcodeProcessor(Options* opt, robin_hood::unordered_map<uint32, uint32>** mbpmap_hash_index, Position1* mposition1_index);
-
+    BarcodeProcessor(Options* opt, int* mbpmap_head, int* mbpmap_nxt,uint64* mbpmap_key,int* mbpmap_value,Position1* mposition_index);
     BarcodeProcessor();
 	~BarcodeProcessor();
 	bool process(Read* read1, Read* read2);
@@ -36,21 +36,27 @@ private:
 	uint32 encodePosition(int fovCol, int fovRow);
 	uint64 encodePosition(uint32 x, uint32 y);
 	long getBarcodeTypes();
+
 	Position1* getPosition(uint64 barcodeInt);
 	Position1* getPositionSegment(uint64 barcodeInt);
     Position1* getPositionSegmentClassification(uint64 barcodeInt);
     Position1* getPositionHash(uint64 barcodeInt);
     Position1* getPositionHashIndex(uint64 barcodeInt);
+    Position1* getPositionHashTable(uint64 barcodeInt);
+
+
     Position1* getPosition(string& barcodeString);
     Position1* getPositionSegment(string& barcodeString);
     Position1* getPositionSegmentClassification(string& barcodeString);
     Position1* getPositionHash(string& barcodeString);
     Position1* getPositionHashIndex(string& barcodeString);
+    Position1* getPositionHashTable(string& barcodeString);
 
 
 	void misMaskGenerate();
 	void misMaskGenerateSegment();
 	void misMaskGenerateHash();
+
 	string positionToString(Position1* position);
 	string positionToString(Position* position);
 	robin_hood::unordered_map<uint64, Position1>::iterator getMisOverlap(uint64 barcodeInt);
@@ -63,7 +69,7 @@ private:
     int getMisOverlapSegmentClassification(uint64 barcodeInt,robin_hood::unordered_map<uint32, Position1>::iterator &result_iter_value);
     int getMisOverlapHash(uint64 barcodeInt,robin_hood::unordered_map<uint64, Position1>::iterator &result_iter_value);
     int getMisOverlapHashIndex(uint64 barcodeInt,robin_hood::unordered_map<uint32, uint32>::iterator &result_iter_value);
-
+    int getMisOverlapHashTable(uint64 barcodeInt,uint32 &result_value);
     Position1* getNOverlap(string& barcodeString, uint8  Nindex);
 	int getNindex(string& barcodeString);
 	void addDNB(uint64 barcodeInt);
@@ -95,6 +101,11 @@ public:
 
     robin_hood::unordered_map<uint32,uint32> **bpmap_hash_index;
     Position1* position_index;
+
+    int* bpmap_head;
+    int* bpmap_nxt;
+    uint64* bpmap_key;
+    int* bpmap_value;
 
 	long totalReads = 0;
 	long mMapToSlideRead = 0;

@@ -8,6 +8,7 @@
 #include "common.h"
 #include "util.h"
 #include <atomic>
+#include <thread>
 
 #define RANK 3
 #define CDIM0 1537
@@ -32,7 +33,9 @@ public:
     void readDataSetSegment(robin_hood::unordered_map<uint32, bpmap_segment_value>& bpMapSegment, int index = 1);
     void readDataSetHash(robin_hood::unordered_map<uint64,  Position1> **&bpmap_hash, int index = 1);
     void readDataSetHashIndex(robin_hood::unordered_map<uint32,  uint32> **&bpmap_hash_index, Position1 *& position_index, int index = 1);
-
+    void readDataSetHashVector(vector<bpmap_vector_value> **&bpmap_hash_vector, Position1 *& position_index, int index = 1);
+    void readDataSetHashList(int *&bpmap_head, int *&bpmap_nxt, uint64 *&bpmap_key, int *&bpmap_value,Position1 *& position_index, int index = 1);
+    void readDataSetHashListOrder(int *&bpmap_head, int *&bpmap_len, uint64 *&bpmap_key, int *&bpmap_value,Position1 *& position_index, int index = 1);
 public:
     std::string fileName;
     hid_t fileID;

@@ -7,6 +7,8 @@
 
 // 政治正确啊！！！
 #define HashTable 33554439
+#define HashTableSecond 53
+#define MOD 1073807359
 //1073807359
 //73939133
 
@@ -130,6 +132,18 @@ typedef struct bpmap_segment_value{
     uint32 maxvalue = -1;
     robin_hood::unordered_map<uint32,Position1> segment;
 }bpmap_segment_value;
+
+typedef struct bpmap_vector_value{
+    uint32 mapValue;
+    uint32 index_postion;
+}bpmap_vector_value;
+
+typedef struct bpmap_node{
+    uint64 barcodeInt;
+    uint32 position;
+    bpmap_node* nxt;
+}bpmap_node;
+
 
 #define getMapKey(x) ((uint32)(x&0x00FFFFFF))
 #define getMapValue(x) ((uint32)((x>>24)&0x03FFFFFF))

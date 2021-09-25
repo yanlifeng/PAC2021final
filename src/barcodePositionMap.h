@@ -37,6 +37,11 @@ public:
     robin_hood::unordered_map<uint64, Position1>** getBpmaphash() {return bpmap_hash;};
     robin_hood::unordered_map<uint32, uint32>**  getBpmapHashIndex() {return bpmap_hash_index;}
     Position1*                                   getPosition() {return position_index;}
+    int*                                         getHead(){return bpmap_head;}
+    int*                                         getNext(){return bpmap_nxt;}
+    uint64*                                      getKey() {return bpmap_key;}
+    int*                                         getValue(){return bpmap_value;}
+
 
 public:
 	robin_hood::unordered_map<uint64,  Position1> bpmap;
@@ -57,6 +62,24 @@ public:
 	 *  HashTable 嵌套 MAP ，只存储index，Position1集中存储
 	 */
     robin_hood::unordered_map<uint32,  uint32> **bpmap_hash_index;
+
+
+    /*
+     * HashTable 嵌套 HashTable 第一层前12位， 第二层mod79
+     * 效果极差，极不推荐使用，应当立即销毁
+     */
+    vector<bpmap_vector_value> **bpmap_hash_vector;
+
+    /*
+     * HashTable Node
+     */
+    int *bpmap_head;
+    int *bpmap_nxt;
+    int *bpmap_value;
+    uint64 *bpmap_key;
+
+    int *bpmap_len;
+
     Position1* position_index;
 
 

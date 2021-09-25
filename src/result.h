@@ -41,6 +41,7 @@ public:
 
     void setBarcodeProcessorHashIndex(robin_hood::unordered_map<uint32,uint32> **bpmap_hash_index, Position1* position1_index);
 
+    void setBarcodeProcessorHashTable(int* bpmap_head, int* bpmap_nxt,uint64* bpmap_key,int* bpmap_value,Position1* position_index);
 private:
     void setBarcodeProcessor();
 

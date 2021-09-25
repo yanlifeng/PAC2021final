@@ -47,6 +47,21 @@ BarcodeProcessor::BarcodeProcessor(Options *opt, robin_hood::unordered_map<uint3
     misMaskGenerateSegment();
 }
 
+BarcodeProcessor::BarcodeProcessor(Options* opt, int* mbpmap_head, int* mbpmap_nxt,uint64* mbpmap_key,int* mbpmap_value,Position1* mposition_index){
+    mOptions = opt;
+    bpmap_head = mbpmap_head;
+    bpmap_nxt  = mbpmap_nxt;
+    bpmap_key  = mbpmap_key;
+    bpmap_value= mbpmap_value;
+    position_index = mposition_index;
+    mismatch = opt->transBarcodeToPos.mismatch;
+    barcodeLen = opt->barcodeLen;
+    polyTInt = seqEncode(polyT.c_str(), 0, barcodeLen, mOptions->rc);
+    misMaskGenerate();
+}
+
+
+
 BarcodeProcessor::BarcodeProcessor() {
 }
 
@@ -68,7 +83,8 @@ bool BarcodeProcessor::process(Read *read1, Read *read2) {
         error_exit("barcodeRead must be 1 or 2 . please check the --barcodeRead option you give");
     }
     barcodeStatAndFilter(barcodeQ);
-    Position1 *position = getPositionHashIndex(barcode);
+    Position1 *position = getPositionHashTable(barcode);
+//    Position1 *position = getPositionHashIndex(barcode);
     //    Position1 *position = getPositionHash(barcode);
     //    Position1 *position = getPosition(barcode);
 
@@ -316,7 +332,28 @@ Position1 *BarcodeProcessor::getPositionHashIndex(uint64 barcodeInt){
     return nullptr;
 }
 
-
+Position1 *BarcodeProcessor::getPositionHashTable(uint64 barcodeInt){
+    uint32 mapKey = barcodeInt%MOD;
+    for (int i=bpmap_head[mapKey];i!=-1;i=bpmap_nxt[i]){
+        if (bpmap_key[i] == barcodeInt){
+            overlapReads++;
+            return &position_index[bpmap_value[i]];
+        }
+    }
+//    cerr << " in this Ok \n" << endl;
+    if (mismatch > 0) {
+        int mis_status;
+        uint32 result_value;
+        mis_status = getMisOverlapHashTable(barcodeInt,result_value);
+        if (mis_status == 0) {
+            overlapReadsWithMis++;
+            return &position_index[result_value];
+        } else {
+            return nullptr;
+        }
+    }
+    return nullptr;
+}
 
 Position1 *BarcodeProcessor::getPosition(string &barcodeString) {
     int Nindex = getNindex(barcodeString);
@@ -394,6 +431,23 @@ Position1 *BarcodeProcessor::getPositionHashIndex(string &barcodeString) {
             return nullptr;
         }
         return getPositionHashIndex(barcodeInt);
+    } else if (Nindex == -2) {
+        return nullptr;
+    } else if (mismatch > 0) {
+        printf("In this !!!!\n");
+        return getNOverlap(barcodeString, Nindex);
+    }
+    return nullptr;
+}
+
+Position1 *BarcodeProcessor::getPositionHashTable(string &barcodeString) {
+    int Nindex = getNindex(barcodeString);
+    if (Nindex == -1) {
+        uint64 barcodeInt = seqEncode(barcodeString.c_str(), 0, barcodeLen);
+        if (barcodeInt == polyTInt) {
+            return nullptr;
+        }
+        return getPositionHashTable(barcodeInt);
     } else if (Nindex == -2) {
         return nullptr;
     } else if (mismatch > 0) {
@@ -1000,6 +1054,36 @@ int BarcodeProcessor::getMisOverlapHashIndex(uint64 barcodeInt,
 
     return -1;
 }
+
+int BarcodeProcessor::getMisOverlapHashTable(uint64 barcodeInt, uint32 &result_value){
+    uint64 misBarcodeInt;
+    int misCount = 0;
+    int misMaskIndex = 0;
+    for (int mis = 0; mis < mismatch; mis++) {
+        misCount = 0;
+        while (misMaskIndex < misMaskLens[mis]) {
+            misBarcodeInt = barcodeInt ^ misMask[misMaskIndex];
+            misMaskIndex++;
+            uint32 mapKey = misBarcodeInt%MOD;
+            for (int i=bpmap_head[mapKey];i!=-1;i=bpmap_nxt[i]){
+                if (bpmap_key[i] == misBarcodeInt){
+                    result_value = bpmap_value[i];
+                    misCount++;
+                    if (misCount > 1){
+                        return -1;
+                    }
+                    break;
+                }
+            }
+        }
+        if (misCount == 1) {
+            return 0;
+        }
+    }
+
+    return -1;
+}
+
 
 
 Position1 *BarcodeProcessor::getNOverlap(string &barcodeString, uint8 Nindex) {
