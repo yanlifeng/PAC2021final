@@ -46,6 +46,8 @@ public:
 
     int GetHashNum() const;
 
+    int GetDims1() const;
+
 public:
     unordered_map<uint64, Position1> bpmap;
 
@@ -53,6 +55,7 @@ public:
     int *hashHead;
     node *hashMap;
     int hashNum;
+    int dims1;
     //******************************************//
 
 

@@ -102,17 +102,17 @@ void BarcodePositionMap::loadbpmap() {
         }
         mapReader.close();
     } else if (ends_with(barcodePositionMapFile, "h5") || ends_with(barcodePositionMapFile, "hdf5")) {
-        printf("name is %s\n", barcodePositionMapFile.c_str());
+//        printf("name is %s\n", barcodePositionMapFile.c_str());
         ChipMaskHDF5 chipMaskH5(barcodePositionMapFile);
-        printf("111\n");
+//        printf("111\n");
         chipMaskH5.openFile();
-        printf("222\n");
+//        printf("222\n");
 //        chipMaskH5.readDataSet(bpmap);
-        printf("now hashHead postion is %d\n", hashHead);
+//        printf("now hashHead postion is %d\n", hashHead);
 
-        chipMaskH5.readDataSet(hashNum, hashHead, hashMap);
+        chipMaskH5.readDataSet(hashNum, hashHead, hashMap, dims1);
 //        printf("now2 map size is %d\n", hashNum);
-        printf("now hashHead postion is %d\n", hashHead);
+//        printf("now hashHead postion is %d\n", hashHead);
 //        printf("test2 val is %d\n", hashHead[109547259]);
 
 
@@ -166,3 +166,7 @@ int BarcodePositionMap::GetHashNum() const {
     return hashNum;
 }
 
+
+int BarcodePositionMap::GetDims1() const {
+    return dims1;
+}

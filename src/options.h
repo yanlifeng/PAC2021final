@@ -108,6 +108,8 @@ public:
     int fixedStart;
     //if PEoutput was true, PE reads will be writen to output.
     bool PEout = false;
+
+
 };
 
 class Options {
@@ -153,6 +155,8 @@ public:
     int usePigz;
     int pigzThread;
 
+    //h5 dims1 size
+    int dims1Size;
 
     string rcString;
     int rc;

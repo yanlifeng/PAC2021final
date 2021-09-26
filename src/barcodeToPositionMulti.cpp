@@ -5049,6 +5049,14 @@ bool BarcodeToPositionMulti::process() {
     thread *pugzer2;
     auto getMbp = new thread(bind(&BarcodeToPositionMulti::getMbpmap, this));
 
+
+//    printf("wait get map thread done...\n");
+//    getMbp->join();
+//    printf("get map thread done\n");
+//
+//    printf("get map cost %.4f\n", GetTime() - t00);
+//    t00 = GetTime();
+
     if (mOptions->usePugz) {
         pugzer1 = new thread(bind(&BarcodeToPositionMulti::pugzTask1, this));
         pugzer2 = new thread(bind(&BarcodeToPositionMulti::pugzTask2, this));
@@ -5062,6 +5070,8 @@ bool BarcodeToPositionMulti::process() {
     printf("get map thread done\n");
 
     printf("get map cost %.4f\n", GetTime() - t00);
+
+    mOptions->dims1Size = mbpmap->GetDims1();
 
     Result **results = new Result *[mOptions->thread];
     BarcodeProcessor **barcodeProcessors = new BarcodeProcessor *[mOptions->thread];
@@ -5207,6 +5217,7 @@ bool BarcodeToPositionMulti::processPairEnd(ReadPairPack *pack, Result *result) 
             }
         }
         hasPosition = result->mBarcodeProcessor->process(or1, or2);
+//        hasPosition = 1;
         if (hasPosition) {
             outstr += or2->toString();
         } else if (mUnmappedWriter) {

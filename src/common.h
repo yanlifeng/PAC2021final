@@ -60,7 +60,10 @@ static const int MAX_DNB_EXP = 250;
 
 static const int EST_DNB_DISTANCE = 1;
 
-static const int mod = 1000000007;
+//static const int mod = 1000000007;
+//static const int mod = 73939133;
+static const int mod = 1073807359;
+//static const int mod = 2000000011;
 
 
 //outside dnb idx reture value
@@ -108,8 +111,10 @@ typedef struct Position1 {
 typedef struct node {
     int pre;
     uint64 v;
-    Position1 p1;
+    int32 p;
 } node;
+
+
 
 
 

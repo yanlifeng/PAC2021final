@@ -35,7 +35,7 @@ public:
     void openFile();
 
 //    void readDataSet(unordered_map<uint64, Position1> &bpMap, int index = 1);
-    void readDataSet(int &headNum, int *&hashHead, node *&hashMap, int index = 1);
+    void readDataSet(int &headNum, int *&hashHead, node *&hashMap, int &dims1, int index = 1);
 
 public:
     std::string fileName;

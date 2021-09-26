@@ -31,9 +31,9 @@ public:
     void dumpDNBmap(string &dnbMapFile);
 
 private:
-    void addPositionToName(Read *r, Position1 *position, pair<string, string> *umi = NULL);
+    void addPositionToName(Read *r, int position, pair<string, string> *umi = NULL);
 
-    void addPositionToNames(Read *r1, Read *r2, Position1 *position, pair<string, string> *umi = NULL);
+    void addPositionToNames(Read *r1, Read *r2, int position, pair<string, string> *umi = NULL);
 
     void getUMI(Read *r, pair<string, string> &umi, bool isRead2 = false);
 
@@ -47,21 +47,21 @@ private:
 
     long getBarcodeTypes();
 
-    Position1 *getPosition(uint64 barcodeInt);
+    int getPosition(uint64 barcodeInt);
 
-    Position1 *getPosition(string &barcodeString);
+    int getPosition(string &barcodeString);
 
     void misMaskGenerate();
 
-    string positionToString(Position1 *position);
+    string positionToString(int position);
 
     string positionToString(Position *position);
 
 //    unordered_map<uint64, Position1>::iterator getMisOverlap(uint64 barcodeInt);
 
-    pair<int, Position1 *> getMisOverlap(uint64 barcodeInt);
+    pair<int, int> getMisOverlap(uint64 barcodeInt);
 
-    Position1 *getNOverlap(string &barcodeString, uint8 Nindex);
+    int getNOverlap(string &barcodeString, uint8 Nindex);
 
     int getNindex(string &barcodeString);
 
@@ -73,7 +73,7 @@ private:
 
     bool umiStatAndFilter(pair<string, string> &umi);
 
-    pair<int, Position1 *> queryMap(uint64 barcodeInt);
+    pair<int, int> queryMap(uint64 barcodeInt);
 
 private:
     uint64 *misMask;
