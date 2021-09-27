@@ -32,6 +32,8 @@ bool BarcodeToPositionMulti::process() {
     initPackRepositoey();
     // cout<<"producer start"<<endl;
     // clock_t t0=clock();
+    // extern atomic<long> getPos_t;
+    // getPos_t=0;
     timeb start,endp,endc,endw;
     ftime(&start);
     
@@ -66,6 +68,12 @@ bool BarcodeToPositionMulti::process() {
         threads[t]->join();
     }
     ftime(&endc);
+    double getPos_t=0;
+    for(int i=0;i<mOptions->thread;i++)
+        getPos_t+=results[i]->mBarcodeProcessor->tt;
+    // double tt=0;
+    // getPos_t.compare_exchange_strong(tt,tt);
+    cout<<"getPosition:"<<getPos_t<<endl;
 
     if (writerThread)
         writerThread->join();

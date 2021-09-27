@@ -108,7 +108,7 @@ herr_t ChipMaskHDF5::writeDataSet(std::string chipID, slideRange& sliderange, un
     return status;
 }
 
-void ChipMaskHDF5::readDataSet(hash_map& bpMap, int index){
+void ChipMaskHDF5::readDataSet(uint32* bpMap, int index){
     clock_t t0=clock();
     herr_t status;
     //open dataset with datasetName
@@ -175,15 +175,15 @@ void ChipMaskHDF5::readDataSet(hash_map& bpMap, int index){
         //bpMatrix[r] = new uint64*[dims[1]];
             for (uint32 c = 0; c< dims[1]; c++){
                 //bpMatrix[r][c] = bpMatrix_buffer + r*dims[1]*dims[2] + c*dims[2];
-                Position1 position = {c, r};             
+                uint32 position = (c<<16)+r;        
                 segment = dims[2];
                 for (int s = 0; s<segment; s++){
                     uint64 barcodeInt = bpMatrix_buffer[r*dims[1]*segment + c*segment + s];
                     if (barcodeInt == 0){
                         continue;
                     }
-                    bpMap.insert(barcodeInt,position);
-                }          
+                    bpMap[barcodeInt&BARCODE_MASK]=position;
+                }
             }
         }
     ftime(&end);

@@ -15,7 +15,8 @@ BarcodePositionMap::~BarcodePositionMap()
 {
 	// bpmap.clear();
 	// unordered_map<uint64, Position1>().swap(bpmap);
-	bpmap.~hash_map();
+	// bpmap.~hash_map();
+	delete []hashmap;
 	dupBarcode.clear();
 	set<uint64>().swap(dupBarcode);
 }
@@ -35,7 +36,7 @@ void BarcodePositionMap::rangeRefresh(Position1& position){
 
 long BarcodePositionMap::getBarcodeTypes()
 {
-	return bpmap.size();
+	return UINT32_MAX;
 }
 //TODO dumpmap
 // void BarcodePositionMap::dumpbpmap(string& mapOutFile) {
@@ -108,7 +109,11 @@ void BarcodePositionMap::loadbpmap()
 	else if (ends_with(barcodePositionMapFile, "h5") || ends_with(barcodePositionMapFile, "hdf5")){
 		ChipMaskHDF5 chipMaskH5(barcodePositionMapFile);
 		chipMaskH5.openFile();
-		chipMaskH5.readDataSet(bpmap);
+		hashmap=new uint32[BARCODE_MASK+1];
+		#pragma omp parallel for
+		for(int i=0;i<=BARCODE_MASK;i++)
+		    hashmap[i]=UINT32_MAX;
+		chipMaskH5.readDataSet(hashmap);
 	}
 	else {
 		uint64 barcodeInt;
@@ -145,6 +150,6 @@ void BarcodePositionMap::loadbpmap()
 	}
 	cout << "###############load barcodeToPosition map finished, time used: " << time(NULL) - start << " seconds" << endl;
 	cout << resetiosflags(ios::fixed) << setprecision(2);
-	cout << "getBarcodePositionMap_uniqBarcodeTypes: " << bpmap.size() << endl;
+	cout << "getBarcodePositionMap_uniqBarcodeTypes: " << BARCODE_MASK << endl;
 }
 

@@ -135,7 +135,7 @@ void Result::dumpDNBs(string &mapOutFile) {
     mBarcodeProcessor->dumpDNBmap(mapOutFile);
 }
 
-void Result::setBarcodeProcessor(hash_map *bpmap) {
+void Result::setBarcodeProcessor(uint32 *bpmap) {
     mBarcodeProcessor = new BarcodeProcessor(mOptions, bpmap);
 }
 

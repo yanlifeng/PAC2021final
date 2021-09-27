@@ -32,7 +32,7 @@ public:
 
     void dumpDNBs(string &mappedDNBOutFile);
 
-    void setBarcodeProcessor(hash_map *bpmap);
+    void setBarcodeProcessor(uint32 *bpmap);
 
 private:
     void setBarcodeProcessor();

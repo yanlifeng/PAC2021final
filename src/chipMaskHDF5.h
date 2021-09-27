@@ -23,11 +23,10 @@ class ChipMaskHDF5{
 public:
     ChipMaskHDF5(std::string FileName);
     ~ChipMaskHDF5();
-
     void creatFile();
     herr_t writeDataSet(std::string chipID, slideRange& sliderange, unordered_map<uint64, Position1>& bpMap, uint32_t BarcodeLen, uint8_t segment, uint32_t slidePitch, uint compressionLevel = 6, int index = 1);
     void openFile();
-    void readDataSet(hash_map& bpMap, int index = 1); 
+    void readDataSet(uint32* bpMap, int index = 1); 
 
 public:
     std::string fileName;

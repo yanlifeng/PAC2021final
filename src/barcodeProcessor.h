@@ -7,6 +7,7 @@
 #include <sstream>
 #include <iostream>
 #include <unordered_map>
+#include <sys/time.h>
 #include "read.h"
 #include "util.h"
 #include "barcodePositionMap.h"
@@ -18,7 +19,7 @@ using namespace std;
 
 class BarcodeProcessor {
 public:
-	BarcodeProcessor(Options* opt, hash_map* mbpmap);
+	BarcodeProcessor(Options* opt, uint32* mbpmap);
 	BarcodeProcessor();
 	~BarcodeProcessor();
 	bool process(Read* read1, Read* read2);
@@ -32,13 +33,13 @@ private:
 	uint32 encodePosition(int fovCol, int fovRow);
 	uint64 encodePosition(uint32 x, uint32 y);
 	long getBarcodeTypes();
-	Position1* getPosition(uint64 barcodeInt);
-	Position1* getPosition(string& barcodeString);
+	uint32 getPosition(uint64 barcodeInt);
+	uint32 getPosition(string& barcodeString);
 	void misMaskGenerate();
 	string positionToString(Position1* position);
 	string positionToString(Position* position);
-	Position1* getMisOverlap(uint64 barcodeInt);
-	Position1* getNOverlap(string& barcodeString, uint8 Nindex);
+	uint32 getMisOverlap(uint64 barcodeInt);
+    uint32 getNOverlap(string& barcodeString, uint8 Nindex);
 	int getNindex(string& barcodeString);
 	void addDNB(uint64 barcodeInt);
 	bool barcodeStatAndFilter(pair<string, string>& barcode);
@@ -56,6 +57,7 @@ private:
 public:
 	Options* mOptions;
 	hash_map* bpmap;
+	uint32* hashmap;
 	long totalReads = 0;
 	long mMapToSlideRead = 0;
 	long overlapReads = 0;
@@ -72,6 +74,7 @@ public:
 	long umiPloyAFilterReads = 0;
 	unordered_map<uint64, int> mDNB;
 	int mismatch;
+	double tt=0;
 	int barcodeLen;
 };
 

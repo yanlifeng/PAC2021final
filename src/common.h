@@ -20,6 +20,8 @@ typedef unsigned short uint16;
 typedef char int8;
 typedef unsigned char uint8;
 
+#define BARCODE_MASK 1073741823
+
 const char ATCG_BASES[4] = {'A', 'C', 'T', 'G'};
 const uint8 RC_BASE[4] = {2, 3, 0, 1};
 
