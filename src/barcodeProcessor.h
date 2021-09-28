@@ -12,6 +12,7 @@
 #include "barcodePositionMap.h"
 #include "options.h"
 #include "util.h"
+#include "bloomFilter.h"
 //#include "robin_hood.h"
 
 using namespace std;
@@ -21,6 +22,8 @@ public:
     BarcodeProcessor(Options *opt, unordered_map<uint64, Position1> *mbpmap);
 
     BarcodeProcessor(Options *opt, int mhashNum, int *mhashHead, node *mhashMap);
+
+    BarcodeProcessor(Options *opt, int mhashNum, int *mhashHead, node *mhashMap, BloomFilter *mBloomFilter);
 
     BarcodeProcessor();
 
@@ -95,6 +98,14 @@ public:
     //******************************************//
 
 
+    //********************bloom filter**********//
+    BloomFilter *bloomFilter;
+    //******************************************//
+
+
+
+
+
     long totalReads = 0;
     long mMapToSlideRead = 0;
     long overlapReads = 0;
@@ -110,6 +121,7 @@ public:
     long umiNFilterReads = 0;
     long umiPloyAFilterReads = 0;
     unordered_map<uint64, int> mDNB;
+
     int mismatch;
     int barcodeLen;
 };

@@ -7,6 +7,8 @@
 #include "common.h"
 //#include "robin_hood.h"
 #include "util.h"
+#include "bloomFilter.h"
+
 
 #define RANK 3
 #define CDIM0 1537
@@ -35,7 +37,8 @@ public:
     void openFile();
 
 //    void readDataSet(unordered_map<uint64, Position1> &bpMap, int index = 1);
-    void readDataSet(int &headNum, int *&hashHead, node *&hashMap, int &dims1, int index = 1);
+    void
+    readDataSet(int &headNum, int *&hashHead, node *&hashMap, int &dims1, BloomFilter *&bloomFilter, int index = 1);
 
 public:
     std::string fileName;

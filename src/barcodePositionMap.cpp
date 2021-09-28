@@ -110,7 +110,7 @@ void BarcodePositionMap::loadbpmap() {
 //        chipMaskH5.readDataSet(bpmap);
 //        printf("now hashHead postion is %d\n", hashHead);
 
-        chipMaskH5.readDataSet(hashNum, hashHead, hashMap, dims1);
+        chipMaskH5.readDataSet(hashNum, hashHead, hashMap, dims1, bloomFilter);
 //        printf("now2 map size is %d\n", hashNum);
 //        printf("now hashHead postion is %d\n", hashHead);
 //        printf("test2 val is %d\n", hashHead[109547259]);
@@ -169,4 +169,8 @@ int BarcodePositionMap::GetHashNum() const {
 
 int BarcodePositionMap::GetDims1() const {
     return dims1;
+}
+
+BloomFilter *BarcodePositionMap::GetBloomFilter() const {
+    return bloomFilter;
 }

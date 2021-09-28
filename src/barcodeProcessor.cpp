@@ -26,6 +26,24 @@ BarcodeProcessor::BarcodeProcessor(Options *opt, int mhashNum, int *mhashHead, n
     misMaskGenerate();
 }
 
+BarcodeProcessor::BarcodeProcessor(Options *opt, int mhashNum, int *mhashHead, node *mhashMap,
+                                   BloomFilter *mBloomFilter) {
+    mOptions = opt;
+
+    hashNum = mhashNum;
+    hashHead = mhashHead;
+    hashMap = mhashMap;
+    bloomFilter = mBloomFilter;
+//    printf("now new BarcodeProcessor , hashNum is %d\n", hashNum);
+//    printf("test5 val is %d\n", hashHead[109547259]);
+
+
+    mismatch = opt->transBarcodeToPos.mismatch;
+    barcodeLen = opt->barcodeLen;
+    polyTInt = seqEncode(polyT.c_str(), 0, barcodeLen, mOptions->rc);
+    misMaskGenerate();
+}
+
 BarcodeProcessor::BarcodeProcessor() {
 }
 
@@ -193,17 +211,21 @@ int BarcodeProcessor::getPosition(uint64 barcodeInt) {
 }
 
 pair<int, int> BarcodeProcessor::queryMap(uint64 barcodeInt) {
+    int ok = 0;
+    int p = -1;
+//    printf("bloom query %lld\n", barcodeInt);
 
-//    int key = barcodeInt % mod;
-    int key = mol(barcodeInt);
-    if (key >= mod)key -= mod;
+    if (bloomFilter->Get(barcodeInt) == 0)return {ok, p};
+
+    int key = barcodeInt % mod;
+//    int key = mol(barcodeInt);
+//    if (key >= mod)key -= mod;
 
 //    if (key != barcodeInt % mod) {
 //        printf("%lld %d %lld\n", barcodeInt, key, barcodeInt % mod);
 //        exit(0);
 //    }
-    int ok = 0;
-    int p = -1;
+
     for (int i = hashHead[key]; i != -1; i = hashMap[i].pre) {
         if (hashMap[i].v == barcodeInt) {
             p = hashMap[i].p;

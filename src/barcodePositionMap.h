@@ -8,6 +8,8 @@
 #include "util.h"
 #include "options.h"
 #include "chipMaskHDF5.h"
+
+#include "bloomFilter.h"
 #include <unordered_map>
 //#include "robin_hood.h"
 #include <iomanip>
@@ -48,6 +50,8 @@ public:
 
     int GetDims1() const;
 
+    BloomFilter *GetBloomFilter() const;
+
 public:
     unordered_map<uint64, Position1> bpmap;
 
@@ -56,6 +60,13 @@ public:
     node *hashMap;
     int hashNum;
     int dims1;
+    //******************************************//
+
+
+    //***********bloom filter add by ylf************//
+
+    BloomFilter *bloomFilter;
+
     //******************************************//
 
 

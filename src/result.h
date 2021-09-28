@@ -34,7 +34,7 @@ public:
 
     void setBarcodeProcessor(unordered_map<uint64, Position1> *bpmap);
 
-    void setBarcodeProcessor(int headNum, int *hashHead, node *hashMap);
+    void setBarcodeProcessor(int headNum, int *hashHead, node *hashMap, BloomFilter *bloomFilter);
 
 private:
     void setBarcodeProcessor();

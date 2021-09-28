@@ -121,7 +121,8 @@ herr_t ChipMaskHDF5::writeDataSet(std::string chipID, slideRange &sliderange,
 }
 
 
-void ChipMaskHDF5::readDataSet(int &hashNum, int *&hashHead, node *&hashMap, int &dims1, int index) {
+void ChipMaskHDF5::readDataSet(int &hashNum, int *&hashHead, node *&hashMap, int &dims1, BloomFilter *&bloomFilter,
+                               int index) {
     herr_t status;
     //open dataset with datasetName
     std::string datasetName = DATASETNAME + std::to_string(index);
@@ -208,6 +209,8 @@ void ChipMaskHDF5::readDataSet(int &hashNum, int *&hashHead, node *&hashMap, int
     printf("new hash map cost %.3f\n", HD5GetTime() - t0);
     t0 = HD5GetTime();
 
+    bloomFilter = new BloomFilter();
+
 
 //#pragma omp parallel for num_threads(64)
     for (uint32 r = 0; r < dims[0]; r++) {
@@ -222,12 +225,14 @@ void ChipMaskHDF5::readDataSet(int &hashNum, int *&hashHead, node *&hashMap, int
                     if (barcodeInt == 0) {
                         continue;
                     }
+
+                    bloomFilter->Set(barcodeInt);
 //                    printf("ready to insert is %lld\n", barcodeInt);
                     //add item to hash map
                     {
-//                        int key = barcodeInt % mod;
-                        int key = mol(barcodeInt);
-                        if (key >= mod)key -= mod;
+                        int key = barcodeInt % mod;
+//                        int key = mol(barcodeInt);
+//                        if (key >= mod)key -= mod;
 
 //                        if (key != barcodeInt % mod) {
 //                            printf("%lld %d %lld\n", barcodeInt, key, barcodeInt % mod);
@@ -264,10 +269,13 @@ void ChipMaskHDF5::readDataSet(int &hashNum, int *&hashHead, node *&hashMap, int
                 if (barcodeInt == 0) {
                     continue;
                 }
+                bloomFilter->Set(barcodeInt);
+
                 //add item to hash map
                 {
-//                    int key = barcodeInt % mod;
-                    int key = mol(barcodeInt);
+                    int key = barcodeInt % mod;
+//                    int key = mol(barcodeInt);
+//                    if (key >= mod)key -= mod;
 
                     int ok = 0;
                     //find item and update postion
