@@ -7,6 +7,7 @@
 
 #include <boost/serialization/string.hpp>
 #include <boost/serialization/unordered_map.hpp>
+#include <mpi.h>
 
 typedef long long int int64;
 typedef unsigned long long int uint64;

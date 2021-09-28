@@ -158,6 +158,15 @@ public:
     //h5 dims1 size
     int dims1Size;
 
+    //test numa socket
+    int numaId;
+
+    //mpi id
+    int myRank;
+
+    //test
+    MPI_Comm communicator;
+
     string rcString;
     int rc;
     DrawHeatMapOptions drawHeatMap;
