@@ -194,7 +194,14 @@ int BarcodeProcessor::getPosition(uint64 barcodeInt) {
 
 pair<int, int> BarcodeProcessor::queryMap(uint64 barcodeInt) {
 
-    int key = barcodeInt % mod;
+//    int key = barcodeInt % mod;
+    int key = mol(barcodeInt);
+    if (key >= mod)key -= mod;
+
+//    if (key != barcodeInt % mod) {
+//        printf("%lld %d %lld\n", barcodeInt, key, barcodeInt % mod);
+//        exit(0);
+//    }
     int ok = 0;
     int p = -1;
     for (int i = hashHead[key]; i != -1; i = hashMap[i].pre) {

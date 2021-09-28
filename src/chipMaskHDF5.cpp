@@ -222,9 +222,18 @@ void ChipMaskHDF5::readDataSet(int &hashNum, int *&hashHead, node *&hashMap, int
                     if (barcodeInt == 0) {
                         continue;
                     }
+//                    printf("ready to insert is %lld\n", barcodeInt);
                     //add item to hash map
                     {
-                        int key = barcodeInt % mod;
+//                        int key = barcodeInt % mod;
+                        int key = mol(barcodeInt);
+                        if (key >= mod)key -= mod;
+
+//                        if (key != barcodeInt % mod) {
+//                            printf("%lld %d %lld\n", barcodeInt, key, barcodeInt % mod);
+//                            exit(0);
+//                        }
+//                        printf("after mod is %d\n", key);
                         int ok = 0;
                         //find item and update postion
                         for (int i = hashHead[key]; i != -1; i = hashMap[i].pre)
@@ -257,7 +266,9 @@ void ChipMaskHDF5::readDataSet(int &hashNum, int *&hashHead, node *&hashMap, int
                 }
                 //add item to hash map
                 {
-                    int key = barcodeInt % mod;
+//                    int key = barcodeInt % mod;
+                    int key = mol(barcodeInt);
+
                     int ok = 0;
                     //find item and update postion
                     for (int i = hashHead[key]; i != -1; i = hashMap[i].pre)

@@ -29,6 +29,10 @@ static const int COUNT_BINARY_SUZE = 2;
 
 static const long long int MAX_BARCODE = 0xffffffffffffffff;
 
+
+typedef long long ll;
+typedef __int128_t i128;
+
 #pragma pack(2)
 
 
@@ -66,6 +70,13 @@ static const int EST_DNB_DISTANCE = 1;
 static const int mod = 1073807359;
 //static const int mod = 2000000011;
 
+static const i128 oneI = 1;
+
+static const i128 _base = (oneI << 64) / mod;
+
+//inline uint64 mol(uint64 x) { return x - mod * (_base * x >> 64); }
+
+#define mol(x) ( (x) - mod * (_base * (x) >> 64) )
 
 //outside dnb idx reture value
 static const int OUTSIDE_DNB_POS_ROW = 1410065408;
