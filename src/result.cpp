@@ -51,6 +51,11 @@ Result *Result::merge(vector<Result *> &list) {
         result->mBarcodeProcessor->umiPloyAFilterReads += list[i]->mBarcodeProcessor->umiPloyAFilterReads;
         result->mBarcodeProcessor->umiQ10FilterReads += list[i]->mBarcodeProcessor->umiQ10FilterReads;
 
+        result->mBarcodeProcessor->totQuery += list[i]->mBarcodeProcessor->totQuery;
+        result->mBarcodeProcessor->queryYes += list[i]->mBarcodeProcessor->queryYes;
+        result->mBarcodeProcessor->filterQuery += list[i]->mBarcodeProcessor->filterQuery;
+
+
         if (!list[i]->mOptions->transBarcodeToPos.mappedDNBOutFile.empty()) {
             unordered_map<uint64, int>::iterator mergeIter;
             for (auto iter = list[i]->mBarcodeProcessor->mDNB.begin();
@@ -72,6 +77,9 @@ Result *Result::merge(vector<Result *> &list) {
 void Result::print() {
 
     cout << fixed << setprecision(2);
+    cout << "total_query_cnt:\t" << mBarcodeProcessor->totQuery << endl;
+    cout << "after_filter_query_cnt:\t" << mBarcodeProcessor->filterQuery << endl;
+    cout << "find_query_cnt:\t" << mBarcodeProcessor->queryYes << endl;
     cout << "total_reads:\t" << mTotalRead << endl;
     cout << "fixed_sequence_contianing_reads:\t" << mFxiedFilterRead << "\t"
          << (double) mFxiedFilterRead / (double) mTotalRead * 100 << "%" << endl;

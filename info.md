@@ -643,3 +643,18 @@ update 👆
 | thread 64，4 hash   | 35            | 194      | 201      | 237   |
 | thread 64，1 hash   | 30            |          |          | 193   |
 
+```
+1 hash
+total_query_cnt:	156371927497
+after_filter_query_cnt:	144998762505
+
+4 hash
+total_query_cnt:	156371927497
+after_filter_query_cnt:	156099493240
+
+total_query_cnt:	156377424777
+after_filter_query_cnt:	2431340523
+find_query_cnt:	145470356
+
+```
+

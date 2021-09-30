@@ -13,7 +13,7 @@
 
 class BloomFilter {
 public:
-    std::bitset<100000010> bits;
+    std::bitset<4300000000ll> bits;
 public:
     BloomFilter();
 
@@ -21,11 +21,11 @@ public:
 
     bool Get(uint64 barCode);
 
-    int Hash1(uint64 barCode);
+    ll Hash1(uint64 barCode);
 
-    int Hash2(uint64 barCode);
+    ll Hash2(uint64 barCode);
 
-    int Hash3(uint64 barCode);
+    uint32 Hash3(uint64 barCode);
 
     int Hash4(uint64 barCode);
 };

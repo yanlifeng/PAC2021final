@@ -28,14 +28,14 @@ int main(int argc, char *argv[]) {
     if (argc == 1) {
         cerr << "spatial_transcriptome: an spatial transcriptome data processor" << endl;
     }
-//    int my_rank, num_procs;
-//    int proc_len;
-//    char processor_name[MPI_MAX_PROCESSOR_NAME];
-//    MPI_Init(&argc, &argv);
-//    MPI_Comm_size(MPI_COMM_WORLD, &num_procs);
-//    MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
-//    MPI_Get_processor_name(processor_name, &proc_len);
-//    printf("Process %d of %d ,processor name is %s\n", my_rank, num_procs, processor_name);
+    int my_rank, num_procs;
+    int proc_len;
+    char processor_name[MPI_MAX_PROCESSOR_NAME];
+    MPI_Init(&argc, &argv);
+    MPI_Comm_size(MPI_COMM_WORLD, &num_procs);
+    MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
+    MPI_Get_processor_name(processor_name, &proc_len);
+    printf("Process %d of %d ,processor name is %s\n", my_rank, num_procs, processor_name);
 
     cmdline::parser cmd;
     // input/output
@@ -125,24 +125,24 @@ int main(int argc, char *argv[]) {
     opt.transBarcodeToPos.PEout = cmd.exist("PEout");
     opt.numaId = cmd.get<int>("numaId");
 
-//    opt.myRank = my_rank;
-//    opt.communicator = MPI_COMM_WORLD;
-//
-//    if (num_procs > 2) {
-//        printf("mpirun -n can't > 2\n");
-//        exit(0);
-//    }
-//    if (num_procs == 2) {
-//        opt.numaId = my_rank;
-//        opt.out = to_string(my_rank) + opt.out;
-//        opt.transBarcodeToPos.out1 = to_string(my_rank) + opt.transBarcodeToPos.out1;
-//
-//    } else if (num_procs == 1) {
-//        opt.numaId = 3;
-//    }
+    opt.myRank = my_rank;
+    opt.communicator = MPI_COMM_WORLD;
 
-    opt.numaId = 3;
-    opt.myRank = 0;
+    if (num_procs > 2) {
+        printf("mpirun -n can't > 2\n");
+        exit(0);
+    }
+    if (num_procs == 2) {
+        opt.numaId = my_rank;
+        opt.out = to_string(my_rank) + opt.out;
+        opt.transBarcodeToPos.out1 = to_string(my_rank) + opt.transBarcodeToPos.out1;
+
+    } else if (num_procs == 1) {
+        opt.numaId = 3;
+    }
+
+//    opt.numaId = 3;
+//    opt.myRank = 0;
 
     printf("numa id is %d\n", opt.numaId);
 

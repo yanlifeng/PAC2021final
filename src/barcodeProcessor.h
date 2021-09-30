@@ -104,12 +104,15 @@ public:
 
 
 
+    long totQuery = 0;
+    long filterQuery = 0;
+    long queryYes = 0;
 
 
-    long totalReads = 0;
-    long mMapToSlideRead = 0;
-    long overlapReads = 0;
-    long overlapReadsWithMis = 0;
+    long totalReads = 0;//tot reads
+    long mMapToSlideRead = 0;//tot mapped
+    long overlapReads = 0;//mismatch=0 mapped
+    long overlapReadsWithMis = 0;//mismatch>0 mapped
     long overlapReadsWithN = 0;
     long barcodeQ10 = 0;
     long barcodeQ20 = 0;

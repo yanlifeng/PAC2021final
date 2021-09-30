@@ -213,9 +213,13 @@ int BarcodeProcessor::getPosition(uint64 barcodeInt) {
 pair<int, int> BarcodeProcessor::queryMap(uint64 barcodeInt) {
     int ok = 0;
     int p = -1;
+    totQuery++;
 //    printf("bloom query %lld\n", barcodeInt);
 
-    if (bloomFilter->Get(barcodeInt) == 0)return {ok, p};
+    if (bloomFilter->Get(barcodeInt) == 0)
+        return {ok, p};
+
+    filterQuery++;
 
     int key = barcodeInt % mod;
 //    int key = mol(barcodeInt);
@@ -233,6 +237,7 @@ pair<int, int> BarcodeProcessor::queryMap(uint64 barcodeInt) {
             break;
         }
     }
+    if (ok == 1)queryYes++;
     return {ok, p};
 }
 
