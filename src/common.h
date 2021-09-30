@@ -68,6 +68,10 @@ static const int EST_DNB_DISTANCE = 1;
 //static const int mod = 1000000007;
 //static const int mod = 73939133;
 static const int mod = 1073807359;
+
+static const uint32 modd = 0xffffffff;
+
+static const uint32 mod2 = 4284954097ll;
 //static const int mod = 2000000011;
 
 static const i128 oneI = 1;
@@ -77,6 +81,37 @@ static const i128 _base = (oneI << 64) / mod;
 //inline uint64 mol(uint64 x) { return x - mod * (_base * x >> 64); }
 
 #define mol(x) ( (x) - mod * (_base * (x) >> 64) )
+
+//some hash func
+inline uint32 Hash0(uint64 barCode) {
+    barCode = (~barCode) + (barCode << 18); // key = (key << 18) - key - 1;
+    barCode = barCode ^ (barCode >> 31);
+    barCode = barCode * 21; // key = (key + (key << 2)) + (key << 4);
+    barCode = barCode ^ (barCode >> 11);
+    barCode = barCode + (barCode << 6);
+    barCode = barCode ^ (barCode >> 22);
+    return (uint32) barCode;
+}
+
+inline uint32 Hash1(uint64 barCode) {
+    return barCode % 4000000063ll;
+}
+
+inline uint32 Hash2(uint64 barCode, uint64 seed = 0) {
+    barCode ^= seed;
+    barCode ^= barCode >> 33;
+    barCode *= 0xff51afd7ed558ccd;
+    barCode ^= barCode >> 33;
+    barCode *= 0xc4ceb9fe1a85ec53;
+    barCode ^= barCode >> 33;
+    return uint32(barCode >> 33);
+}
+
+inline uint32 Hash3(uint64 barCode) {
+    return uint32((barCode >> 32) ^ (barCode & ((1ll << 32) - 1)));
+}
+
+#define bfIdx(x)
 
 //outside dnb idx reture value
 static const int OUTSIDE_DNB_POS_ROW = 1410065408;
@@ -121,7 +156,7 @@ typedef struct Position1 {
 
 
 typedef struct node {
-    int pre;
+    uint32 pre;
     uint64 v;
     int32 p;
 } node;

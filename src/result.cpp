@@ -147,7 +147,7 @@ void Result::setBarcodeProcessor(unordered_map<uint64, Position1> *bpmap) {
     mBarcodeProcessor = new BarcodeProcessor(mOptions, bpmap);
 }
 
-void Result::setBarcodeProcessor(int headNum, int *hashHead, node *hashMap, BloomFilter *bloomFilter) {
+void Result::setBarcodeProcessor(int headNum, int *hashHead, node *hashMap, uint64 *bloomFilter) {
     mBarcodeProcessor = new BarcodeProcessor(mOptions, headNum, hashHead, hashMap, bloomFilter);
 }
 

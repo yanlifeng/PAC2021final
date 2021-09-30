@@ -27,7 +27,7 @@ BarcodeProcessor::BarcodeProcessor(Options *opt, int mhashNum, int *mhashHead, n
 }
 
 BarcodeProcessor::BarcodeProcessor(Options *opt, int mhashNum, int *mhashHead, node *mhashMap,
-                                   BloomFilter *mBloomFilter) {
+                                   uint64 *mBloomFilter) {
     mOptions = opt;
 
     hashNum = mhashNum;
@@ -216,12 +216,40 @@ pair<int, int> BarcodeProcessor::queryMap(uint64 barcodeInt) {
     totQuery++;
 //    printf("bloom query %lld\n", barcodeInt);
 
-    if (bloomFilter->Get(barcodeInt) == 0)
-        return {ok, p};
+//    uint32 idx0 = Hash0(barcodeInt);
+////    uint32 idx1 = Hash1(barcodeInt);
+//    uint32 idx2 = Hash2(barcodeInt);
+//    uint32 idx3 = Hash3(barcodeInt);
 
-    filterQuery++;
+    int res = 0;
+//    if ((bloomFilter[idx0 >> 6] & (1ll << (idx0 & 0x3F))) && (bloomFilter[idx1 >> 6] & (1ll << (idx1 & 0x3F))) &&
+//        (bloomFilter[idx2 >> 6] & (1ll << (idx2 & 0x3F)))) {
+//        res = 1;
+//    }
+//    if ((bloomFilter[idx0 >> 6] & (1ll << (idx0 & 0x3F))) && (bloomFilter[idx3 >> 6] & (1ll << (idx3 & 0x3F))) &&
+//        (bloomFilter[idx2 >> 6] & (1ll << (idx2 & 0x3F)))) {
+//        res = 1;
+//    }
 
-    int key = barcodeInt % mod;
+//    if ((bloomFilter[idx0 >> 6] & (1ll << (idx0 & 0x3F))) && (bloomFilter[idx3 >> 6] & (1ll << (idx3 & 0x3F)))) {
+//        res = 1;
+//    }
+
+//
+//    if ((bloomFilter[idx0 >> 6] & (1ll << (idx0 & 0x3F))) && (bloomFilter[idx1 >> 6] & (1ll << (idx1 & 0x3F))) &&
+//        (bloomFilter[idx2 >> 6] & (1ll << (idx2 & 0x3F))) && (bloomFilter[idx3 >> 6] & (1ll << (idx3 & 0x3F)))) {
+//        res = 1;
+//    }
+
+//    if (res == 0)
+//        return {ok, p};
+
+    filterQuery += res;
+
+
+//    int key = barcodeInt % mod;
+//    uint32 key = Hash0(barcodeInt);
+    uint32 key = barcodeInt % mod2;
 //    int key = mol(barcodeInt);
 //    if (key >= mod)key -= mod;
 
@@ -230,7 +258,7 @@ pair<int, int> BarcodeProcessor::queryMap(uint64 barcodeInt) {
 //        exit(0);
 //    }
 
-    for (int i = hashHead[key]; i != -1; i = hashMap[i].pre) {
+    for (uint32 i = hashHead[key]; i != -1; i = hashMap[i].pre) {
         if (hashMap[i].v == barcodeInt) {
             p = hashMap[i].p;
             ok = 1;

@@ -171,6 +171,6 @@ int BarcodePositionMap::GetDims1() const {
     return dims1;
 }
 
-BloomFilter *BarcodePositionMap::GetBloomFilter() const {
+uint64 *BarcodePositionMap::GetBloomFilter() const {
     return bloomFilter;
 }

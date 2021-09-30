@@ -5154,64 +5154,69 @@ bool BarcodeToPositionMulti::process() {
     }
     Result *finalResult = Result::merge(resultList);
 
-//    finalResult->print();
+    if (mOptions->numaId == 3) {
+        finalResult->print();
+    } else {
+        printf("watind barrier\n");
+        MPI_Barrier(mOptions->communicator);
+        printf("all merge done\n");
 
-    printf("watind barrier\n");
-    MPI_Barrier(mOptions->communicator);
-    printf("all merge done\n");
+        if (mOptions->myRank == 0) {
+            printf("=======================print ans from process 0=========================\n");
 
-    if (mOptions->myRank == 0) {
-        printf("=======================print ans from process 0=========================\n");
-
-        Result *resultTmp = new Result(mOptions, true);
-        resultTmp->setBarcodeProcessor(mbpmap->GetHashNum(), mbpmap->GetHashHead(), mbpmap->GetHashMap(),
-                                       mbpmap->GetBloomFilter());
+            Result *resultTmp = new Result(mOptions, true);
+            resultTmp->setBarcodeProcessor(mbpmap->GetHashNum(), mbpmap->GetHashHead(), mbpmap->GetHashMap(),
+                                           mbpmap->GetBloomFilter());
 //        printf("p0 waiting first data\n");
-        MPI_Recv(&(resultTmp->mTotalRead), 1, MPI_LONG_LONG, 1, 1, mOptions->communicator, MPI_STATUS_IGNORE);
+            MPI_Recv(&(resultTmp->mTotalRead), 1, MPI_LONG_LONG, 1, 1, mOptions->communicator, MPI_STATUS_IGNORE);
 //        printf("p0 get first data\n");
-        MPI_Recv(&(resultTmp->mFxiedFilterRead), 1, MPI_LONG_LONG, 1, 1, mOptions->communicator, MPI_STATUS_IGNORE);
-        MPI_Recv(&(resultTmp->mDupRead), 1, MPI_LONG_LONG, 1, 1, mOptions->communicator, MPI_STATUS_IGNORE);
-        MPI_Recv(&(resultTmp->mLowQuaRead), 1, MPI_LONG_LONG, 1, 1, mOptions->communicator, MPI_STATUS_IGNORE);
-        MPI_Recv(&(resultTmp->mWithoutPositionReads), 1, MPI_LONG_LONG, 1, 1, mOptions->communicator,
-                 MPI_STATUS_IGNORE);
-        MPI_Recv(&(resultTmp->overlapReadsWithMis), 1, MPI_LONG_LONG, 1, 1, mOptions->communicator, MPI_STATUS_IGNORE);
-        MPI_Recv(&(resultTmp->overlapReadsWithN), 1, MPI_LONG_LONG, 1, 1, mOptions->communicator, MPI_STATUS_IGNORE);
+            MPI_Recv(&(resultTmp->mFxiedFilterRead), 1, MPI_LONG_LONG, 1, 1, mOptions->communicator, MPI_STATUS_IGNORE);
+            MPI_Recv(&(resultTmp->mDupRead), 1, MPI_LONG_LONG, 1, 1, mOptions->communicator, MPI_STATUS_IGNORE);
+            MPI_Recv(&(resultTmp->mLowQuaRead), 1, MPI_LONG_LONG, 1, 1, mOptions->communicator, MPI_STATUS_IGNORE);
+            MPI_Recv(&(resultTmp->mWithoutPositionReads), 1, MPI_LONG_LONG, 1, 1, mOptions->communicator,
+                     MPI_STATUS_IGNORE);
+            MPI_Recv(&(resultTmp->overlapReadsWithMis), 1, MPI_LONG_LONG, 1, 1, mOptions->communicator,
+                     MPI_STATUS_IGNORE);
+            MPI_Recv(&(resultTmp->overlapReadsWithN), 1, MPI_LONG_LONG, 1, 1, mOptions->communicator,
+                     MPI_STATUS_IGNORE);
 
 
-        MPI_Recv(&(resultTmp->mBarcodeProcessor->totalReads), 1, MPI_LONG_LONG, 1, 1, mOptions->communicator,
-                 MPI_STATUS_IGNORE);
-        MPI_Recv(&(resultTmp->mBarcodeProcessor->mMapToSlideRead), 1, MPI_LONG_LONG, 1, 1, mOptions->communicator,
-                 MPI_STATUS_IGNORE);
-        MPI_Recv(&(resultTmp->mBarcodeProcessor->overlapReads), 1, MPI_LONG_LONG, 1, 1, mOptions->communicator,
-                 MPI_STATUS_IGNORE);
-        MPI_Recv(&(resultTmp->mBarcodeProcessor->overlapReadsWithMis), 1, MPI_LONG_LONG, 1, 1, mOptions->communicator,
-                 MPI_STATUS_IGNORE);
-        MPI_Recv(&(resultTmp->mBarcodeProcessor->overlapReadsWithN), 1, MPI_LONG_LONG, 1, 1, mOptions->communicator,
-                 MPI_STATUS_IGNORE);
-        MPI_Recv(&(resultTmp->mBarcodeProcessor->barcodeQ10), 1, MPI_LONG_LONG, 1, 1, mOptions->communicator,
-                 MPI_STATUS_IGNORE);
-        MPI_Recv(&(resultTmp->mBarcodeProcessor->barcodeQ20), 1, MPI_LONG_LONG, 1, 1, mOptions->communicator,
-                 MPI_STATUS_IGNORE);
-        MPI_Recv(&(resultTmp->mBarcodeProcessor->barcodeQ30), 1, MPI_LONG_LONG, 1, 1, mOptions->communicator,
-                 MPI_STATUS_IGNORE);
-        MPI_Recv(&(resultTmp->mBarcodeProcessor->umiQ10), 1, MPI_LONG_LONG, 1, 1, mOptions->communicator,
-                 MPI_STATUS_IGNORE);
-        MPI_Recv(&(resultTmp->mBarcodeProcessor->umiQ20), 1, MPI_LONG_LONG, 1, 1, mOptions->communicator,
-                 MPI_STATUS_IGNORE);
-        MPI_Recv(&(resultTmp->mBarcodeProcessor->umiQ30), 1, MPI_LONG_LONG, 1, 1, mOptions->communicator,
-                 MPI_STATUS_IGNORE);
-        MPI_Recv(&(resultTmp->mBarcodeProcessor->umiQ10FilterReads), 1, MPI_LONG_LONG, 1, 1, mOptions->communicator,
-                 MPI_STATUS_IGNORE);
-        MPI_Recv(&(resultTmp->mBarcodeProcessor->umiNFilterReads), 1, MPI_LONG_LONG, 1, 1, mOptions->communicator,
-                 MPI_STATUS_IGNORE);
-        MPI_Recv(&(resultTmp->mBarcodeProcessor->umiPloyAFilterReads), 1, MPI_LONG_LONG, 1, 1, mOptions->communicator,
-                 MPI_STATUS_IGNORE);
-        MPI_Recv(&(resultTmp->mBarcodeProcessor->totQuery), 1, MPI_LONG_LONG, 1, 1, mOptions->communicator,
-                 MPI_STATUS_IGNORE);
-        MPI_Recv(&(resultTmp->mBarcodeProcessor->filterQuery), 1, MPI_LONG_LONG, 1, 1, mOptions->communicator,
-                 MPI_STATUS_IGNORE);
-        MPI_Recv(&(resultTmp->mBarcodeProcessor->queryYes), 1, MPI_LONG_LONG, 1, 1, mOptions->communicator,
-                 MPI_STATUS_IGNORE);
+            MPI_Recv(&(resultTmp->mBarcodeProcessor->totalReads), 1, MPI_LONG_LONG, 1, 1, mOptions->communicator,
+                     MPI_STATUS_IGNORE);
+            MPI_Recv(&(resultTmp->mBarcodeProcessor->mMapToSlideRead), 1, MPI_LONG_LONG, 1, 1, mOptions->communicator,
+                     MPI_STATUS_IGNORE);
+            MPI_Recv(&(resultTmp->mBarcodeProcessor->overlapReads), 1, MPI_LONG_LONG, 1, 1, mOptions->communicator,
+                     MPI_STATUS_IGNORE);
+            MPI_Recv(&(resultTmp->mBarcodeProcessor->overlapReadsWithMis), 1, MPI_LONG_LONG, 1, 1,
+                     mOptions->communicator,
+                     MPI_STATUS_IGNORE);
+            MPI_Recv(&(resultTmp->mBarcodeProcessor->overlapReadsWithN), 1, MPI_LONG_LONG, 1, 1, mOptions->communicator,
+                     MPI_STATUS_IGNORE);
+            MPI_Recv(&(resultTmp->mBarcodeProcessor->barcodeQ10), 1, MPI_LONG_LONG, 1, 1, mOptions->communicator,
+                     MPI_STATUS_IGNORE);
+            MPI_Recv(&(resultTmp->mBarcodeProcessor->barcodeQ20), 1, MPI_LONG_LONG, 1, 1, mOptions->communicator,
+                     MPI_STATUS_IGNORE);
+            MPI_Recv(&(resultTmp->mBarcodeProcessor->barcodeQ30), 1, MPI_LONG_LONG, 1, 1, mOptions->communicator,
+                     MPI_STATUS_IGNORE);
+            MPI_Recv(&(resultTmp->mBarcodeProcessor->umiQ10), 1, MPI_LONG_LONG, 1, 1, mOptions->communicator,
+                     MPI_STATUS_IGNORE);
+            MPI_Recv(&(resultTmp->mBarcodeProcessor->umiQ20), 1, MPI_LONG_LONG, 1, 1, mOptions->communicator,
+                     MPI_STATUS_IGNORE);
+            MPI_Recv(&(resultTmp->mBarcodeProcessor->umiQ30), 1, MPI_LONG_LONG, 1, 1, mOptions->communicator,
+                     MPI_STATUS_IGNORE);
+            MPI_Recv(&(resultTmp->mBarcodeProcessor->umiQ10FilterReads), 1, MPI_LONG_LONG, 1, 1, mOptions->communicator,
+                     MPI_STATUS_IGNORE);
+            MPI_Recv(&(resultTmp->mBarcodeProcessor->umiNFilterReads), 1, MPI_LONG_LONG, 1, 1, mOptions->communicator,
+                     MPI_STATUS_IGNORE);
+            MPI_Recv(&(resultTmp->mBarcodeProcessor->umiPloyAFilterReads), 1, MPI_LONG_LONG, 1, 1,
+                     mOptions->communicator,
+                     MPI_STATUS_IGNORE);
+            MPI_Recv(&(resultTmp->mBarcodeProcessor->totQuery), 1, MPI_LONG_LONG, 1, 1, mOptions->communicator,
+                     MPI_STATUS_IGNORE);
+            MPI_Recv(&(resultTmp->mBarcodeProcessor->filterQuery), 1, MPI_LONG_LONG, 1, 1, mOptions->communicator,
+                     MPI_STATUS_IGNORE);
+            MPI_Recv(&(resultTmp->mBarcodeProcessor->queryYes), 1, MPI_LONG_LONG, 1, 1, mOptions->communicator,
+                     MPI_STATUS_IGNORE);
 
 //        printf("process 0 get res done\n");
 
@@ -5219,51 +5224,57 @@ bool BarcodeToPositionMulti::process() {
 //        finalResult->print();
 
 //        printf("----------\n");
-        vector<Result *> newResList;
-        newResList.push_back(finalResult);
-        newResList.push_back(resultTmp);
+            vector<Result *> newResList;
+            newResList.push_back(finalResult);
+            newResList.push_back(resultTmp);
 
-        finalResult = Result::merge(newResList);
+            finalResult = Result::merge(newResList);
 
 //        printf("merger done, start print\n");
 
-        finalResult->print();
-        printf("========================================================================\n");
+            finalResult->print();
+            printf("========================================================================\n");
 
-    } else {
+        } else {
 //        printf("process 1 start send data1\n");
 //        printf("p1 sending first data\n");
-        MPI_Send(&(finalResult->mTotalRead), 1, MPI_LONG_LONG, 0, 1, mOptions->communicator);
+            MPI_Send(&(finalResult->mTotalRead), 1, MPI_LONG_LONG, 0, 1, mOptions->communicator);
 //        printf("p1 send done\n");
-        MPI_Send(&(finalResult->mFxiedFilterRead), 1, MPI_LONG_LONG, 0, 1, mOptions->communicator);
-        MPI_Send(&(finalResult->mDupRead), 1, MPI_LONG_LONG, 0, 1, mOptions->communicator);
-        MPI_Send(&(finalResult->mLowQuaRead), 1, MPI_LONG_LONG, 0, 1, mOptions->communicator);
-        MPI_Send(&(finalResult->mWithoutPositionReads), 1, MPI_LONG_LONG, 0, 1, mOptions->communicator);
-        MPI_Send(&(finalResult->overlapReadsWithMis), 1, MPI_LONG_LONG, 0, 1, mOptions->communicator);
-        MPI_Send(&(finalResult->overlapReadsWithN), 1, MPI_LONG_LONG, 0, 1, mOptions->communicator);
+            MPI_Send(&(finalResult->mFxiedFilterRead), 1, MPI_LONG_LONG, 0, 1, mOptions->communicator);
+            MPI_Send(&(finalResult->mDupRead), 1, MPI_LONG_LONG, 0, 1, mOptions->communicator);
+            MPI_Send(&(finalResult->mLowQuaRead), 1, MPI_LONG_LONG, 0, 1, mOptions->communicator);
+            MPI_Send(&(finalResult->mWithoutPositionReads), 1, MPI_LONG_LONG, 0, 1, mOptions->communicator);
+            MPI_Send(&(finalResult->overlapReadsWithMis), 1, MPI_LONG_LONG, 0, 1, mOptions->communicator);
+            MPI_Send(&(finalResult->overlapReadsWithN), 1, MPI_LONG_LONG, 0, 1, mOptions->communicator);
 //        printf("process 1 start send data2\n");
 
-        MPI_Send(&(finalResult->mBarcodeProcessor->totalReads), 1, MPI_LONG_LONG, 0, 1, mOptions->communicator);
-        MPI_Send(&(finalResult->mBarcodeProcessor->mMapToSlideRead), 1, MPI_LONG_LONG, 0, 1, mOptions->communicator);
-        MPI_Send(&(finalResult->mBarcodeProcessor->overlapReads), 1, MPI_LONG_LONG, 0, 1, mOptions->communicator);
-        MPI_Send(&(finalResult->mBarcodeProcessor->overlapReadsWithMis), 1, MPI_LONG_LONG, 0, 1,
-                 mOptions->communicator);
-        MPI_Send(&(finalResult->mBarcodeProcessor->overlapReadsWithN), 1, MPI_LONG_LONG, 0, 1, mOptions->communicator);
-        MPI_Send(&(finalResult->mBarcodeProcessor->barcodeQ10), 1, MPI_LONG_LONG, 0, 1, mOptions->communicator);
-        MPI_Send(&(finalResult->mBarcodeProcessor->barcodeQ20), 1, MPI_LONG_LONG, 0, 1, mOptions->communicator);
-        MPI_Send(&(finalResult->mBarcodeProcessor->barcodeQ30), 1, MPI_LONG_LONG, 0, 1, mOptions->communicator);
-        MPI_Send(&(finalResult->mBarcodeProcessor->umiQ10), 1, MPI_LONG_LONG, 0, 1, mOptions->communicator);
-        MPI_Send(&(finalResult->mBarcodeProcessor->umiQ20), 1, MPI_LONG_LONG, 0, 1, mOptions->communicator);
-        MPI_Send(&(finalResult->mBarcodeProcessor->umiQ30), 1, MPI_LONG_LONG, 0, 1, mOptions->communicator);
-        MPI_Send(&(finalResult->mBarcodeProcessor->umiQ10FilterReads), 1, MPI_LONG_LONG, 0, 1, mOptions->communicator);
-        MPI_Send(&(finalResult->mBarcodeProcessor->umiNFilterReads), 1, MPI_LONG_LONG, 0, 1, mOptions->communicator);
-        MPI_Send(&(finalResult->mBarcodeProcessor->umiPloyAFilterReads), 1, MPI_LONG_LONG, 0, 1,
-                 mOptions->communicator);
-        MPI_Send(&(finalResult->mBarcodeProcessor->totQuery), 1, MPI_LONG_LONG, 0, 1, mOptions->communicator);
-        MPI_Send(&(finalResult->mBarcodeProcessor->filterQuery), 1, MPI_LONG_LONG, 0, 1, mOptions->communicator);
-        MPI_Send(&(finalResult->mBarcodeProcessor->queryYes), 1, MPI_LONG_LONG, 0, 1, mOptions->communicator);
+            MPI_Send(&(finalResult->mBarcodeProcessor->totalReads), 1, MPI_LONG_LONG, 0, 1, mOptions->communicator);
+            MPI_Send(&(finalResult->mBarcodeProcessor->mMapToSlideRead), 1, MPI_LONG_LONG, 0, 1,
+                     mOptions->communicator);
+            MPI_Send(&(finalResult->mBarcodeProcessor->overlapReads), 1, MPI_LONG_LONG, 0, 1, mOptions->communicator);
+            MPI_Send(&(finalResult->mBarcodeProcessor->overlapReadsWithMis), 1, MPI_LONG_LONG, 0, 1,
+                     mOptions->communicator);
+            MPI_Send(&(finalResult->mBarcodeProcessor->overlapReadsWithN), 1, MPI_LONG_LONG, 0, 1,
+                     mOptions->communicator);
+            MPI_Send(&(finalResult->mBarcodeProcessor->barcodeQ10), 1, MPI_LONG_LONG, 0, 1, mOptions->communicator);
+            MPI_Send(&(finalResult->mBarcodeProcessor->barcodeQ20), 1, MPI_LONG_LONG, 0, 1, mOptions->communicator);
+            MPI_Send(&(finalResult->mBarcodeProcessor->barcodeQ30), 1, MPI_LONG_LONG, 0, 1, mOptions->communicator);
+            MPI_Send(&(finalResult->mBarcodeProcessor->umiQ10), 1, MPI_LONG_LONG, 0, 1, mOptions->communicator);
+            MPI_Send(&(finalResult->mBarcodeProcessor->umiQ20), 1, MPI_LONG_LONG, 0, 1, mOptions->communicator);
+            MPI_Send(&(finalResult->mBarcodeProcessor->umiQ30), 1, MPI_LONG_LONG, 0, 1, mOptions->communicator);
+            MPI_Send(&(finalResult->mBarcodeProcessor->umiQ10FilterReads), 1, MPI_LONG_LONG, 0, 1,
+                     mOptions->communicator);
+            MPI_Send(&(finalResult->mBarcodeProcessor->umiNFilterReads), 1, MPI_LONG_LONG, 0, 1,
+                     mOptions->communicator);
+            MPI_Send(&(finalResult->mBarcodeProcessor->umiPloyAFilterReads), 1, MPI_LONG_LONG, 0, 1,
+                     mOptions->communicator);
+            MPI_Send(&(finalResult->mBarcodeProcessor->totQuery), 1, MPI_LONG_LONG, 0, 1, mOptions->communicator);
+            MPI_Send(&(finalResult->mBarcodeProcessor->filterQuery), 1, MPI_LONG_LONG, 0, 1, mOptions->communicator);
+            MPI_Send(&(finalResult->mBarcodeProcessor->queryYes), 1, MPI_LONG_LONG, 0, 1, mOptions->communicator);
 //        printf("process 1 start send data3\n");
 
+
+        }
 
     }
 

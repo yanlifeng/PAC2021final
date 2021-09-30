@@ -50,7 +50,7 @@ public:
 
     int GetDims1() const;
 
-    BloomFilter *GetBloomFilter() const;
+    uint64 *GetBloomFilter() const;
 
 public:
     unordered_map<uint64, Position1> bpmap;
@@ -65,7 +65,8 @@ public:
 
     //***********bloom filter add by ylf************//
 
-    BloomFilter *bloomFilter;
+//    BloomFilter *bloomFilter;
+    uint64 *bloomFilter;
 
     //******************************************//
 

@@ -121,7 +121,7 @@ herr_t ChipMaskHDF5::writeDataSet(std::string chipID, slideRange &sliderange,
 }
 
 
-void ChipMaskHDF5::readDataSet(int &hashNum, int *&hashHead, node *&hashMap, int &dims1, BloomFilter *&bloomFilter,
+void ChipMaskHDF5::readDataSet(int &hashNum, int *&hashHead, node *&hashMap, int &dims1, uint64 *&bloomFilter,
                                int index) {
     herr_t status;
     //open dataset with datasetName
@@ -199,9 +199,11 @@ void ChipMaskHDF5::readDataSet(int &hashNum, int *&hashHead, node *&hashMap, int
 
 
     hashNum = 0;
-    hashHead = new int[mod + 10];
+    printf("modd is %u\n", modd);
+    hashHead = new int[modd];
+    printf("done\n");
 #pragma omp parallel for num_threads(64)
-    for (int i = 0; i < mod; i++) {
+    for (uint32 i = 0; i < modd; i++) {
         hashHead[i] = -1;
     }
     uint64 totSize = 1ll * dims[0] * dims[1] * dims[2];
@@ -209,7 +211,7 @@ void ChipMaskHDF5::readDataSet(int &hashNum, int *&hashHead, node *&hashMap, int
     printf("new hash map cost %.3f\n", HD5GetTime() - t0);
     t0 = HD5GetTime();
 
-    bloomFilter = new BloomFilter();
+    bloomFilter = new uint64[1 << 28];
 
 
 //#pragma omp parallel for num_threads(64)
@@ -225,12 +227,26 @@ void ChipMaskHDF5::readDataSet(int &hashNum, int *&hashHead, node *&hashMap, int
                     if (barcodeInt == 0) {
                         continue;
                     }
+                    //add item to bf
+                    {
+//                        uint32 idx0 = Hash0(barcodeInt);
+////                        uint32 idx1 = Hash1(barcodeInt);
+//                        uint32 idx2 = Hash2(barcodeInt);
+//                        uint32 idx3 = Hash3(barcodeInt);
+//
+//
+//                        bloomFilter[idx0 >> 6] |= 1ll << (idx0 & 0x3F);
+////                        bloomFilter[idx1 >> 6] |= 1ll << (idx1 & 0x3F);
+//                        bloomFilter[idx2 >> 6] |= 1ll << (idx2 & 0x3F);
+//                        bloomFilter[idx3 >> 6] |= 1ll << (idx3 & 0x3F);
+                    }
 
-                    bloomFilter->Set(barcodeInt);
 //                    printf("ready to insert is %lld\n", barcodeInt);
                     //add item to hash map
                     {
-                        int key = barcodeInt % mod;
+//                        int key = barcodeInt % mod;
+//                        uint32 key = Hash0(barcodeInt);
+                        uint32 key = barcodeInt % mod2;
 //                        int key = mol(barcodeInt);
 //                        if (key >= mod)key -= mod;
 
@@ -241,7 +257,7 @@ void ChipMaskHDF5::readDataSet(int &hashNum, int *&hashHead, node *&hashMap, int
 //                        printf("after mod is %d\n", key);
                         int ok = 0;
                         //find item and update postion
-                        for (int i = hashHead[key]; i != -1; i = hashMap[i].pre)
+                        for (uint32 i = hashHead[key]; i != -1; i = hashMap[i].pre)
                             if (hashMap[i].v == barcodeInt) {
 //                                hashMap[i].p1 = position;
 //                                hashMap[i].x = c;
@@ -269,8 +285,17 @@ void ChipMaskHDF5::readDataSet(int &hashNum, int *&hashHead, node *&hashMap, int
                 if (barcodeInt == 0) {
                     continue;
                 }
-                bloomFilter->Set(barcodeInt);
+                //add item to bf
+                {
+                    uint32 idx0 = Hash0(barcodeInt);
+                    uint32 idx1 = Hash1(barcodeInt);
+                    uint32 idx2 = Hash2(barcodeInt);
 
+
+                    bloomFilter[idx0 >> 6] |= 1 << (idx0 & 0x40);
+                    bloomFilter[idx1 >> 6] |= 1 << (idx1 & 0x40);
+                    bloomFilter[idx2 >> 6] |= 1 << (idx2 & 0x40);
+                }
                 //add item to hash map
                 {
                     int key = barcodeInt % mod;

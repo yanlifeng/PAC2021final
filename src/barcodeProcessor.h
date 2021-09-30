@@ -23,7 +23,7 @@ public:
 
     BarcodeProcessor(Options *opt, int mhashNum, int *mhashHead, node *mhashMap);
 
-    BarcodeProcessor(Options *opt, int mhashNum, int *mhashHead, node *mhashMap, BloomFilter *mBloomFilter);
+    BarcodeProcessor(Options *opt, int mhashNum, int *mhashHead, node *mhashMap, uint64 *mBloomFilter);
 
     BarcodeProcessor();
 
@@ -99,7 +99,7 @@ public:
 
 
     //********************bloom filter**********//
-    BloomFilter *bloomFilter;
+    uint64 *bloomFilter;
     //******************************************//
 
 
