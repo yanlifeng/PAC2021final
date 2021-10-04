@@ -32,6 +32,8 @@ public:
 
     void output();
 
+    void output(MPI_Comm communicator);
+
     void output(moodycamel::ReaderWriterQueue<pair<char *, int>> *Q);
 
     void input(char *data, size_t size);

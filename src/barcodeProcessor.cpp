@@ -247,9 +247,7 @@ pair<int, int> BarcodeProcessor::queryMap(uint64 barcodeInt) {
     filterQuery += res;
 
 
-//    int key = barcodeInt % mod;
-//    uint32 key = Hash0(barcodeInt);
-    uint32 key = barcodeInt % mod2;
+    int key = barcodeInt % mod;
 //    int key = mol(barcodeInt);
 //    if (key >= mod)key -= mod;
 
@@ -258,7 +256,7 @@ pair<int, int> BarcodeProcessor::queryMap(uint64 barcodeInt) {
 //        exit(0);
 //    }
 
-    for (uint32 i = hashHead[key]; i != -1; i = hashMap[i].pre) {
+    for (int i = hashHead[key]; i != -1; i = hashMap[i].pre) {
         if (hashMap[i].v == barcodeInt) {
             p = hashMap[i].p;
             ok = 1;

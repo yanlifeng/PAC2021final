@@ -126,6 +126,7 @@ int main(int argc, char *argv[]) {
     opt.numaId = cmd.get<int>("numaId");
 
     opt.myRank = my_rank;
+    opt.numPro = num_procs;
     opt.communicator = MPI_COMM_WORLD;
 
     if (num_procs > 2) {
@@ -145,6 +146,7 @@ int main(int argc, char *argv[]) {
 //    opt.myRank = 0;
 
     printf("numa id is %d\n", opt.numaId);
+    printf("pro num is %d\n", opt.numPro);
 
     if (opt.usePugz) {
         printf("now use pugz, %d threads\n", opt.pugzThread);

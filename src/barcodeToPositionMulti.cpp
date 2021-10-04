@@ -4982,6 +4982,9 @@ BarcodeToPositionMulti::BarcodeToPositionMulti(Options *opt) {
         pigzLast.first = new char[1 << 23];
         pigzLast.second = 0;
     }
+    if (mOptions->numPro > 1) {
+//        mergeQueue = new moodycamel::ReaderWriterQueue<pair<char *, int>>(1 << 20);
+    }
 
     pugz1Done = 0;
     pugz2Done = 0;
@@ -4996,6 +4999,28 @@ BarcodeToPositionMulti::~BarcodeToPositionMulti() {
     //unordered_map<uint64, Position*>().swap(misBarcodeMap);
 }
 
+
+void BarcodeToPositionMulti::mergeWrite() {
+    int endTag = 0;
+    char *tmpData = NULL;
+    long tmpSize = 0;
+    long totSize = 0;
+    while (!endTag) {
+        MPI_Recv(&tmpSize, 1, MPI_LONG_LONG, 1, 0, mOptions->communicator, MPI_STATUS_IGNORE);
+        if (tmpSize == -1) {
+            printf("processor 0 get -1\n");
+            endTag = 1;
+        } else {
+            tmpData = new char[tmpSize + 1];
+            MPI_Recv(tmpData, tmpSize, MPI_CHAR, 1, 0, mOptions->communicator, MPI_STATUS_IGNORE);
+//            printf("processor 0 get data %ld\n", tmpSize);
+            totSize += tmpSize;
+            mWriter->input(tmpData, tmpSize);
+        }
+    }
+    printf("processor merge get %lld data\n", totSize);
+    printf("processor 0 get data done\n");
+}
 
 void BarcodeToPositionMulti::pigzWrite() {
 /*
@@ -5085,10 +5110,8 @@ bool BarcodeToPositionMulti::process() {
     }
 
 
-    printf("consumer thread begin...\n");
+    printf("processor %d consumer thread begin...\n", mOptions->myRank);
 
-
-    printf("new result done\n");
 
     thread **threads = new thread *[mOptions->thread];
     for (int t = 0; t < mOptions->thread; t++) {
@@ -5098,8 +5121,12 @@ bool BarcodeToPositionMulti::process() {
 
     thread *writerThread = NULL;
     thread *unMappedWriterThread = NULL;
+    thread *mergeThread = NULL;
     if (mWriter) {
         writerThread = new thread(bind(&BarcodeToPositionMulti::writeTask, this, mWriter));
+        if (mOptions->myRank == 0) {
+            mergeThread = new thread(bind(&BarcodeToPositionMulti::mergeWrite, this));
+        }
     }
     if (mUnmappedWriter) {
         unMappedWriterThread = new thread(bind(&BarcodeToPositionMulti::writeTask, this, mUnmappedWriter));
@@ -5113,7 +5140,7 @@ bool BarcodeToPositionMulti::process() {
 
     producer.join();
 
-    cout << "producer done" << endl;
+    cout << "processor " << mOptions->myRank << " producer done" << endl;
     if (mOptions->usePugz) {
         pugzer1->join();
         cout << "pugzer1 done" << endl;
@@ -5124,14 +5151,18 @@ bool BarcodeToPositionMulti::process() {
     for (int t = 0; t < mOptions->thread; t++) {
         threads[t]->join();
     }
-    cout << "consumer done" << endl;
-    printf("consumer cost %.4f\n", GetTime() - t00);
+    cout << "processor " << mOptions->myRank << "consumer done" << endl;
+    printf("processor %d consumer cost %.4f\n", mOptions->myRank, GetTime() - t00);
 
     if (writerThread) {
+        if (mOptions->myRank == 0) {
+            mergeThread->join();
+            printf("mergeThread done\n");
+        }
         writerThread->join();
         writerDone = 1;
-        printf("writer done\n");
-        printf("writer cost %.4f\n", GetTime() - t00);
+        printf("processor %d writer done\n", mOptions->myRank);
+        printf("processor %d writer cost %.4f\n", mOptions->myRank, GetTime() - t00);
         if (mOptions->usePigz) {
             pigzThread->join();
             printf("pigz done\n");
@@ -5156,6 +5187,7 @@ bool BarcodeToPositionMulti::process() {
 
     if (mOptions->numaId == 3) {
         finalResult->print();
+        printf("format cost %f\n", finalResult->GetCostFormat());
     } else {
         printf("watind barrier\n");
         MPI_Barrier(mOptions->communicator);
@@ -5679,14 +5711,30 @@ void BarcodeToPositionMulti::writeTask(WriterThread *config) {
             config->output(pigzQueue);
         }
     } else {
-        while (true) {
-            //loginfo("writeTask running: " + config->getFilename());
-            if (config->isCompleted()) {
+        if (mOptions->myRank == 0) {
+            while (true) {
+                //loginfo("writeTask running: " + config->getFilename());
+                if (config->isCompleted()) {
+                    config->output();
+                    break;
+                }
                 config->output();
-                break;
             }
-            config->output();
+        } else {
+            while (true) {
+                //loginfo("writeTask running: " + config->getFilename());
+                if (config->isCompleted()) {
+                    config->output(mOptions->communicator);
+                    break;
+                }
+                config->output(mOptions->communicator);
+            }
+            long tag = -1;
+            printf("processor 1 send data done, now send -1\n");
+            MPI_Send(&(tag), 1, MPI_LONG_LONG, 0, 0, mOptions->communicator);
+            printf("processor 1 send -1 done\n");
         }
+
     }
 
     if (mOptions->verbose) {

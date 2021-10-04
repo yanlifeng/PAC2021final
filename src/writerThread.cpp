@@ -44,6 +44,24 @@ void WriterThread::output() {
     }
 }
 
+void WriterThread::output(MPI_Comm communicator) {
+    if (mOutputCounter >= mInputCounter) {
+        usleep(100);
+    }
+    while (mOutputCounter < mInputCounter) {
+//        printf("processor 1 send data %ld\n", mRingBufferSizes[mOutputCounter]);
+
+        long tmpSize = mRingBufferSizes[mOutputCounter];
+        MPI_Send(&(tmpSize), 1, MPI_LONG_LONG, 0, 0, communicator);
+        MPI_Send(mRingBuffer[mOutputCounter], tmpSize, MPI_CHAR, 0, 0, communicator);
+
+        delete mRingBuffer[mOutputCounter];
+        mRingBuffer[mOutputCounter] = NULL;
+        mOutputCounter++;
+        //cout << "Writer thread: " <<  mFilename <<  " mOutputCounter: " << mOutputCounter << " mInputCounter: " << mInputCounter << endl;
+    }
+}
+
 void WriterThread::output(moodycamel::ReaderWriterQueue<pair<char *, int>> *Q) {
     if (mOutputCounter >= mInputCounter) {
         usleep(100);

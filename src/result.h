@@ -52,6 +52,9 @@ public:
     Writer *mWriter;
     BarcodeProcessor *mBarcodeProcessor;
     int mThreadId;
+
+    double GetCostFormat() const;
+
     double costFormat;
 
 };

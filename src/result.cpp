@@ -32,6 +32,7 @@ Result *Result::merge(vector<Result *> &list) {
     result->setBarcodeProcessor();
 
     for (int i = 0; i < list.size(); i++) {
+        result->costFormat = max(result->costFormat, list[i]->costFormat);
         result->mTotalRead += list[i]->mTotalRead;
         result->mFxiedFilterRead += list[i]->mFxiedFilterRead;
         result->mWithoutPositionReads += list[i]->mWithoutPositionReads;
@@ -153,6 +154,10 @@ void Result::setBarcodeProcessor(int headNum, int *hashHead, node *hashMap, uint
 
 void Result::setBarcodeProcessor() {
     mBarcodeProcessor = new BarcodeProcessor();
+}
+
+double Result::GetCostFormat() const {
+    return costFormat;
 }
 
 

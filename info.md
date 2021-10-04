@@ -23,6 +23,12 @@ TODOs
 - [ ] change queue1 to dataPool to decrease new and delete operations
 - [ ] fix pigzWrite bug
 - [ ] mod all barcode to 1e9, use it dirctely, cal time
+- [ ] test G‘s map
+- [ ] test 0 3 6 9
+- [x] merge mip write part
+- [ ] check👆
+- [x] add bloom filter
+- [ ] 
 
 ## 0908
 
@@ -656,5 +662,85 @@ total_query_cnt:	156377424777
 after_filter_query_cnt:	2431340523
 find_query_cnt:	145470356
 
+new wang hash
+total_query_cnt:	156377424777
+after_filter_query_cnt:	917789027
+find_query_cnt:	145470356
+
 ```
 
+## 0930
+
+好啊，今天必须要出点活了，现在的情况是简单试了bloomfilter，确实能把99%的查询的筛掉，但是用了三个hash函数，并且是stl的bitset作为数据结构可能都不太高效，准备替换成手写试试。
+
+此外，为了更好的评价每个版本的性能指标，需要对各个模块计时，目前的策略是把原来逻辑里面的break都干掉，然后通过注释bloomfilter的代码来评价时间。
+
+好啊，现在把misoverlap部分的break注释，测测时间和查询次数：
+
+```
+no misoverlap break
+total_query_cnt:        157473409122
+after_filter_query_cnt: 1010068985
+find_query_cnt: 233394250
+
+
+```
+
+这样测没啥用啊感觉，主要还是测bf占多少时间，改改策略，一个版本不做bf，另一个做bf但是不用他的结果。
+
+```
+做bf：
+42+197
+
+
+不做bf：
+41+78
+
+```
+
+
+
+好啊，现在手写一个bloomfilter，用uint64*来作为数据结构存储，因为很多hash函数都是uint64        -> uint32之类的，所以存储的话bit数大约是1<<32，也就是1<<26这么大的uint64数组，然后查询key的时候要对应转化为。。。
+
+试过了没啥用。
+
+确实能过滤很多很多，但是并没有快，甚至慢了10s（110--120）
+
+然后试了试把原来的hashmap换一种hash方式，没啥用；试了试直接把hash数组开大4倍，没啥用。
+
+然后试试二级索引、内存小一点的bf、挑0，3，6，9。。。位做筛选、
+
+## 1003
+
+01 02放假摸鱼。
+
+垂死病中惊坐起，没有用最新的rabbitio，用的是rabbitqc中的，果然自己挖的坑。。。。
+
+|                  | getmap | tot  | tot-getmap |
+| ---------------- | ------ | ---- | ---------- |
+| no process，32*2 | 28     | 45   | 17         |
+| no process，64*1 | 28     | 61   | 33         |
+| no process，32*1 | 28     | 67   | 39         |
+| ReRabbitQC，48   | /      |      | 31         |
+| RabbitQC，48     |        |      | 31         |
+| no process，32*2 | 21     | 64   | 42         |
+
+嘶，测了测感觉多的拷贝也没啥影响啊。先写写mpi合并输出的版本吧。
+
+## 1004
+
+👆说的版本，改之前时间大约24/28-111、25/28-109
+
+改之后size不太对emmm，时间大约25/28-116、25/28-118、24/27-118
+
+淦，他size又对了？？上午上课的时候痴呆了？还是错误浮现不出来了？
+
+//TODO//TODO//TODO//TODO//TODO
+
+用rabbitqc看一看输出的结果，
+
+STD：<img src="/Users/ylf9811/Library/Application Support/typora-user-images/image-20211004190937957.png" alt="image-20211004190937957" style="zoom:50%;" />
+
+now：<img src="/Users/ylf9811/Library/Application Support/typora-user-images/image-20211004191001061.png" alt="image-20211004191001061" style="zoom:50%;" />
+
+好像真的复现不出来了。。。。。

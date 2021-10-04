@@ -82,6 +82,8 @@ private:
 
     void pigzWrite();
 
+    void mergeWrite();
+
 public:
     Options *mOptions;
     BarcodePositionMap *mbpmap;
@@ -91,6 +93,8 @@ public:
     moodycamel::ReaderWriterQueue<std::pair<char *, int>> *pugzQueue2;
 
     moodycamel::ReaderWriterQueue<std::pair<char *, int>> *pigzQueue;
+//    moodycamel::ReaderWriterQueue<std::pair<char *, int>> *mergeQueue;
+
 
     pair<char *, int> pigzLast;
 

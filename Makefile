@@ -41,11 +41,11 @@ ifeq ($(print_debug_decoding),1)
 endif
 
 
-CXX = mpicc
+CXX = g++
 CXXFLAGS := -std=c++11 -g -O3 -w -I${DIR_INC} -mssse3 -I./ -I./common $(foreach includedir,$(INCLUDE_DIRS),-I$(includedir)) ${CXXFLAGS} \
 $(call cc-option,-flto=jobserver,-flto) -march=native -mtune=native
 
-CXX2 = mpicc
+CXX2 = gcc
 CXXFLAGS2 := -O3 -w -Wall -Wextra -Wno-unknown-pragmas -Wcast-qual
 
 LIBS := -lz -lpthread -lhdf5 -lboost_serialization -fopenmp -lrt
@@ -60,6 +60,7 @@ ${BIN_TARGET}:${OBJ}
 
 ${DIR_OBJ}/%.o:${DIR_SRC}/%.cpp
 	$(CXX) -c $< -o $@ $(CXXFLAGS)
+
 
 ${DIR_OBJ}/%.o:${DIR_SRC}/%.c
 	$(CXX2) $(CXXFLAGS2) -c $< -o $@

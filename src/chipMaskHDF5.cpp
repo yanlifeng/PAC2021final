@@ -199,11 +199,9 @@ void ChipMaskHDF5::readDataSet(int &hashNum, int *&hashHead, node *&hashMap, int
 
 
     hashNum = 0;
-    printf("modd is %u\n", modd);
-    hashHead = new int[modd];
-    printf("done\n");
+    hashHead = new int[mod + 10];
 #pragma omp parallel for num_threads(64)
-    for (uint32 i = 0; i < modd; i++) {
+    for (int i = 0; i < mod; i++) {
         hashHead[i] = -1;
     }
     uint64 totSize = 1ll * dims[0] * dims[1] * dims[2];
@@ -244,9 +242,7 @@ void ChipMaskHDF5::readDataSet(int &hashNum, int *&hashHead, node *&hashMap, int
 //                    printf("ready to insert is %lld\n", barcodeInt);
                     //add item to hash map
                     {
-//                        int key = barcodeInt % mod;
-//                        uint32 key = Hash0(barcodeInt);
-                        uint32 key = barcodeInt % mod2;
+                        int key = barcodeInt % mod;
 //                        int key = mol(barcodeInt);
 //                        if (key >= mod)key -= mod;
 
@@ -257,7 +253,7 @@ void ChipMaskHDF5::readDataSet(int &hashNum, int *&hashHead, node *&hashMap, int
 //                        printf("after mod is %d\n", key);
                         int ok = 0;
                         //find item and update postion
-                        for (uint32 i = hashHead[key]; i != -1; i = hashMap[i].pre)
+                        for (int i = hashHead[key]; i != -1; i = hashMap[i].pre)
                             if (hashMap[i].v == barcodeInt) {
 //                                hashMap[i].p1 = position;
 //                                hashMap[i].x = c;

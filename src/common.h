@@ -68,10 +68,6 @@ static const int EST_DNB_DISTANCE = 1;
 //static const int mod = 1000000007;
 //static const int mod = 73939133;
 static const int mod = 1073807359;
-
-static const uint32 modd = 0xffffffff;
-
-static const uint32 mod2 = 4284954097ll;
 //static const int mod = 2000000011;
 
 static const i128 oneI = 1;
@@ -156,7 +152,7 @@ typedef struct Position1 {
 
 
 typedef struct node {
-    uint32 pre;
+    int pre;
     uint64 v;
     int32 p;
 } node;

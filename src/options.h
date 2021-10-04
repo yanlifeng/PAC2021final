@@ -164,6 +164,9 @@ public:
     //mpi id
     int myRank;
 
+    //mpi process
+    int numPro;
+
     //test
     MPI_Comm communicator;
 
