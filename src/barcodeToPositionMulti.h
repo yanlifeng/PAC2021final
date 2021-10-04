@@ -75,6 +75,7 @@ public:
     atomic<long long> consumerTime;
     Options *mOptions;
     BarcodePositionMap *mbpmap;
+
     FixedFilter *fixedFilter;
     //unordered_map<uint64, Position*> misBarcodeMap;
 

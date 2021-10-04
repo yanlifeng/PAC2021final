@@ -7,6 +7,7 @@
 #include "robin_hood.h"
 #include "common.h"
 #include "util.h"
+#include "BloomFilter.h"
 #include <atomic>
 #include <thread>
 
@@ -36,6 +37,8 @@ public:
     void readDataSetHashVector(vector<bpmap_vector_value> **&bpmap_hash_vector, Position1 *& position_index, int index = 1);
     void readDataSetHashList(int *&bpmap_head, int *&bpmap_nxt, uint64 *&bpmap_key, int *&bpmap_value,Position1 *& position_index, int index = 1);
     void readDataSetHashListOrder(int *&bpmap_head, int *&bpmap_len, uint64 *&bpmap_key, int *&bpmap_value,Position1 *& position_index, int index = 1);
+    void readDataSetHashListNoIndex(int *&bpmap_head, int *&bpmap_nxt, uint64 *&bpmap_key,Position1 *& position_index, int index = 1);
+    void readDataSetHashListNoIndexWithBloomFilter(int *&bpmap_head, int *&bpmap_nxt, uint64 *&bpmap_key,Position1 *& position_index, BloomFilter* &bloomFilter,int index = 1);
 public:
     std::string fileName;
     hid_t fileID;

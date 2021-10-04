@@ -38,7 +38,7 @@ void WriterThread::output() {
 		usleep(100);
 	}
 	while (mOutputCounter < mInputCounter) {
-//		mWriter1->write(mRingBuffer[mOutputCounter], mRingBufferSizes[mOutputCounter]);
+		mWriter1->write(mRingBuffer[mOutputCounter], mRingBufferSizes[mOutputCounter]);
 		delete mRingBuffer[mOutputCounter];
 		mRingBuffer[mOutputCounter] = NULL;
 		mOutputCounter++;

@@ -49,7 +49,10 @@ bool BarcodeToPositionMulti::process() {
 //        results[t]->setBarcodeProcessorSegment(mbpmap->getBpmapSegment());
 //        results[t]->setBarcodeProcessorHash(mbpmap->getBpmaphash() );
 //        results[t]->setBarcodeProcessorHashIndex(mbpmap->getBpmapHashIndex(),mbpmap->getPosition());
-        results[t]->setBarcodeProcessorHashTable(mbpmap->getHead(),mbpmap->getNext(),mbpmap->getKey(),mbpmap->getValue(),mbpmap->getPosition());
+//        results[t]->setBarcodeProcessorHashTable(mbpmap->getHead(),mbpmap->getNext(),mbpmap->getKey(),mbpmap->getValue(),mbpmap->getPosition());
+//        results[t]->setBarcodeProcessorHashTableOrder(mbpmap->getHead(),mbpmap->getLen(),mbpmap->getKey(),mbpmap->getValue(),mbpmap->getPosition(),true);
+//        results[t]->setBarcodeProcessorHashTableNoIndex(mbpmap->getHead(),mbpmap->getNext(),mbpmap->getKey(),mbpmap->getPosition());
+        results[t]->setBarcodeProcessorHashTableNoIndexWithBloomFilter(mbpmap->getHead(),mbpmap->getNext(),mbpmap->getKey(),mbpmap->getPosition(),mbpmap->getBloomFilter());
     }
 
     std::thread **threads = new thread *[mOptions->thread];
@@ -149,8 +152,10 @@ bool BarcodeToPositionMulti::processPairEnd(ReadPairPack *pack, Result *result) 
 
     string outstr;
     string unmappedOut;
+
     bool hasPosition;
     bool fixedFiltered;
+
     for (int p = 0; p < pack->count; p++) {
         result->mTotalRead++;
         ReadPair *pair = pack->data[p];
@@ -164,6 +169,7 @@ bool BarcodeToPositionMulti::processPairEnd(ReadPairPack *pack, Result *result) 
             }
         }
         hasPosition = result->mBarcodeProcessor->process(or1, or2);
+//        hasPosition = 1;
         if (hasPosition) {
             outstr += or2->toString();
         } else if (mUnmappedWriter) {
@@ -173,6 +179,7 @@ bool BarcodeToPositionMulti::processPairEnd(ReadPairPack *pack, Result *result) 
     }
 
     TEND(MAP)
+
     long long now_time = (long long)TINT(MAP);
 
     consumerTime+=now_time;

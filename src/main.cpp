@@ -138,7 +138,7 @@ int main(int argc, char *argv[]) {
              *  嵌套 MAP 优化枚举方式              9000 sec
              *  HashTab 嵌套 MAP                 7300 sec
              *  HashTab 嵌套 MAP Position单存     6450 sec
-             *  HashTab Postion单存
+             *  HashTab Postion 不单存
              *  单独HashTab                      5600 sec
              *
              */
@@ -151,7 +151,7 @@ int main(int argc, char *argv[]) {
              */
             cerr << "new cost " << MainGetTime() - t_t0 << endl;
             t_t0 = MainGetTime();
-//            barcodeToPosMulti.process();
+            barcodeToPosMulti.process();
             cerr << "process cost " << MainGetTime() - t_t0 << endl;
         }
     } else if (opt.actionInt == 2) {

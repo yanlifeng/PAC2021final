@@ -160,6 +160,18 @@ void Result::setBarcodeProcessorHashTable(int* bpmap_head, int* bpmap_nxt,uint64
     mBarcodeProcessor = new BarcodeProcessor(mOptions,bpmap_head,bpmap_nxt,bpmap_key,bpmap_value,position_index);
 }
 
+void Result::setBarcodeProcessorHashTableOrder(int* bpmap_head, int* bpmap_len,uint64* bpmap_key,int* bpmap_value,Position1* position_index,bool ordered){
+    mBarcodeProcessor = new BarcodeProcessor(mOptions,bpmap_head,bpmap_len,bpmap_key,bpmap_value,position_index,ordered);
+}
+
+void Result::setBarcodeProcessorHashTableNoIndex(int* bpmap_head, int* bpmap_nxt,uint64* bpmap_key,Position1* position_index){
+    mBarcodeProcessor = new BarcodeProcessor(mOptions,bpmap_head,bpmap_nxt,bpmap_key,position_index);
+}
+
+void Result::setBarcodeProcessorHashTableNoIndexWithBloomFilter(int* bpmap_head, int* bpmap_nxt,uint64* bpmap_key,Position1* position_index,BloomFilter* bloomFilter){
+    mBarcodeProcessor = new BarcodeProcessor(mOptions,bpmap_head,bpmap_nxt,bpmap_key,position_index,bloomFilter);
+}
+
 void Result::setBarcodeProcessor() {
     mBarcodeProcessor = new BarcodeProcessor();
 }

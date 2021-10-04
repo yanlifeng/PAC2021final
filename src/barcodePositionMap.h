@@ -8,6 +8,7 @@
 #include "util.h"
 #include "options.h"
 #include "chipMaskHDF5.h"
+#include "BloomFilter.h"
 #include <unordered_map>
 #include <iomanip>
 #include <set>
@@ -15,6 +16,7 @@
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/serialization/string.hpp>
 #include <boost/serialization/unordered_map.hpp>
+
 
 using namespace std;
 
@@ -32,15 +34,17 @@ public:
 	long getBarcodeTypes();
 	void dumpbpmap(string& mapOutFile);
 	void loadbpmap();
-	robin_hood::unordered_map<uint64, Position1>* getBpmap() { return &bpmap; };
-    robin_hood::unordered_map<uint32, bpmap_segment_value>* getBpmapsegment() {return &bpmap_segment;};
-    robin_hood::unordered_map<uint64, Position1>** getBpmaphash() {return bpmap_hash;};
+	robin_hood::unordered_map<uint64, Position1>* getBpmap() { return &bpmap; }
+    robin_hood::unordered_map<uint32, bpmap_segment_value>* getBpmapsegment() {return &bpmap_segment;}
+    robin_hood::unordered_map<uint64, Position1>** getBpmaphash() {return bpmap_hash;}
     robin_hood::unordered_map<uint32, uint32>**  getBpmapHashIndex() {return bpmap_hash_index;}
     Position1*                                   getPosition() {return position_index;}
     int*                                         getHead(){return bpmap_head;}
     int*                                         getNext(){return bpmap_nxt;}
     uint64*                                      getKey() {return bpmap_key;}
     int*                                         getValue(){return bpmap_value;}
+    int*                                         getLen(){return bpmap_len;}
+    BloomFilter*                                 getBloomFilter(){return bloomFilter;}
 
 
 public:
@@ -81,6 +85,12 @@ public:
     int *bpmap_len;
 
     Position1* position_index;
+
+
+    /*
+     * 筛选专区
+     */
+    BloomFilter* bloomFilter;
 
 
     Options* mOptions;
