@@ -16,15 +16,15 @@ bool BloomFilter::push(uint64 key){
 
 bool BloomFilter::push_mod(uint64 key) {
     uint32 mapkey = key%Bloom_MOD;
-    hashtable[mapkey>>64] = hashtable[mapkey>>64]|((uint64)1<<(mapkey&0xffffff));
+    hashtable[mapkey>>5] = hashtable[mapkey>>5]|((uint64)1<<(mapkey&0x1f));
 }
 
 bool BloomFilter::get(uint64 key){
     bool fg = true;
-    fg &= get_mod(key);
+    fg = fg&&get_mod(key);
     return fg;
 }
 bool BloomFilter::get_mod(uint64 key) {
     uint32 mapkey = key%Bloom_MOD;
-    return  hashtable[mapkey>>64]&((uint64)1<<(mapkey&0xffffff));
+    return  (hashtable[mapkey>>5]&((uint64)1<<(mapkey&0x1f)))!=0;
 }

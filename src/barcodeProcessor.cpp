@@ -1311,7 +1311,9 @@ int BarcodeProcessor::getMisOverlapHashTableNoIndexWithBloomFiler(uint64 barcode
         while (misMaskIndex < misMaskLens[mis]) {
             misBarcodeInt = barcodeInt ^ misMask[misMaskIndex];
             misMaskIndex++;
+//            cerr << "enen yinggai chulai ba " << endl;
             if (!bloomFilter->get(misBarcodeInt)){
+//                cerr << "Bloom Filter Got it" << endl;
                 continue;
             }
             uint32 mapKey = misBarcodeInt%MOD;
