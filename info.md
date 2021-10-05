@@ -23,7 +23,7 @@ TODOs
 - [ ] change queue1 to dataPool to decrease new and delete operations
 - [ ] fix pigzWrite bug
 - [ ] mod all barcode to 1e9, use it dirctely, cal time
-- [ ] test G‘s map
+- [x] test G‘s map
 - [ ] test 0 3 6 9
 - [x] merge mip write part
 - [ ] check👆
@@ -744,3 +744,273 @@ STD：<img src="/Users/ylf9811/Library/Application Support/typora-user-images/im
 now：<img src="/Users/ylf9811/Library/Application Support/typora-user-images/image-20211004191001061.png" alt="image-20211004191001061" style="zoom:50%;" />
 
 好像真的复现不出来了。。。。。
+
+暂时先把重点放在bf上吧。
+
+一个numa节点：28-177、28-179、
+
+in and out in shm、one numa node：28-170
+
+老甘给的链接里有好几个map，简单写个测试性能的玩意：
+
+```
+
+#include <iostream>
+#include <sparsehash/dense_hash_map>
+#include <cstring>
+#include <algorithm>
+#include <sys/time.h>
+#include <vector>
+#include <random>
+#include <unordered_map>
+
+#define mm long long
+//#define mm int
+
+using google::dense_hash_map;      // namespace where class lives by default
+using std::cout;
+using std::endl;
+using std::tr1::hash;  // or __gnu_cxx::hash, or maybe tr1::hash, depending on your OS
+static const int mod = 1073807359;
+
+
+double MainGetTime() {
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    return (double) tv.tv_sec + (double) tv.tv_usec / 1000000;
+}
+
+typedef struct node {
+    int pre;
+    mm v;
+    int pos;
+} node;
+
+
+int main() {
+    double t0 = MainGetTime();
+
+
+    std::random_device rd;
+    std::mt19937_64 gen(rd());
+
+    std::uniform_int_distribution<mm> dis;
+
+
+    std::vector<mm> G;
+    std::vector<mm> P;
+    int id;
+    int cnt;
+    int M = 2e8;
+    int N = 1e9;
+
+    for (int i = 0; i < M; i++) {
+        G.push_back(dis(gen));
+    }
+    for (int i = 0; i < N; i++) {
+        P.push_back(dis(gen));
+    }
+    printf("init cost %lf\n", MainGetTime() - t0);
+
+
+    t0 = MainGetTime();
+    dense_hash_map<mm, int> mps;
+
+    mps.set_empty_key(NULL);
+    id = 0;
+    for (auto it:G) {
+        id++;
+        mps[it] = id;
+    }
+    printf("dense_hash_map insert cost %lf\n", MainGetTime() - t0);
+
+    t0 = MainGetTime();
+    cnt = 0;
+    for (auto it:P) {
+        if (mps.count(it))cnt++;
+    }
+    printf("dense_hash_map find %d\n", cnt);
+    printf("dense_hash_map find cost %lf\n", MainGetTime() - t0);
+
+
+    t0 = MainGetTime();
+    id = 0;
+
+    int *hashHead = new int[mod + 10];
+    for (int i = 0; i < mod; i++)hashHead[i] = -1;
+    node *hashMap = new node[M + 10];
+    int hashNum = 0;
+    for (auto it:G) {
+        id++;
+        int key = it % mod;
+        int ok = 0;
+        for (int i = hashHead[key]; i != -1; i = hashMap[i].pre)
+            if (hashMap[i].v == it) {
+                hashMap[i].pos = id;
+                ok = 1;
+                break;
+            }
+        if (ok == 0) {
+            hashMap[hashNum].v = it;
+            hashMap[hashNum].pos = id;
+            hashMap[hashNum].pre = hashHead[key];
+            hashHead[key] = hashNum;
+            hashNum++;
+        }
+    }
+    printf("gogo insert cost %lf\n", MainGetTime() - t0);
+    t0 = MainGetTime();
+    cnt = 0;
+    for (auto it:P) {
+        int ok = 0;
+        int pos = -1;
+        int key = it % mod;
+        for (int i = hashHead[key]; i != -1; i = hashMap[i].pre) {
+            if (hashMap[i].v == it) {
+                pos = hashMap[i].pos;
+                ok = 1;
+                break;
+            }
+        }
+        if (ok)cnt++;
+    }
+    printf("gogo find %d\n", cnt);
+    printf("gogo find cost %lf\n", MainGetTime() - t0);
+
+    t0 = MainGetTime();
+    std::unordered_map<mm, int> mp2s;
+    id = 0;
+    for (auto it:G) {
+        id++;
+        mp2s[it] = id;
+    }
+    printf("stl unordered_map insert cost %lf\n", MainGetTime() - t0);
+
+
+    t0 = MainGetTime();
+    cnt = 0;
+    for (auto it:P) {
+        if (mp2s.count(it))cnt++;
+    }
+    printf("stl unordered_map find %d\n", cnt);
+    printf("stl unordered_map find cost %lf\n", MainGetTime() - t0);
+
+}
+
+M=2e8 N=1e9 thread=1
+
+[PAC20217111@compute003 ylf]$ ./hashTest
+init cost 27.841362
+dense_hash_map insert cost 18.319946
+dense_hash_map find 166
+dense_hash_map find cost 30.111485
+gogo insert cost 7.738144
+gogo find 166
+gogo find cost 25.507501
+stl unordered_map insert cost 70.406113
+stl unordered_map find 166
+stl unordered_map find cost 55.771334
+
+👆 use find not count
+[PAC20217111@compute003 ylf]$ ./hashTest
+init cost 28.364878
+dense_hash_map insert cost 15.537160
+dense_hash_map find 174
+dense_hash_map find cost 37.527437
+sparse_hash_map insert cost 116.459556
+sparse_hash_map find 174
+sparse_hash_map find cost 175.995829
+gogo insert cost 7.135087
+gogo find 174
+gogo find cost 24.261454
+stl unordered_map insert cost 73.188713
+stl unordered_map find 174
+stl unordered_map find cost 61.126728
+
+
+M=6e7 N=1e9 thread=1
+[PAC20217111@compute003 ylf]$ ./hashTest
+init cost 22.414524
+dense_hash_map insert cost 4.985887
+dense_hash_map find 55
+dense_hash_map find cost 34.944564
+sparse_hash_map insert cost 34.306814
+sparse_hash_map find 55
+sparse_hash_map find cost 53.169762
+gogo insert cost 2.976034
+gogo find 55
+gogo find cost 21.728029
+stl unordered_map insert cost 18.886106
+stl unordered_map find 55
+stl unordered_map find cost 63.939711
+
+[PAC20217111@compute003 ylf]$ time ./hashTest
+init cost 24.635170
+google::dense_hash_map insert cost 4.901080
+google::dense_hash_map find 63
+google::dense_hash_map find cost 35.008083
+google::sparse_hash_map insert cost 33.590294
+google::sparse_hash_map find 63
+google::sparse_hash_map find cost 51.789670
+spp::sparse_hash_map insert cost 17.595097
+spp::sparse_hash_map find 63
+spp::sparse_hash_map find cost 43.207952
+gogo insert cost 2.930788
+gogo find 63
+gogo find cost 21.738789
+stl unordered_map insert cost 20.002673
+stl unordered_map find 63
+stl unordered_map find cost 64.700771
+
+
+M=2e8 N=1e9 thread=32
+
+[PAC20217111@compute003 ylf]$ ./hashTest
+init cost 26.854261
+dense_hash_map insert cost 18.031583
+dense_hash_map find 182
+dense_hash_map find cost 2.938416
+gogo insert cost 7.980589
+gogo find 182
+gogo find cost 2.200198
+stl unordered_map insert cost 69.550551
+stl unordered_map find 182
+stl unordered_map find cost 3.741968
+
+
+M=2e8 N=1e10 thread=32
+[PAC20217111@compute003 ylf]$ ./hashTest
+init cost 319.879172
+dense_hash_map insert cost 23.582168
+dense_hash_map find 1639
+dense_hash_map find cost 18.351356
+gogo insert cost 7.843452
+gogo find 1639
+gogo find cost 14.136651
+stl unordered_map insert cost 82.213892
+stl unordered_map find 1639
+stl unordered_map find cost 29.233407
+
+
+M=2e8 N=1e9 thread=32
+[PAC20217111@compute003 ylf]$ ./hashTest
+init cost 7.282487
+dense_hash_map insert cost 11.859019
+dense_hash_map find 95475949
+dense_hash_map find cost 2.299639
+sparse_hash_map insert cost 74.191624
+sparse_hash_map find 95475949
+sparse_hash_map find cost 6.081009
+gogo insert cost 4.767718
+gogo find 95475949
+gogo find cost 1.383346
+stl unordered_map insert cost 68.503956
+stl unordered_map find 95475949
+stl unordered_map find cost 3.647662
+
+```
+
+## 1005
+
+嘶，没啥用哎，感觉手写的hashmap应该就是最快的了，
+
