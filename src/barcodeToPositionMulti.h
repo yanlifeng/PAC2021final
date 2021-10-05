@@ -106,6 +106,8 @@ public:
 
     std::atomic_int writerDone;
 
+    std::atomic_int mergeDone;
+
     //unordered_map<uint64, Position*> misBarcodeMap;
 
 private:

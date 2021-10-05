@@ -4990,6 +4990,9 @@ BarcodeToPositionMulti::BarcodeToPositionMulti(Options *opt) {
     pugz2Done = 0;
     producerDone = 0;
     writerDone = 0;
+    mergeDone = 0;
+    if (mOptions->numPro == 1)mergeDone = 1;
+    printf("mergeDone %d\n", mergeDone);
 }
 
 BarcodeToPositionMulti::~BarcodeToPositionMulti() {
@@ -5124,7 +5127,7 @@ bool BarcodeToPositionMulti::process() {
     thread *mergeThread = NULL;
     if (mWriter) {
         writerThread = new thread(bind(&BarcodeToPositionMulti::writeTask, this, mWriter));
-        if (mOptions->myRank == 0) {
+        if (mOptions->numPro > 1 && mOptions->myRank == 0) {
             mergeThread = new thread(bind(&BarcodeToPositionMulti::mergeWrite, this));
         }
     }
@@ -5155,9 +5158,10 @@ bool BarcodeToPositionMulti::process() {
     printf("processor %d consumer cost %.4f\n", mOptions->myRank, GetTime() - t00);
 
     if (writerThread) {
-        if (mOptions->myRank == 0) {
+        if (mOptions->numPro > 1 && mOptions->myRank == 0) {
             mergeThread->join();
             printf("mergeThread done\n");
+            mergeDone = 1;
         }
         writerThread->join();
         writerDone = 1;
@@ -5686,6 +5690,7 @@ void BarcodeToPositionMulti::consumerTask(Result *result) {
         }
     }
 
+
     if (mFinishedThreads == mOptions->thread) {
         if (mWriter)
             mWriter->setInputCompleted();
@@ -5714,13 +5719,16 @@ void BarcodeToPositionMulti::writeTask(WriterThread *config) {
         if (mOptions->myRank == 0) {
             while (true) {
                 //loginfo("writeTask running: " + config->getFilename());
-                if (config->isCompleted()) {
+
+                if (config->isCompleted() && mergeDone) {
                     config->output();
                     break;
                 }
                 config->output();
             }
         } else {
+            //processor 0 done != all done
+
             while (true) {
                 //loginfo("writeTask running: " + config->getFilename());
                 if (config->isCompleted()) {
