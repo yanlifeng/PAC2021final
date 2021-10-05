@@ -217,15 +217,15 @@ pair<int, int> BarcodeProcessor::queryMap(uint64 barcodeInt) {
 //    printf("bloom query %lld\n", barcodeInt);
 
 //    uint32 idx0 = Hash0(barcodeInt);
-////    uint32 idx1 = Hash1(barcodeInt);
+//    uint32 idx1 = Hash1(barcodeInt);
 //    uint32 idx2 = Hash2(barcodeInt);
-//    uint32 idx3 = Hash3(barcodeInt);
-
+    uint32 idx3 = Hash3(barcodeInt);
+//
     int res = 0;
-//    if ((bloomFilter[idx0 >> 6] & (1ll << (idx0 & 0x3F))) && (bloomFilter[idx1 >> 6] & (1ll << (idx1 & 0x3F))) &&
-//        (bloomFilter[idx2 >> 6] & (1ll << (idx2 & 0x3F)))) {
-//        res = 1;
-//    }
+////    if ((bloomFilter[idx0 >> 6] & (1ll << (idx0 & 0x3F))) && (bloomFilter[idx1 >> 6] & (1ll << (idx1 & 0x3F))) &&
+////        (bloomFilter[idx2 >> 6] & (1ll << (idx2 & 0x3F)))) {
+////        res = 1;
+////    }
 //    if ((bloomFilter[idx0 >> 6] & (1ll << (idx0 & 0x3F))) && (bloomFilter[idx3 >> 6] & (1ll << (idx3 & 0x3F))) &&
 //        (bloomFilter[idx2 >> 6] & (1ll << (idx2 & 0x3F)))) {
 //        res = 1;
@@ -234,6 +234,9 @@ pair<int, int> BarcodeProcessor::queryMap(uint64 barcodeInt) {
 //    if ((bloomFilter[idx0 >> 6] & (1ll << (idx0 & 0x3F))) && (bloomFilter[idx3 >> 6] & (1ll << (idx3 & 0x3F)))) {
 //        res = 1;
 //    }
+    if ((bloomFilter[idx3 >> 6] & (1ll << (idx3 & 0x3F)))) {
+        res = 1;
+    }
 
 //
 //    if ((bloomFilter[idx0 >> 6] & (1ll << (idx0 & 0x3F))) && (bloomFilter[idx1 >> 6] & (1ll << (idx1 & 0x3F))) &&
@@ -241,8 +244,8 @@ pair<int, int> BarcodeProcessor::queryMap(uint64 barcodeInt) {
 //        res = 1;
 //    }
 
-//    if (res == 0)
-//        return {ok, p};
+    if (res == 0)
+        return {ok, p};
 
     filterQuery += res;
 

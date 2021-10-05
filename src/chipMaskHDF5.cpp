@@ -211,6 +211,10 @@ void ChipMaskHDF5::readDataSet(int &hashNum, int *&hashHead, node *&hashMap, int
 
     bloomFilter = new uint64[1 << 28];
 
+#pragma omp parallel for num_threads(64)
+    for (int i = 0; i < (1 << 28); i++) {
+        bloomFilter[i] = 0;
+    }
 
 //#pragma omp parallel for num_threads(64)
     for (uint32 r = 0; r < dims[0]; r++) {
@@ -228,15 +232,15 @@ void ChipMaskHDF5::readDataSet(int &hashNum, int *&hashHead, node *&hashMap, int
                     //add item to bf
                     {
 //                        uint32 idx0 = Hash0(barcodeInt);
-////                        uint32 idx1 = Hash1(barcodeInt);
+//                        uint32 idx1 = Hash1(barcodeInt);
 //                        uint32 idx2 = Hash2(barcodeInt);
-//                        uint32 idx3 = Hash3(barcodeInt);
-//
-//
+                        uint32 idx3 = Hash3(barcodeInt);
+
+
 //                        bloomFilter[idx0 >> 6] |= 1ll << (idx0 & 0x3F);
-////                        bloomFilter[idx1 >> 6] |= 1ll << (idx1 & 0x3F);
+//                        bloomFilter[idx1 >> 6] |= 1ll << (idx1 & 0x3F);
 //                        bloomFilter[idx2 >> 6] |= 1ll << (idx2 & 0x3F);
-//                        bloomFilter[idx3 >> 6] |= 1ll << (idx3 & 0x3F);
+                        bloomFilter[idx3 >> 6] |= 1ll << (idx3 & 0x3F);
                     }
 
 //                    printf("ready to insert is %lld\n", barcodeInt);
@@ -283,14 +287,7 @@ void ChipMaskHDF5::readDataSet(int &hashNum, int *&hashHead, node *&hashMap, int
                 }
                 //add item to bf
                 {
-                    uint32 idx0 = Hash0(barcodeInt);
-                    uint32 idx1 = Hash1(barcodeInt);
-                    uint32 idx2 = Hash2(barcodeInt);
 
-
-                    bloomFilter[idx0 >> 6] |= 1 << (idx0 & 0x40);
-                    bloomFilter[idx1 >> 6] |= 1 << (idx1 & 0x40);
-                    bloomFilter[idx2 >> 6] |= 1 << (idx2 & 0x40);
                 }
                 //add item to hash map
                 {

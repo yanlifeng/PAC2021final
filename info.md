@@ -21,12 +21,12 @@ TODOs
 - [ ] change block size in pugz(32kb -> 4mb)
 - [x] change block size in pigz
 - [ ] change queue1 to dataPool to decrease new and delete operations
-- [ ] fix pigzWrite bug
+- [ ] fix pigzWrite bug？？
 - [ ] mod all barcode to 1e9, use it dirctely, cal time
 - [x] test G‘s map
 - [ ] test 0 3 6 9
 - [x] merge mip write part
-- [ ] check👆
+- [x] check👆
 - [x] add bloom filter
 - [ ] 
 
@@ -1015,4 +1015,34 @@ stl unordered_map find cost 3.647662
 嘶，没啥用哎，感觉手写的hashmap应该就是最快的了，还是回到bf上弄弄。
 
 找到之前两个进程merge输出的问题了，原来检测是否结束是p0的消费者结束了就set，可能p0的c们结束了，恰好队列空了（p1的mergeThread没来及塞数据），然后没输出全，现在多加了个flag就好了。
+
+回退回比较简洁的commit 9a40937c573b6dc459d8e00d5df7930ba7d1815b。
+
+|                        | getmap | oo                      | tot  |                                                              |
+| ---------------------- | ------ | ----------------------- | ---- | ------------------------------------------------------------ |
+| 👆提交 thread64         | 28     | 152                     | 180  |                                                              |
+|                        |        |                         |      |                                                              |
+| old + bf*3 thread 64   | 46     | 146                     | 192  | total_query_cnt:	156377424777<br/>after_filter_query_cnt:	1079936634 |
+|                        | 41     | 153                     | 194  | total_query_cnt:	156377424777<br/>after_filter_query_cnt:	1079936634 |
+| old no bf thread 64    | 42     | 150                     | 193  | total_query_cnt:	156377424777<br/>after_filter_query_cnt:	0 |
+|                        | 42     | 154                     | 197  | total_query_cnt:	156377424777<br/>after_filter_query_cnt:	0 |
+| old + bf：h1 thread 64 | 34     | 147                     | 181  | total_query_cnt:	156377424777<br/>after_filter_query_cnt:	10064669874 |
+|                        | 33     | 145                     | 179  | total_query_cnt:	156377424777<br/>after_filter_query_cnt:	10064669874 |
+| old + bf：h0 thread 64 | 37     | 148                     | 186  | total_query_cnt:	156377424777<br/>after_filter_query_cnt:	9415169025 |
+|                        | 34     | 152                     | 186  | total_query_cnt:	156377424777<br/>after_filter_query_cnt:	9415169025 |
+| old + bf：h3 thread 64 | 33     | 130                     | 163  | total_query_cnt:	156377424777<br/>after_filter_query_cnt:	9639439838 |
+|                        | 33     | 145                     | 178  | total_query_cnt:	156377424777<br/>after_filter_query_cnt:	9639439838 |
+|                        | 33     | 141                     | 174  | -                                                            |
+|                        | 33     | 133                     | 166  | -                                                            |
+| 👆 thread32 * 2         | 32-33  | 48/51/51-48/51/76？？？ | 110  | total_query_cnt:	156377424777<br/>after_filter_query_cnt:	9639439838 |
+|                        |        | -------78               | 111  | -                                                            |
+| 👆 shm                  | 32-32  | 47/49/49-48/51/51       | 83   | total_query_cnt:	156377424777<br/>after_filter_query_cnt:	9639439838 |
+|                        |        | ---------51             | 82   |                                                              |
+|                        |        |                         |      |                                                              |
+
+憨批了属于是，在测之前commit的时候突然就发现了一点点之前的bug：
+
+<img src="/Users/ylf9811/Library/Application Support/typora-user-images/image-20211005234621491.png" alt="image-20211005234621491" style="zoom:50%;" />
+
+改了之后最终只用前32后32位xor的简单hash效果最好，并且跑在两个numa节点上效果更好，不过似乎是卡在了写数据上，弄到shm就基本上是30+50=80了（不过测得都是fq，gz应该也差不多）。
 

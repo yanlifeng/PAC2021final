@@ -4992,7 +4992,8 @@ BarcodeToPositionMulti::BarcodeToPositionMulti(Options *opt) {
     writerDone = 0;
     mergeDone = 0;
     if (mOptions->numPro == 1)mergeDone = 1;
-    printf("mergeDone %d\n", mergeDone);
+//    printf("mergeDone %d\n", mergeDone);
+    cout << "mergeDone " << mergeDone << endl;
 }
 
 BarcodeToPositionMulti::~BarcodeToPositionMulti() {
