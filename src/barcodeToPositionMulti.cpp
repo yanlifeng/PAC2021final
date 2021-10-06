@@ -71,10 +71,12 @@ bool BarcodeToPositionMulti::process() {
 
     producer.join();
     cerr << "producer done" << endl;
+    int64 MAPNUM = 0;
     for (int t = 0; t < mOptions->thread; t++) {
+        MAPNUM += results[t]->mBarcodeProcessor->MAPNUM;
         threads[t]->join();
     }
-
+    cerr << "Map all number is "<< MAPNUM << endl;
     long long out_consumerTime = consumerTime/1e6;
     fprintf(stderr,"Map in Consumer Task time is %d sec\n",out_consumerTime);
 

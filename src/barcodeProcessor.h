@@ -145,6 +145,8 @@ public:
 	robin_hood::unordered_map<uint64, int> mDNB;
 	int mismatch;
 	int barcodeLen;
+
+	int64 MAPNUM;
 };
 
 

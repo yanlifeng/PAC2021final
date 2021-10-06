@@ -23,6 +23,12 @@ private:
     bool push_mod(uint64 key);
     bool get_mod(uint64 key);
 
+    bool push_xor(uint64 key);
+    bool get_xor(uint64 key);
+
+    bool push_Classification(uint64 key);
+    bool get_Classification(uint64 key);
+
     const uint64 Bloom_MOD = 73939133;
 
 };

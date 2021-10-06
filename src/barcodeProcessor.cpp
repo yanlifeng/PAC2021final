@@ -1,6 +1,7 @@
 #include "barcodeProcessor.h"
 
 BarcodeProcessor::BarcodeProcessor(Options *opt, robin_hood::unordered_map <uint64, Position1> *mbpmap) {
+    MAPNUM =0;
     mOptions = opt;
     bpmap = mbpmap;
     mismatch = opt->transBarcodeToPos.mismatch;
@@ -10,6 +11,7 @@ BarcodeProcessor::BarcodeProcessor(Options *opt, robin_hood::unordered_map <uint
 }
 
 BarcodeProcessor::BarcodeProcessor(Options *opt, robin_hood::unordered_map <uint32, bpmap_segment_value> *mbpmap_segment) {
+    MAPNUM =0;
     mOptions = opt;
     bpmap_segment = mbpmap_segment;
     mismatch = opt->transBarcodeToPos.mismatch;
@@ -19,6 +21,7 @@ BarcodeProcessor::BarcodeProcessor(Options *opt, robin_hood::unordered_map <uint
 }
 
 BarcodeProcessor::BarcodeProcessor(Options *opt, robin_hood::unordered_map <uint64, Position1> *mbpmap, robin_hood::unordered_map <uint32, bpmap_segment_value> *mbpmap_segment) {
+    MAPNUM =0;
     mOptions = opt;
     bpmap = mbpmap;
     bpmap_segment = mbpmap_segment;
@@ -29,6 +32,7 @@ BarcodeProcessor::BarcodeProcessor(Options *opt, robin_hood::unordered_map <uint
 }
 
 BarcodeProcessor::BarcodeProcessor(Options *opt, robin_hood::unordered_map <uint64, Position1> **mbpmap_hash) {
+    MAPNUM =0;
     mOptions = opt;
     bpmap_hash = mbpmap_hash;
     mismatch = opt->transBarcodeToPos.mismatch;
@@ -38,6 +42,7 @@ BarcodeProcessor::BarcodeProcessor(Options *opt, robin_hood::unordered_map <uint
 }
 
 BarcodeProcessor::BarcodeProcessor(Options *opt, robin_hood::unordered_map<uint32,uint32> **mbpmap_hash_index, Position1* mposition1_index){
+    MAPNUM =0;
     mOptions = opt;
     bpmap_hash_index = mbpmap_hash_index;
     position_index = mposition1_index;
@@ -48,6 +53,7 @@ BarcodeProcessor::BarcodeProcessor(Options *opt, robin_hood::unordered_map<uint3
 }
 
 BarcodeProcessor::BarcodeProcessor(Options* opt, int* mbpmap_head, int* mbpmap_nxt,uint64* mbpmap_key,int* mbpmap_value,Position1* mposition_index){
+    MAPNUM =0;
     mOptions = opt;
     bpmap_head = mbpmap_head;
     bpmap_nxt  = mbpmap_nxt;
@@ -61,6 +67,7 @@ BarcodeProcessor::BarcodeProcessor(Options* opt, int* mbpmap_head, int* mbpmap_n
 }
 
 BarcodeProcessor::BarcodeProcessor(Options* opt, int* mbpmap_head, int* mbpmap_len,uint64* mbpmap_key,int* mbpmap_value,Position1* mposition_index,bool ordered){
+    MAPNUM =0;
     mOptions = opt;
     bpmap_head = mbpmap_head;
     bpmap_len  = mbpmap_len;
@@ -74,6 +81,7 @@ BarcodeProcessor::BarcodeProcessor(Options* opt, int* mbpmap_head, int* mbpmap_l
 }
 
 BarcodeProcessor::BarcodeProcessor(Options* opt, int* mbpmap_head, int* mbpmap_nxt,uint64* mbpmap_key,Position1* mposition_index){
+    MAPNUM =0;
     mOptions = opt;
     bpmap_head = mbpmap_head;
     bpmap_nxt  = mbpmap_nxt;
@@ -86,6 +94,7 @@ BarcodeProcessor::BarcodeProcessor(Options* opt, int* mbpmap_head, int* mbpmap_n
 }
 
 BarcodeProcessor::BarcodeProcessor(Options* opt, int* mbpmap_head, int* mbpmap_nxt,uint64* mbpmap_key,Position1* mposition_index,BloomFilter *mbloomFilter){
+    MAPNUM =0;
     mOptions = opt;
     bpmap_head = mbpmap_head;
     bpmap_nxt  = mbpmap_nxt;
@@ -95,7 +104,8 @@ BarcodeProcessor::BarcodeProcessor(Options* opt, int* mbpmap_head, int* mbpmap_n
     mismatch = opt->transBarcodeToPos.mismatch;
     barcodeLen = opt->barcodeLen;
     polyTInt = seqEncode(polyT.c_str(), 0, barcodeLen, mOptions->rc);
-    misMaskGenerate();
+    misMaskGenerateSegment();
+//    misMaskGenerate();
 }
 
 BarcodeProcessor::BarcodeProcessor() {
@@ -444,6 +454,7 @@ Position1 *BarcodeProcessor::getPositionHashTableNoIndex(uint64 barcodeInt){
 Position1 *BarcodeProcessor::getPositionHashTableNoIndexWithBloomFiler(uint64 barcodeInt){
     uint32 mapKey = barcodeInt%MOD;
     for (int i=bpmap_head[mapKey];i!=-1;i=bpmap_nxt[i]){
+//        MAPNUM++;
         if (bpmap_key[i] == barcodeInt){
             overlapReads++;
             return &position_index[i];
@@ -1302,36 +1313,99 @@ int BarcodeProcessor::getMisOverlapHashTableNoIndex(uint64 barcodeInt, Position1
     return -1;
 }
 
-int BarcodeProcessor::getMisOverlapHashTableNoIndexWithBloomFiler(uint64 barcodeInt, Position1 *&result_value){
-    uint64 misBarcodeInt;
+int BarcodeProcessor::getMisOverlapHashTableNoIndexWithBloomFiler(uint64 barcodeInt, Position1 *&result_value) {
     int misCount = 0;
-    int misMaskIndex = 0;
-    for (int mis = 0; mis < mismatch; mis++) {
-        misCount = 0;
-        while (misMaskIndex < misMaskLens[mis]) {
-            misBarcodeInt = barcodeInt ^ misMask[misMaskIndex];
-            misMaskIndex++;
-//            cerr << "enen yinggai chulai ba " << endl;
-            if (!bloomFilter->get(misBarcodeInt)){
-//                cerr << "Bloom Filter Got it" << endl;
-                continue;
+
+
+/*
+ *  处理mismatch == 1 的情况
+ */
+
+    for (int i = 0; i < misMaskLen; i++) {
+        uint64 misBarcodeInt = barcodeInt ^ misMask[i];
+        uint32 mapKey = misBarcodeInt % MOD;
+        for (int i = bpmap_head[mapKey]; i != -1; i = bpmap_nxt[i]) {
+//            MAPNUM++;
+            if (bpmap_key[i] == misBarcodeInt) {
+                result_value = &position_index[i];
+                misCount++;
+                if (misCount > 1) {
+                    return -1;
+                }
+                break;
             }
-            uint32 mapKey = misBarcodeInt%MOD;
-            for (int i=bpmap_head[mapKey];i!=-1;i=bpmap_nxt[i]){
-                if (bpmap_key[i] == misBarcodeInt){
+        }
+    }
+    if (misCount == 1) return 0;
+
+    if (mismatch < 2) return -1;
+
+
+    uint32 mapkey = getMapKey(barcodeInt);
+    uint32 mapValue = getMapValue(barcodeInt);
+
+//    cerr << "misMaskClassificationNumber is " << misMaskClassificationNumber << endl;
+
+
+//  顺序枚举
+    int misMaskIndex = 0;
+    for (int i = 0; i < misMaskClassificationNumber; i++) {
+
+//        if (!bloomFilter->get(mapkey ^ misMaskLensSegmentL[misMaskIndex])) {
+//            misMaskIndex = misMaskClassification[i];
+//            continue;
+//        }
+        while (misMaskIndex < misMaskClassification[i]) {
+            uint64 misBarcodeIntKey = mapkey ^ misMaskLensSegmentL[misMaskIndex];
+            uint64 misBarcodeInt = mapValue ^ misMaskLensSegmentR[misMaskIndex];
+            misBarcodeInt = (misBarcodeInt << 24) | misBarcodeIntKey;
+            for (int i = bpmap_head[misBarcodeInt % MOD]; i != -1; i = bpmap_nxt[i]) {
+                MAPNUM++;
+                if (bpmap_key[i] == misBarcodeInt) {
                     result_value = &position_index[i];
                     misCount++;
-                    if (misCount > 1){
+                    if (misCount > 1) {
                         return -1;
                     }
                     break;
                 }
             }
-        }
-        if (misCount == 1) {
-            return 0;
+            misMaskIndex++;
         }
     }
+
+
+
+/*
+    // 逆序枚举
+    int misMaskIndex = misMaskClassification[misMaskClassificationNumber-1]-1;
+    for (int i=misMaskClassificationNumber-1;i>=0;i--){
+
+        iter_key = bpmap_segment->find(mapkey^misMaskLensSegmentL[misMaskIndex]);
+        if (iter_key == bpmap_segment->end()){
+            if (i>0) misMaskIndex = misMaskClassification[i-1]-1;
+            continue;
+        }
+        int MisEnd = i>0?misMaskClassification[i-1]:0;
+        while (misMaskIndex >= MisEnd){
+            uint32 misBarcodeIntValue = mapValue^misMaskLensSegmentR[misMaskIndex];
+            misMaskIndex--;
+            if (misBarcodeIntValue < iter_key->second.minvalue || misBarcodeIntValue > iter_key->second.maxvalue) {
+                continue;
+            }
+            iter_value = iter_key->second.segment.find(misBarcodeIntValue);
+            if (iter_value != iter_key->second.segment.end()){
+                result_iter_value = iter_value;
+                misCount++;
+                if (misCount > 1) {
+                    return -1;
+                }
+            }
+        }
+    }
+
+*/
+    if (misCount == 1) return 0;
 
     return -1;
 }
