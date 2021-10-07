@@ -90,7 +90,7 @@ inline uint32 Hash0(uint64 barCode) {
 }
 
 inline uint32 Hash1(uint64 barCode) {
-    return barCode % 4000000063ll;
+    return barCode % 1073807359;
 }
 
 inline uint32 Hash2(uint64 barCode, uint64 seed = 0) {
@@ -105,6 +105,10 @@ inline uint32 Hash2(uint64 barCode, uint64 seed = 0) {
 
 inline uint32 Hash3(uint64 barCode) {
     return uint32((barCode >> 32) ^ (barCode & ((1ll << 32) - 1)));
+}
+
+inline uint32 Hash4(uint64 barCode) {
+    return uint32((barCode >> 25) ^ (barCode & ((1ll << 25) - 1)));
 }
 
 #define bfIdx(x)

@@ -235,12 +235,14 @@ void ChipMaskHDF5::readDataSet(int &hashNum, int *&hashHead, node *&hashMap, int
 //                        uint32 idx1 = Hash1(barcodeInt);
 //                        uint32 idx2 = Hash2(barcodeInt);
                         uint32 idx3 = Hash3(barcodeInt);
+//                        uint32 idx4 = Hash4(barcodeInt);
 
 
 //                        bloomFilter[idx0 >> 6] |= 1ll << (idx0 & 0x3F);
 //                        bloomFilter[idx1 >> 6] |= 1ll << (idx1 & 0x3F);
 //                        bloomFilter[idx2 >> 6] |= 1ll << (idx2 & 0x3F);
                         bloomFilter[idx3 >> 6] |= 1ll << (idx3 & 0x3F);
+//                        bloomFilter[idx4 >> 6] |= 1ll << (idx4 & 0x3F);
                     }
 
 //                    printf("ready to insert is %lld\n", barcodeInt);

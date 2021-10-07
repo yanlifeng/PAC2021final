@@ -1018,27 +1018,53 @@ stl unordered_map find cost 3.647662
 
 回退回比较简洁的commit 9a40937c573b6dc459d8e00d5df7930ba7d1815b。
 
-|                        | getmap | oo                      | tot  |                                                              |
-| ---------------------- | ------ | ----------------------- | ---- | ------------------------------------------------------------ |
-| 👆提交 thread64         | 28     | 152                     | 180  |                                                              |
-|                        |        |                         |      |                                                              |
-| old + bf*3 thread 64   | 46     | 146                     | 192  | total_query_cnt:	156377424777<br/>after_filter_query_cnt:	1079936634 |
-|                        | 41     | 153                     | 194  | total_query_cnt:	156377424777<br/>after_filter_query_cnt:	1079936634 |
-| old no bf thread 64    | 42     | 150                     | 193  | total_query_cnt:	156377424777<br/>after_filter_query_cnt:	0 |
-|                        | 42     | 154                     | 197  | total_query_cnt:	156377424777<br/>after_filter_query_cnt:	0 |
-| old + bf：h1 thread 64 | 34     | 147                     | 181  | total_query_cnt:	156377424777<br/>after_filter_query_cnt:	10064669874 |
-|                        | 33     | 145                     | 179  | total_query_cnt:	156377424777<br/>after_filter_query_cnt:	10064669874 |
-| old + bf：h0 thread 64 | 37     | 148                     | 186  | total_query_cnt:	156377424777<br/>after_filter_query_cnt:	9415169025 |
-|                        | 34     | 152                     | 186  | total_query_cnt:	156377424777<br/>after_filter_query_cnt:	9415169025 |
-| old + bf：h3 thread 64 | 33     | 130                     | 163  | total_query_cnt:	156377424777<br/>after_filter_query_cnt:	9639439838 |
-|                        | 33     | 145                     | 178  | total_query_cnt:	156377424777<br/>after_filter_query_cnt:	9639439838 |
-|                        | 33     | 141                     | 174  | -                                                            |
-|                        | 33     | 133                     | 166  | -                                                            |
-| 👆 thread32 * 2         | 32-33  | 48/51/51-48/51/76？？？ | 110  | total_query_cnt:	156377424777<br/>after_filter_query_cnt:	9639439838 |
-|                        |        | -------78               | 111  | -                                                            |
-| 👆 shm                  | 32-32  | 47/49/49-48/51/51       | 83   | total_query_cnt:	156377424777<br/>after_filter_query_cnt:	9639439838 |
-|                        |        | ---------51             | 82   |                                                              |
-|                        |        |                         |      |                                                              |
+|                           | getmap      | oo                      | tot  |                                                              |
+| ------------------------- | ----------- | ----------------------- | ---- | ------------------------------------------------------------ |
+| 👆提交 thread64            | 28          | 152                     | 180  |                                                              |
+| 👆gcc8                     | 24          | 148                     | 173  |                                                              |
+|                           | 29          | 135                     | 164  |                                                              |
+|                           | 23          | 132                     | 155  |                                                              |
+| 👆gcc4                     | 23          | 152                     | 175  |                                                              |
+|                           | 26          |                         | 187  |                                                              |
+| 👆icpc                     | 29          | 144                     | 173  |                                                              |
+|                           | 24          | 140                     | 164  |                                                              |
+|                           |             |                         |      |                                                              |
+| old + bf*3 thread 64      | 46          | 146                     | 192  | total_query_cnt:	156377424777<br/>after_filter_query_cnt:	1079936634 |
+|                           | 41          | 153                     | 194  | total_query_cnt:	156377424777<br/>after_filter_query_cnt:	1079936634 |
+| old no bf thread 64       | 42          | 150                     | 193  | total_query_cnt:	156377424777<br/>after_filter_query_cnt:	0 |
+|                           | 42          | 154                     | 197  | total_query_cnt:	156377424777<br/>after_filter_query_cnt:	0 |
+|                           | 27（no bf） | 159                     | 187  | total_query_cnt:	156377424777<br/>after_filter_query_cnt:	0 |
+|                           |             |                         |      |                                                              |
+|                           |             |                         |      |                                                              |
+| old no bf thread 32*2     | 26-28       | //77-//81               | 108  | total_query_cnt:	156377424777<br/>after_filter_query_cnt:	0 |
+|                           | 26-27       | //77-//100              | 120  | total_query_cnt:	156377424777<br/>after_filter_query_cnt:	0 |
+| old + bf：h1 thread 64    | 34          | 147                     | 181  | total_query_cnt:	156377424777<br/>after_filter_query_cnt:	10064669874 |
+|                           | 33          | 145                     | 179  | total_query_cnt:	156377424777<br/>after_filter_query_cnt:	10064669874 |
+|                           | 34          | 144                     | 179  | total_query_cnt:	156377424777<br/>after_filter_query_cnt:	10064669874 |
+| old + bf：h0 thread 64    | 37          | 148                     | 186  | total_query_cnt:	156377424777<br/>after_filter_query_cnt:	9415169025 |
+|                           | 34          | 152                     | 186  | total_query_cnt:	156377424777<br/>after_filter_query_cnt:	9415169025 |
+|                           |             |                         |      |                                                              |
+| old + bf：h3 thread 64    | 33          | 130                     | 163  | total_query_cnt:	156377424777<br/>after_filter_query_cnt:	9639439838 |
+|                           | 33          | 145                     | 178  | total_query_cnt:	156377424777<br/>after_filter_query_cnt:	9639439838 |
+|                           | 33          | 141                     | 174  | -                                                            |
+|                           | 33          | 133                     | 166  | -                                                            |
+|                           | 30          | 132                     | 162  | -                                                            |
+| 👆 thread32 * 2            | 32-33       | 48/51/51-48/51/76？？？ | 110  | total_query_cnt:	156377424777<br/>after_filter_query_cnt:	9639439838 |
+|                           |             | -------78               | 111  | -                                                            |
+|                           |             | ---------54             | 84   |                                                              |
+|                           |             | ---------56             | 88   |                                                              |
+|                           | 31-33       | -------54               | 85   |                                                              |
+| 👆mod -> dxh               |             |                         |      |                                                              |
+| 32*2                      | 30-32       | --------90-92           | 123  | total_query_cnt:	156377424777<br/>after_filter_query_cnt:	33984170386 |
+|                           |             |                         |      |                                                              |
+|                           |             |                         |      |                                                              |
+|                           |             |                         |      |                                                              |
+| 👆inline by hand           |             |                         |      |                                                              |
+|                           |             |                         |      |                                                              |
+| 👆 shm                     | 32-32       | 47/49/49-48/51/51       | 83   | total_query_cnt:	156377424777<br/>after_filter_query_cnt:	9639439838 |
+|                           |             | ---------51             | 82   |                                                              |
+| old + bf：h1 thread 32 *2 | 31-34       | 62/65/65-59/63/63       | 97   | total_query_cnt:	156377424777<br/>after_filter_query_cnt:	10064669874 |
+|                           |             | -----69                 | 101  |                                                              |
 
 憨批了属于是，在测之前commit的时候突然就发现了一点点之前的bug：
 
@@ -1046,3 +1072,85 @@ stl unordered_map find cost 3.647662
 
 改了之后最终只用前32后32位xor的简单hash效果最好，并且跑在两个numa节点上效果更好，不过似乎是卡在了写数据上，弄到shm就基本上是30+50=80了（不过测得都是fq，gz应该也差不多）。
 
+## 1006
+
+update👆
+
+no bf单节点查询最好是150s，双节点是81s，使用hash3构造bf的话，单节点查询最好是130s，双节点是58s，比较奇怪的是为啥加速了两倍还多？？？但答案确实是对的。
+
+最快的版本去fat节点测了一下，发现单节点和双节点时间几乎一样，难道是fat上的内存比较🐂没有远程numa访存的问题？好像也是有点用，效果不如pac机器上那么猛。
+
+经过在fat节点上跑vtune的一些观察👇
+
+thread 64 * 1，add bf：
+
+![image-20211006171010632](/Users/ylf9811/Library/Application Support/typora-user-images/image-20211006171010632.png)
+
+![image-20211006171033940](/Users/ylf9811/Library/Application Support/typora-user-images/image-20211006171033940.png)
+
+![image-20211006171039232](/Users/ylf9811/Library/Application Support/typora-user-images/image-20211006171039232.png)
+
+可以看到绝大部分时间还是来自hashMap的随机访存，bf能过滤掉90%的询问，并且不太占时间。
+
+thread64 * 1，no bf：
+
+![image-20211006171419243](/Users/ylf9811/Library/Application Support/typora-user-images/image-20211006171419243.png)
+
+![image-20211006171424154](/Users/ylf9811/Library/Application Support/typora-user-images/image-20211006171424154.png)
+
+然后zz说很多bf没有过滤掉的query（9e8/156e8）里面只有3e8能进for循环（hash[key]=-1）（实际上能查到的只有1e8），就把这个单独打出来：
+
+![image-20211006172054447](/Users/ylf9811/Library/Application Support/typora-user-images/image-20211006172054447.png)
+
+![image-20211006172204133](/Users/ylf9811/Library/Application Support/typora-user-images/image-20211006172204133.png)
+
+![image-20211006172212027](/Users/ylf9811/Library/Application Support/typora-user-images/image-20211006172212027.png)
+
+## 1007
+
+展子哥终于安好了gcc8，试了试，在很久之前的纯hashMap的commit下比gcc4要快一点，比icpc也要快一丢丢，几乎一样。
+
+今天实在是忍不了了，每次差1.5e11次太慢了。。。。尝试把20G的fq文件截取成2G，hashMap大小不变，这样应该和原来的计算模型差不多，简单改一下pac机器上的rabbitqc来做截取吧。
+
+算了，太懒了，直接用head吧。
+
+sp1 sp2 2G
+
+|                | getmap | write done | tot  |      |      |
+| -------------- | ------ | ---------- | ---- | ---- | ---- |
+| gcc8 64 thread | 27     | 18         | 46   |      |      |
+|                | 26     | 18         | 45   |      |      |
+| gcc4           | 26     | 21         | 48   |      |      |
+|                | 26     | 22         | 49   |      |      |
+| icpc           | 28     | 20         | 49   |      |      |
+|                | 26     | 19         | 46   |      |      |
+|                |        |            |      |      |      |
+|                |        |            |      |      |      |
+
+```
+small data ANS
+total_reads:	20000000
+fixed_sequence_contianing_reads:	0	0.00%
+pass_filter_reads:	20000000
+mapped_reads:	14727394	73.64%
+barcode_exactlyOverlap_reads:	11828527	59.14%
+barcode_misOverlap_reads:	2898867	14.49%
+barcode_withN_reads:	0	0.00%
+Q10_bases_in_barcode:	99.24%
+Q20_bases_in_barcode:	96.66%
+Q30_bases_in_barcode:	90.35%
+Q10_bases_in_umi:	98.08%
+Q20_bases_in_umi:	93.15%
+Q30_bases_in_umi:	85.09%
+umi_filter_reads:	411457	2.06%
+umi_with_N_reads:	10	0.00%
+umi_with_polyA_reads:	481	0.00%
+umi_with_low_quality_base_reads:	410966	2.05%
+
+
+2263572480
+```
+
+嘶
+
+gcc8感觉是有点子用处的，而且晚上在fat上试了把hashMap的hash1改成hash3，没啥用。但是在pac机器上跑bf的版本的时候，编译出问题了，是向量化指令集有关的，但是似乎是pugz里面的文件报错的，现在并没有用，而且用的是mpiicc编译的，换成gcc8按理说不应该和之前不一样，简单加了include之后比之前的86快，现在79。。。。明天浮现一下这个问题仔细看看

@@ -220,12 +220,14 @@ pair<int, int> BarcodeProcessor::queryMap(uint64 barcodeInt) {
 //    uint32 idx1 = Hash1(barcodeInt);
 //    uint32 idx2 = Hash2(barcodeInt);
     uint32 idx3 = Hash3(barcodeInt);
+//    uint32 idx4 = Hash4(barcodeInt);
+//    uint32 idx3 = uint32((barcodeInt >> 32) ^ (barcodeInt & ((1ll << 32) - 1)));
 //
     int res = 0;
-////    if ((bloomFilter[idx0 >> 6] & (1ll << (idx0 & 0x3F))) && (bloomFilter[idx1 >> 6] & (1ll << (idx1 & 0x3F))) &&
-////        (bloomFilter[idx2 >> 6] & (1ll << (idx2 & 0x3F)))) {
-////        res = 1;
-////    }
+//    if ((bloomFilter[idx0 >> 6] & (1ll << (idx0 & 0x3F))) && (bloomFilter[idx1 >> 6] & (1ll << (idx1 & 0x3F))) &&
+//        (bloomFilter[idx2 >> 6] & (1ll << (idx2 & 0x3F)))) {
+//        res = 1;
+//    }
 //    if ((bloomFilter[idx0 >> 6] & (1ll << (idx0 & 0x3F))) && (bloomFilter[idx3 >> 6] & (1ll << (idx3 & 0x3F))) &&
 //        (bloomFilter[idx2 >> 6] & (1ll << (idx2 & 0x3F)))) {
 //        res = 1;
@@ -251,6 +253,8 @@ pair<int, int> BarcodeProcessor::queryMap(uint64 barcodeInt) {
 
 
     int key = barcodeInt % mod;
+
+//    if (hashHead[key] == -1)return {ok, p};
 //    int key = mol(barcodeInt);
 //    if (key >= mod)key -= mod;
 
