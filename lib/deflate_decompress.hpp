@@ -63,6 +63,9 @@
 
 #include "libdeflate.h"
 
+#include "immintrin.h"
+#include "emmintrin.h"
+
 /** The main class for the deflate decompression
  * Holds the decompressor tables and the input stream, but not the deflate window or output buffers
  */

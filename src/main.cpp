@@ -135,9 +135,14 @@ int main(int argc, char *argv[]) {
     }
     if (num_procs == 2) {
         opt.numaId = my_rank;
-        opt.out = to_string(my_rank) + opt.out;
-        opt.transBarcodeToPos.out1 = to_string(my_rank) + opt.transBarcodeToPos.out1;
-
+        string out_name = opt.out;
+        int pos = out_name.find(".fq");
+        if (pos < 0 || pos > out_name.size()) {
+            printf("gg out has no .fq\n");
+            exit(0);
+        }
+        opt.out = out_name.substr(0, pos) + to_string(my_rank) + ".fq";
+        opt.transBarcodeToPos.out1 = out_name.substr(0, pos) + to_string(my_rank) + ".fq";
     } else if (num_procs == 1) {
         opt.numaId = 3;
     }
@@ -163,8 +168,8 @@ int main(int argc, char *argv[]) {
         printf(".gz pos is %lu\n", out_name.find(".gz"));
         opt.transBarcodeToPos.out1 = out_name.substr(0, out_name.find(".gz"));
         opt.out = opt.transBarcodeToPos.out1;
-        printf("now out name is %s\n", opt.transBarcodeToPos.out1.c_str());
     }
+    printf("now out name is %s\n", opt.transBarcodeToPos.out1.c_str());
 
     if (ends_with(opt.transBarcodeToPos.in1, ".gz") == 0) {
         opt.usePugz = 0;

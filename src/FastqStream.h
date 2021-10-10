@@ -149,16 +149,8 @@ namespace dsrc {
 //                        printf("num for > 5000 ,break\n");
 //                        break;
 //                    }
-                    if (q->size_approx() == 0 && done == 1) {
-                        break;
-                    }
-                    if (q->size_approx() == 0) {
-                        numFor++;
-//                        printf("prudocer wait pugz %d\n", cntt++);
-//                        cout << "prudocer " << num << " wait pugz " << cntt++ << " q->size_approx() "
-//                             << q->size_approx() << endl;
-                        usleep(100);
-                    }
+
+
                     std::pair<char *, int> now;
                     if (q->try_dequeue(now)) {
 
@@ -185,6 +177,13 @@ namespace dsrc {
                             delete[] now.first;
                             break;
                         }
+                    } else if (q->size_approx() == 0) {
+                        if (done == 1)break;
+                        numFor++;
+//                        printf("prudocer wait pugz %d\n", cntt++);
+//                        cout << "prudocer " << num << " wait pugz " << cntt++ << " q->size_approx() "
+//                             << q->size_approx() << endl;
+                        usleep(100);
                     }
                 }
 //                printf("ok of one read, now res sum is %lld, need to read is %lld, leave %d to read next time\n",

@@ -4,7 +4,7 @@ TODOs
 
 - [x] Add rabbitio
 - [x] Use other map
-- [ ] Parallel in load map
+- [ ] Parallel in load map----8*hashmap，omp merge
 - [ ] Use secondary index
 - [x] Use list-hash
 - [ ] Use aili-code ？？？
@@ -28,13 +28,14 @@ TODOs
 - [x] merge mip write part
 - [x] check👆
 - [x] add bloom filter
-- [ ] make bf bitset smaller
+- [ ] make bf bitset smaller or more small bitset to replace the big one
 - [ ] make bf bitset bigger
 - [ ] try bf with 3 bitset
 - [ ] calculate bf size
 - [x] add mpi pugz
 - [ ] add mpi pigz
 - [ ] merge hashHead hashMap
+- [ ] check asm to find why gcc11 has a good perfermance
 - [ ] 
 
 ## 0908
@@ -1211,3 +1212,71 @@ gcc8感觉是有点子用处的，而且晚上在fat上试了把hashMap的hash1�
 安好了mpich，在我的理解范围内试了试gcc4和gcc8的区别，gcc8稍快一点。
 
 又试了试gcc11👆猛啊，具体为啥明天看看汇编。
+
+## 1009
+
+//TODO
+
+早上打水的时候突然想到，能不能开个二级的bf，原来32位大小，现在两个16位大小的，判断ind=hash(barcode)是不是出现过，原来是bfInit[ind]==1，现在可以写成bfNow0[ind0]&&bfNow[ind1]，ind01分别是ind的高16位和低16位。
+
+好啊，先吃饭。reboot一下。
+
+好啊，现在读写内存的话，fq两个numa节点查询大约36s，一个numa节点查询大约50s，基本上没啥问题了，具体啥原因就让zz去看看吧，现在先单个numa节点把gz打开试试。
+
+|                                | getmap | writer done | total | bf rate                                                      | work thread | pugz                                                         |
+| ------------------------------ | ------ | ----------- | ----- | ------------------------------------------------------------ | ----------- | ------------------------------------------------------------ |
+| 64*1，fq，shm                  | 31     | 49          | 80    | total_query_cnt:	156371927497<br/>after_filter_query_cnt:	9634745468 | ～64        |                                                              |
+| 64*1，init gz，disk            | 31     | 176-176/495 | 529   | -                                                            | ～16        |                                                              |
+| 64*1，init gz in，fq out，shm  | 33     | 174         | 208   |                                                              | ～16        |                                                              |
+| 64*1，pugz8 gz in，fq out，shm | 41     | 103         | 144   |                                                              | ～30        | gunzip and push data to memory cost 30.2385<br/>gunzip and push data to memory cost 32.4541 |
+|                                | 44     | 103         | 148   |                                                              | ～30        | gunzip and push data to memory cost 30.1984<br/>gunzip and push data to memory cost 32.4931 |
+|                                |        |             |       |                                                              |             |                                                              |
+| 32*2，init gz in，fq out，shm  | 31-31  | 172-172     | 204   |                                                              | ～7+7       |                                                              |
+| 32*2，pugz1 gz in，fq out，shm | 33-36  | 75-78/      | 111   |                                                              | ～16+16     | gunzip and push data to memory cost 57<br/>gunzip and push data to memory cost 57<br/>gunzip and push data to memory cost 60<br/>gunzip and push data to memory cost 61 |
+|                                | 32-32  | 71-71       | 104   |                                                              | ～16+16     | gunzip and push data to memory cost 56<br/>gunzip and push data to memory cost 56<br/>gunzip and push data to memory cost 60<br/>gunzip and push data to memory cost 60 |
+| 32*2，pugz2 gz in，fq out，shm | 34-36  | 77-78       | 113   |                                                              | ～16+16     | gunzip and push data to memory cost 42<br/>gunzip and push data to memory cost 42<br/>gunzip and push data to memory cost 45<br/>gunzip and push data to memory cost 45 |
+|                                | 34-34  | 74-74       | 109   |                                                              | ～16+16     | gunzip and push data to memory cost 41<br/>gunzip and push data to memory cost 42<br/>gunzip and push data to memory cost 44<br/>gunzip and push data to memory cost 44 |
+|                                | 34-34  | 74-74       | 109   |                                                              | ～16+16     | gunzip and push data to memory cost 41<br/>gunzip and push data to memory cost 42<br/>gunzip and push data to memory cost 44<br/>gunzip and push data to memory cost 45<br/>gunzip and push data to memory cost 42<br/>gunzip and push data to memory cost 42<br/>gunzip and push data to memory cost 45<br/>gunzip and push data to memory cost 45 |
+| 32*2，pugz4 gz in，fq out，shm | 34-35  | 77-77       | 112   |                                                              | ～15+15     | gunzip and push data to memory cost 30.443<br/>gunzip and push data to memory cost 30.5704<br/>gunzip and push data to memory cost 32.6724<br/>gunzip and push data to memory cost 32.9539 |
+|                                | 34-34  | 75-76       | 110   |                                                              | ～15+15     | gunzip and push data to memory cost 30.4799<br/>gunzip and push data to memory cost 30.5536<br/>gunzip and push data to memory cost 32.8386<br/>gunzip and push data to memory cost 32.8623 |
+| 32*2，pugz8 gz in，fq out，shm | 35-35  | 76-76       | 113   |                                                              | ～15+15     | gunzip and push data to memory cost 26.0721<br/>gunzip and push data to memory cost 26.3924<br/>gunzip and push data to memory cost 27.9054<br/>gunzip and push data to memory cost 28.2095 |
+|                                | 35-35  | 77-77       | 112   |                                                              |             | gunzip and push data to memory cost 26.0642<br/>gunzip and push data to memory cost 26.3153<br/>gunzip and push data to memory cost 27.8736<br/>gunzip and push data to memory cost 28.1623 |
+|                                |        |             |       |                                                              |             |                                                              |
+| 64*1，pxgz gz 2+8，disk        | 34     |             |       |                                                              |             |                                                              |
+
+有点子奇怪哦，为啥还能输出8个cost？？？？？
+
+而且，多个pugz线程的话，就算他快到在构建hashMap期间就解压完了，后面query的时候也还是快不起来，只能用起15+15个线程，
+
+## 1010
+
+|                                 | getmap | write done | total                |                                                              |
+| ------------------------------- | ------ | ---------- | -------------------- | ------------------------------------------------------------ |
+| fq，32*2，gcc11                 | 25-27  | 34-35      | 63                   |                                                              |
+| pugz8 gz，64*1，                | 30     | 60         |                      | gunzip and push data to memory cost 30<br/>gunzip and push data to memory cost 33 |
+|                                 | 30     | 78         |                      | gunzip and push data to memory cost 29.7678<br/>gunzip and push data to memory cost 33 |
+|                                 | 28     | 78         |                      | gunzip and push data to memory cost 31<br/>gunzip and push data to memory cost 33 |
+| 👆optimize size_approx（晚上）   | 41     | 27         |                      | gunzip and push data to memory cost 31.9899<br/>gunzip and push data to memory cost 34.7715 |
+|                                 | 38     | 29         |                      |                                                              |
+| 👆32*2                           | 36-38  | 22-24      |                      | gunzip and push data to memory cost 28.8973<br/>gunzip and push data to memory cost 29.4034<br/>gunzip and push data to memory cost 30.8625<br/>gunzip and push data to memory cost 31.558 |
+|                                 | 36-37  | 23-24      |                      | gunzip and push data to memory cost 28.9341<br/>gunzip and push data to memory cost 29.0582<br/>gunzip and push data to memory cost 31.0212<br/>gunzip and push data to memory cost 31.1593 |
+| 👆all 32*2，pugz 8               | 36-37  | 39-40      | 76/～32 threads work | gunzip and push data to memory cost 28.8359<br/>gunzip and push data to memory cost 28.9144<br/>gunzip and push data to memory cost 30.8682<br/>gunzip and push data to memory cost 31.0669 |
+|                                 |        |            | 76                   | gunzip and push data to memory cost 28.7751<br/>gunzip and push data to memory cost 28.9429<br/>gunzip and push data to memory cost 30.7982<br/>gunzip and push data to memory cost 31.1148 |
+|                                 |        |            |                      |                                                              |
+| 👆all 32*2，pugz 2               | 34-35  | 37-38      | 73（size wa！！！）  | gunzip and push data to memory cost 46<br/>gunzip and push data to memory cost 47<br/>gunzip and push data to memory cost 50<br/>gunzip and push data to memory cost 52 |
+|                                 |        |            | 73                   | gunzip and push data to memory cost 47<br/>gunzip and push data to memory cost 48<br/>gunzip and push data to memory cost 51<br/>gunzip and push data to memory cost 52 |
+|                                 |        |            | 73                   | gunzip and push data to memory cost 46<br/>gunzip and push data to memory cost 47<br/>gunzip and push data to memory cost 51<br/>gunzip and push data to memory cost 52 |
+| 👆32*2，pugz 2，disk in，shm out | 36-36  |            | 75                   | gunzip and push data to memory cost 47<br/>gunzip and push data to memory cost 47<br/>gunzip and push data to memory cost 51<br/>gunzip and push data to memory cost 52 |
+|                                 |        |            | 74                   |                                                              |
+
+好啊，现在发现pugz的输入有点子问题，明明pugz很快，8thread只要20多s就完成了，全部放在了无限大的队列Q0里面，但是producer部分从Q0里面get数据的时候就有点慢了，需要不断的get，memcpy，delete，
+
+![image-20211010210610712](/Users/ylf9811/Library/Application Support/typora-user-images/image-20211010210610712.png)
+
+这个是fat节点上搞的测试，可以看到生产者的这个函数慢的一批，具体的是，里面的memcpy和无锁队列的巴拉巴拉，现在准备的解决方案是，先把比较耗时的size_approx拿到try后面，把两个size_approx合并。
+
+update👆。
+
+发现优化过size_approx之后，8个线程pugz就基本上又能供应起查询操作了。
+
+试了两个线程pugz，效果和8差不多，但是有时候会输出文件的size不太对？

@@ -5078,6 +5078,12 @@ bool BarcodeToPositionMulti::process() {
     initPackRepositoey();
     thread *pugzer1;
     thread *pugzer2;
+
+    if (mOptions->usePugz) {
+        pugzer1 = new thread(bind(&BarcodeToPositionMulti::pugzTask1, this));
+        pugzer2 = new thread(bind(&BarcodeToPositionMulti::pugzTask2, this));
+    }
+
     auto getMbp = new thread(bind(&BarcodeToPositionMulti::getMbpmap, this));
 
 
@@ -5087,11 +5093,6 @@ bool BarcodeToPositionMulti::process() {
 
     printf("get map cost %.4f\n", GetTime() - t00);
     t00 = GetTime();
-
-    if (mOptions->usePugz) {
-        pugzer1 = new thread(bind(&BarcodeToPositionMulti::pugzTask1, this));
-        pugzer2 = new thread(bind(&BarcodeToPositionMulti::pugzTask2, this));
-    }
 
 
     thread producer(bind(&BarcodeToPositionMulti::producerTask, this));
