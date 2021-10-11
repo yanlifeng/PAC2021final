@@ -141,8 +141,9 @@ int main(int argc, char *argv[]) {
             printf("gg out has no .fq\n");
             exit(0);
         }
-        opt.out = out_name.substr(0, pos) + to_string(my_rank) + ".fq";
-        opt.transBarcodeToPos.out1 = out_name.substr(0, pos) + to_string(my_rank) + ".fq";
+        string sifx = out_name.substr(pos, out_name.size());
+        opt.out = out_name.substr(0, pos) + to_string(my_rank) + sifx;
+        opt.transBarcodeToPos.out1 = out_name.substr(0, pos) + to_string(my_rank) + sifx;
     } else if (num_procs == 1) {
         opt.numaId = 3;
     }

@@ -9,6 +9,7 @@ WriterThread::WriterThread(string filename, int compressionLevel) {
     mOutputCounter = 0;
     mInputCompleted = false;
     mFilename = filename;
+    wSum = 0;
 
     mRingBuffer = new char *[PACK_NUM_LIMIT];
     memset(mRingBuffer, 0, sizeof(char *) * PACK_NUM_LIMIT);
@@ -63,6 +64,7 @@ void WriterThread::output(MPI_Comm communicator) {
 }
 
 void WriterThread::output(moodycamel::ReaderWriterQueue<pair<char *, int>> *Q) {
+
     if (mOutputCounter >= mInputCounter) {
         usleep(100);
     }
@@ -73,11 +75,14 @@ void WriterThread::output(moodycamel::ReaderWriterQueue<pair<char *, int>> *Q) {
 //            printf("waiting to push a chunk to pigz queue\n");
             usleep(100);
         }
+        wSum += mRingBufferSizes[mOutputCounter];
 //        printf("push a chunk to pigz queue, queue size %d\n", Q->size_approx());
         mRingBuffer[mOutputCounter] = NULL;
         mOutputCounter++;
         //cout << "Writer thread: " <<  mFilename <<  " mOutputCounter: " << mOutputCounter << " mInputCounter: " << mInputCounter << endl;
     }
+
+
 }
 
 void WriterThread::input(char *data, size_t size) {
@@ -114,4 +119,8 @@ void WriterThread::initWriter(gzFile gzfile) {
 
 long WriterThread::bufferLength() {
     return mInputCounter - mOutputCounter;
+}
+
+long WriterThread::GetWSum() const {
+    return wSum;
 }

@@ -9,7 +9,7 @@ TODOs
 - [x] Use list-hash
 - [ ] Use aili-code ？？？
 - [ ] Optimize match algorithm
-- [ ] Use gcc7 / gcc11
+- [x] Use gcc7 / gcc11
 - [x] Use icc
 - [x] Add pugz
 - [ ] Read se not pe
@@ -21,7 +21,7 @@ TODOs
 - [ ] change block size in pugz(32kb -> 4mb)
 - [x] change block size in pigz
 - [ ] change queue1 to dataPool to decrease new and delete operations
-- [ ] fix pigzWrite bug？？
+- [x] fix pigzWrite bug？？
 - [ ] mod all barcode to 1e9, use it dirctely, cal time
 - [x] test G‘s map
 - [ ] test 0 3 6 9
@@ -31,11 +31,14 @@ TODOs
 - [ ] make bf bitset smaller or more small bitset to replace the big one
 - [ ] make bf bitset bigger
 - [ ] try bf with 3 bitset
-- [ ] calculate bf size
+- [x] calculate bf size
 - [x] add mpi pugz
-- [ ] add mpi pigz
+- [x] add mpi pigz
 - [ ] merge hashHead hashMap
 - [ ] check asm to find why gcc11 has a good perfermance
+- [ ] check pugz&producer and writer&pigz part
+- [ ] inline query function by 👋
+- [ ] fix pugz size bug？？
 - [ ] 
 
 ## 0908
@@ -191,6 +194,7 @@ ConcurrentQueue不是有序的，麻了。换成了同一个人搞得ReaderWrite
 | pigz thread 2 -4  | 210    |      |
 | pigz thread 4 -4  | 105    |      |
 | pigz thread 8 -4  | 53     |      |
+| pigz thread 16 -4 |        |      |
 | gzip -4           | 450～  |      |
 | bgzip thread 1 -4 | 240    |      |
 | bgzip thread 2 -4 | 120    |      |
@@ -1280,3 +1284,41 @@ update👆。
 发现优化过size_approx之后，8个线程pugz就基本上又能供应起查询操作了。
 
 试了两个线程pugz，效果和8差不多，但是有时候会输出文件的size不太对？
+
+## 1011
+
+昨晚的错误复现不出来了。淦
+
+//TODO👆wa
+
+
+
+|                                                              | getMap | writeDone | totalCost | pugzCost                                                     |
+| ------------------------------------------------------------ | ------ | --------- | --------- | ------------------------------------------------------------ |
+| rm -rf /dev/shm/*combine_read* && sleep 2 && mpirun -n 2 ../ST_BarcodeMap-0.0.1 --in DP8400016231TR_D1.barcodeToPos.h5 --in1 V300091300_L03_read_1.fq.gz  --in2 V300091300_L04_read_1.fq.gz --out /dev/shm/combine_read.fq --mismatch 2 --thread 32 --usePugz --pugzThread 2 | 30-31  | 36-39     | 71        | gunzip and push data to memory cost 58<br/>gunzip and push data to memory cost 59<br/>gunzip and push data to memory cost 62<br/>gunzip and push data to memory cost 63 |
+| rm -rf /dev/shm/*combine_read* && sleep 2 && mpirun -n 2 ../ST_BarcodeMap-0.0.1 --in DP8400016231TR_D1.barcodeToPos.h5 --in1 V300091300_L03_read_1.fq.gz  --in2 V300091300_L04_read_1.fq.gz --out /dev/shm/combine_read.fq --mismatch 2 --thread 30 --usePugz --pugzThread 2 | 30-32  | 37-39     | 72        | gunzip and push data to memory cost 55<br/>gunzip and push data to memory cost 58<br/>gunzip and push data to memory cost 61<br/>gunzip and push data to memory cost 62 |
+|                                                              |        |           | 71        |                                                              |
+| rm -rf /dev/shm/*combine_read* && sleep 2 && mpirun -n 2 ../ST_BarcodeMap-0.0.1 --in DP8400016231TR_D1.barcodeToPos.h5 --in1 V300091300_L03_read_1.fq.gz  --in2 V300091300_L04_read_1.fq.gz --out /dev/shm/combine_read.fq --mismatch 2 --thread 28 --usePugz --pugzThread 2 |        |           | 72        |                                                              |
+| rm -rf /dev/shm/*combine_read* && sleep 2 && mpirun -n 2 ../ST_BarcodeMap-0.0.1 --in DP8400016231TR_D1.barcodeToPos.h5 --in1 V300091300_L03_read_1.fq.gz  --in2 V300091300_L04_read_1.fq.gz --out /dev/shm/combine_read.fq --mismatch 2 --thread 24 --usePugz --pugzThread 2 |        |           | 77        |                                                              |
+|                                                              |        |           | 76        |                                                              |
+|                                                              |        |           |           |                                                              |
+|                                                              |        |           |           |                                                              |
+
+经过测试，pugz，发现双numa节点的话，每个节点28个查询线程就足够了，这样就腾出来4个线程给pigz，
+
+```c++
+				while (Q->try_dequeue(now) == 0) {
+            if (Q->size_approx() == 0 && *wDone == 1) {
+                ret = 0;
+                break;
+            }
+            usleep(100);
+        }
+        if (Q->size_approx() == 0 && *wDone == 1) {
+            ret = 0;
+            break;
+        }
+```
+
+瞅瞅瞅瞅，这些的啥玩意，原来输出文件的大小老是小一丢丢，可能while的时候一直==0，突然来了一个（也是最后一个，wDone置成1，接着-_-），接着dequeue出来了，然后接着if里面size==0，wDone==1，就GG了，最后一块数据就直接不要了。
+

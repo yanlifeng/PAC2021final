@@ -1057,16 +1057,18 @@ readFromQueue(moodycamel::ReaderWriterQueue<pair<char *, int>> *Q, atomic_int *w
             got += (size_t) ret;
         }
     }
-    while (len) {
+    bool overWhile = false;
+    while (len > 0) {
 //        ret = read(desc, buf, len);
         while (Q->try_dequeue(now) == 0) {
             if (Q->size_approx() == 0 && *wDone == 1) {
                 ret = 0;
+                overWhile = true;
                 break;
             }
             usleep(100);
         }
-        if (Q->size_approx() == 0 && *wDone == 1) {
+        if (overWhile) {
             ret = 0;
             break;
         }
@@ -2170,7 +2172,9 @@ local void parallel_compress(moodycamel::ReaderWriterQueue<pair<char *, int>> *Q
     // the output of the compress threads)
     seq = 0;
     next = get_space(&in_pool);
+    long pSum = 0;
     next->len = readFromQueue(Q, wDone, L, next->buf, next->size);
+    pSum += next->len;
 //    next->len = readn(g.ind, next->buf, next->size);
     hold = NULL;
     dict = NULL;
@@ -2192,6 +2196,7 @@ local void parallel_compress(moodycamel::ReaderWriterQueue<pair<char *, int>> *Q
             next = get_space(&in_pool);
 //            next->len = readn(g.ind, next->buf, next->size);
             next->len = readFromQueue(Q, wDone, L, next->buf, next->size);
+            pSum += next->len;
 
         }
 
@@ -2313,6 +2318,8 @@ local void parallel_compress(moodycamel::ReaderWriterQueue<pair<char *, int>> *Q
     } while (more);
     drop_space(next);
 
+
+    printf("pigz pSum is %ld\n", pSum);
     // wait for the write threadPigz to complete (we leave the compress threads out
     // there and waiting in case there is another stream to compress)
     join_pigz(writeth);
@@ -5138,9 +5145,8 @@ bool BarcodeToPositionMulti::process() {
     }
 
     thread *pigzThread;
-    if (mOptions->usePigz) {
+    if (mOptions->usePigz && mOptions->myRank == 0) {
         pigzThread = new thread(bind(&BarcodeToPositionMulti::pigzWrite, this));
-
     }
 
     producer.join();
@@ -5169,13 +5175,11 @@ bool BarcodeToPositionMulti::process() {
         writerDone = 1;
         printf("processor %d writer done\n", mOptions->myRank);
         printf("processor %d writer cost %.4f\n", mOptions->myRank, GetTime() - t00);
-        if (mOptions->usePigz) {
+        if (mOptions->usePigz && mOptions->myRank == 0) {
             pigzThread->join();
             printf("pigz done\n");
             printf("pigz cost %.4f\n", GetTime() - t00);
         }
-
-
     }
     if (unMappedWriterThread)
         unMappedWriterThread->join();
@@ -5191,7 +5195,7 @@ bool BarcodeToPositionMulti::process() {
     }
     Result *finalResult = Result::merge(resultList);
 
-    if (mOptions->numaId == 3) {
+    if (mOptions->numPro == 1) {
         finalResult->print();
         printf("format cost %f\n", finalResult->GetCostFormat());
     } else {
@@ -5709,14 +5713,34 @@ void BarcodeToPositionMulti::consumerTask(Result *result) {
 
 void BarcodeToPositionMulti::writeTask(WriterThread *config) {
     if (mOptions->usePigz) {
-        while (true) {
-            //loginfo("writeTask running: " + config->getFilename());
-            if (config->isCompleted()) {
+        if (mOptions->myRank == 0) {
+            while (true) {
+                //loginfo("writeTask running: " + config->getFilename());
+                if (config->isCompleted() && mergeDone) {
+                    config->output(pigzQueue);
+                    break;
+                }
                 config->output(pigzQueue);
-                break;
             }
-            config->output(pigzQueue);
+            printf("wSum is %ld\n", config->GetWSum());
+        } else {
+            //processor 0 done != all done
+
+            while (true) {
+                //loginfo("writeTask running: " + config->getFilename());
+                if (config->isCompleted()) {
+                    config->output(mOptions->communicator);
+                    break;
+                }
+                config->output(mOptions->communicator);
+            }
+            long tag = -1;
+            printf("processor 1 send data done, now send -1\n");
+            MPI_Send(&(tag), 1, MPI_LONG_LONG, 0, 0, mOptions->communicator);
+            printf("processor 1 send -1 done\n");
         }
+
+
     } else {
         if (mOptions->myRank == 0) {
             while (true) {

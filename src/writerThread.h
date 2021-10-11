@@ -59,6 +59,12 @@ private:
     char **mRingBuffer;
     size_t *mRingBufferSizes;
 
+    long wSum;
+public:
+    long GetWSum() const;
+
+private:
+
     mutex mtx;
 };
 
