@@ -115,7 +115,8 @@ void BarcodePositionMap::loadbpmap()
 //      chipMaskH5.readDataSetHashList(bpmap_head, bpmap_nxt,bpmap_key, bpmap_value,position_index);
 //      chipMaskH5.readDataSetHashListOrder(bpmap_head, bpmap_len,bpmap_key, bpmap_value,position_index);
 //      chipMaskH5.readDataSetHashListNoIndex(bpmap_head, bpmap_nxt,bpmap_key,position_index);
-        chipMaskH5.readDataSetHashListNoIndexWithBloomFilter(bpmap_head, bpmap_nxt,bpmap_key,position_index,bloomFilter);
+//        chipMaskH5.readDataSetHashListNoIndexWithBloomFilter(bpmap_head, bpmap_nxt,bpmap_key,position_index,bloomFilter);
+        chipMaskH5.readDataSetHashListOneArrayWithBloomFilter(bpmap_head, bpmap_nxt,position_all,bloomFilter);
 	}
 	else {
 		uint64 barcodeInt;

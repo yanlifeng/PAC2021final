@@ -52,7 +52,9 @@ bool BarcodeToPositionMulti::process() {
 //        results[t]->setBarcodeProcessorHashTable(mbpmap->getHead(),mbpmap->getNext(),mbpmap->getKey(),mbpmap->getValue(),mbpmap->getPosition());
 //        results[t]->setBarcodeProcessorHashTableOrder(mbpmap->getHead(),mbpmap->getLen(),mbpmap->getKey(),mbpmap->getValue(),mbpmap->getPosition(),true);
 //        results[t]->setBarcodeProcessorHashTableNoIndex(mbpmap->getHead(),mbpmap->getNext(),mbpmap->getKey(),mbpmap->getPosition());
-        results[t]->setBarcodeProcessorHashTableNoIndexWithBloomFilter(mbpmap->getHead(),mbpmap->getNext(),mbpmap->getKey(),mbpmap->getPosition(),mbpmap->getBloomFilter());
+//        results[t]->setBarcodeProcessorHashTableNoIndexWithBloomFilter(mbpmap->getHead(),mbpmap->getNext(),mbpmap->getKey(),mbpmap->getPosition(),mbpmap->getBloomFilter());
+        results[t]->setBarcodeProcessorHashTableOneArrayWithBloomFilter(mbpmap->getHead(),mbpmap->getNext(),mbpmap->getPositionAll(),mbpmap->getBloomFilter());
+
     }
 
     std::thread **threads = new thread *[mOptions->thread];

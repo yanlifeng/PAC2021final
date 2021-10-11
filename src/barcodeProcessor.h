@@ -27,6 +27,7 @@ public:
     BarcodeProcessor(Options* opt, int* mbpmap_head, int* mbpmap_len,uint64* mbpmap_key,int* mbpmap_value,Position1* mposition_index,bool ordered);
     BarcodeProcessor(Options* opt, int* mbpmap_head, int* mbpmap_nxt,uint64* mbpmap_key,Position1* mposition_index);
     BarcodeProcessor(Options* opt, int* mbpmap_head, int* mbpmap_nxt,uint64* mbpmap_key,Position1* mposition_index,BloomFilter *mbloomFilter);
+    BarcodeProcessor(Options* opt, int* mbpmap_head, int* mbpmap_nxt,bpmap_key_value* mposition_all,BloomFilter *mbloomFilter);
     BarcodeProcessor();
 	~BarcodeProcessor();
 	bool process(Read* read1, Read* read2);
@@ -50,6 +51,7 @@ private:
     Position1* getPositionHashTableOrder(uint64 barcodeInt);
     Position1* getPositionHashTableNoIndex(uint64 barcodeInt);
     Position1* getPositionHashTableNoIndexWithBloomFiler(uint64 barcodeInt);
+    Position1* getPositionHashTableOneArrayWithBloomFiler(uint64 barcodeInt);
 
     Position1* getPosition(string& barcodeString);
     Position1* getPositionSegment(string& barcodeString);
@@ -60,6 +62,8 @@ private:
     Position1* getPositionHashTableOrder(string& barcodeString);
     Position1* getPositionHashTableNoIndex(string& barcodeString);
     Position1* getPositionHashTableNoIndexWithBloomFiler(string& barcodeString);
+    Position1* getPositionHashTableOneArrayWithBloomFiler(string& barcodeString);
+
 
 	void misMaskGenerate();
 	void misMaskGenerateSegment();
@@ -81,6 +85,7 @@ private:
     int getMisOverlapHashTableOrder(uint64 barcodeInt,uint32 &result_value);
     int getMisOverlapHashTableNoIndex(uint64 barcodeInt,Position1 *&result_value);
     int getMisOverlapHashTableNoIndexWithBloomFiler(uint64 barcodeInt,Position1 *&result_value);
+    int getMisOverlapHashTableOneArrayWithBloomFiler(uint64 barcodeInt,Position1 *&result_value);
 
 
 
@@ -96,8 +101,8 @@ private:
 	int* misMaskLens;
 	int misMaskClassificationNumber;
 	int* misMaskClassification;
-	uint32* misMaskLensSegmentL;
-	uint32* misMaskLensSegmentR;
+	uint64* misMaskLensSegmentL;
+	uint64* misMaskLensSegmentR;
 	uint64* misMaskHash;
 	const char q10 = '+';
 	const char q20 = '5';
@@ -127,6 +132,8 @@ public:
     uint64* bpmap_key;
     int* bpmap_value;
     int* bpmap_len;
+    bpmap_key_value *position_all;
+
 
 	long totalReads = 0;
 	long mMapToSlideRead = 0;

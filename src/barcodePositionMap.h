@@ -45,6 +45,7 @@ public:
     int*                                         getValue(){return bpmap_value;}
     int*                                         getLen(){return bpmap_len;}
     BloomFilter*                                 getBloomFilter(){return bloomFilter;}
+    bpmap_key_value*                             getPositionAll(){return position_all;}
 
 
 public:
@@ -85,6 +86,8 @@ public:
     int *bpmap_len;
 
     Position1* position_index;
+
+    bpmap_key_value* position_all;
 
 
     /*

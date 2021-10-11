@@ -172,6 +172,10 @@ void Result::setBarcodeProcessorHashTableNoIndexWithBloomFilter(int* bpmap_head,
     mBarcodeProcessor = new BarcodeProcessor(mOptions,bpmap_head,bpmap_nxt,bpmap_key,position_index,bloomFilter);
 }
 
+void Result::setBarcodeProcessorHashTableOneArrayWithBloomFilter(int* bpmap_head, int* bpmap_nxt,bpmap_key_value* position_all,BloomFilter* bloomFilter){
+    mBarcodeProcessor = new BarcodeProcessor(mOptions,bpmap_head,bpmap_nxt,position_all,bloomFilter);
+}
+
 void Result::setBarcodeProcessor() {
     mBarcodeProcessor = new BarcodeProcessor();
 }

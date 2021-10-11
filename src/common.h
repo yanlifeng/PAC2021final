@@ -144,6 +144,10 @@ typedef struct bpmap_node{
     bpmap_node* nxt;
 }bpmap_node;
 
+typedef struct bpmap_key_value{
+    uint64 key;
+    Position1 value;
+}bpmap_key_value;
 
 #define getMapKey(x) ((uint32)(x&0x00FFFFFF))
 #define getMapValue(x) ((uint32)((x>>24)&0x03FFFFFF))

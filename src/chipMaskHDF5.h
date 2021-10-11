@@ -39,6 +39,7 @@ public:
     void readDataSetHashListOrder(int *&bpmap_head, int *&bpmap_len, uint64 *&bpmap_key, int *&bpmap_value,Position1 *& position_index, int index = 1);
     void readDataSetHashListNoIndex(int *&bpmap_head, int *&bpmap_nxt, uint64 *&bpmap_key,Position1 *& position_index, int index = 1);
     void readDataSetHashListNoIndexWithBloomFilter(int *&bpmap_head, int *&bpmap_nxt, uint64 *&bpmap_key,Position1 *& position_index, BloomFilter* &bloomFilter,int index = 1);
+    void readDataSetHashListOneArrayWithBloomFilter(int *&bpmap_head, int *&bpmap_nxt,bpmap_key_value *& position_all, BloomFilter* &bloomFilter,int index = 1);
 public:
     std::string fileName;
     hid_t fileID;

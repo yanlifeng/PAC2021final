@@ -49,6 +49,8 @@ public:
 
     void setBarcodeProcessorHashTableNoIndexWithBloomFilter(int* bpmap_head, int* bpmap_nxt,uint64* bpmap_key,Position1* position_index,BloomFilter* bloomFilter);
 
+    void setBarcodeProcessorHashTableOneArrayWithBloomFilter(int* bpmap_head, int* bpmap_nxt,bpmap_key_value* position_all,BloomFilter* bloomFilter);
+
 private:
     void setBarcodeProcessor();
 
