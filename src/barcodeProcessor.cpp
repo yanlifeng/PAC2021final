@@ -1478,6 +1478,41 @@ int BarcodeProcessor::getMisOverlapHashTableNoIndexWithBloomFiler(uint64 barcode
 }
 
 int BarcodeProcessor::getMisOverlapHashTableOneArrayWithBloomFiler(uint64 barcodeInt, Position1 *&result_value) {
+
+//    uint64 misBarcodeInt;
+//    int misCount = 0;
+//    int misMaskIndex = 0;
+//    for (int mis = 0; mis < mismatch; mis++) {
+//        misCount = 0;
+//        while (misMaskIndex < misMaskLens[mis]) {
+//            misBarcodeInt = barcodeInt ^ misMask[misMaskIndex];
+//            misMaskIndex++;
+//            if (bloomFilter->get_xor(misBarcodeInt)){
+//                uint32 mapKey = misBarcodeInt%MOD;
+//                MAPNUM++;
+//                for (int i=bpmap_head[mapKey];i!=-1;i=bpmap_nxt[i]){
+////                MAPNUM++;
+//                    if (position_all[i].key == misBarcodeInt){
+//                        result_value = &position_all[i].value;
+//                        misCount++;
+//                        if (misCount > 1){
+//                            return -1;
+//                        }
+//                        break;
+//                    }
+//                }
+//            }
+//        }
+//        if (misCount == 1) {
+//            return 0;
+//        }
+//    }
+//
+//    return -1;
+
+
+
+
     int misCount = 0;
 
 
@@ -1502,7 +1537,6 @@ int BarcodeProcessor::getMisOverlapHashTableOneArrayWithBloomFiler(uint64 barcod
         }
     }
     if (misCount == 1) return 0;
-
     if (mismatch < 2) return -1;
 
 
@@ -1560,6 +1594,7 @@ int BarcodeProcessor::getMisOverlapHashTableOneArrayWithBloomFiler(uint64 barcod
             uint64 misBarcodeInt = mapValue ^ misMaskLensSegmentR[misMaskIndex];
             misBarcodeInt = (misBarcodeInt << 32) | misBarcodeIntKey;
             if (bloomFilter->get_mod(misBarcodeInt))
+//            if (bloomFilter->get_xor(misBarcodeInt))
             {
                 MAPNUM++;
                 for (int i = bpmap_head[misBarcodeInt % MOD]; i != -1; i = bpmap_nxt[i]) {
@@ -1582,6 +1617,7 @@ int BarcodeProcessor::getMisOverlapHashTableOneArrayWithBloomFiler(uint64 barcod
     if (misCount == 1) return 0;
 
     return -1;
+
 }
 
 Position1 *BarcodeProcessor::getNOverlap(string &barcodeString, uint8 Nindex) {

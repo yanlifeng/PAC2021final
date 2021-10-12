@@ -1634,7 +1634,7 @@ void ChipMaskHDF5::readDataSetHashListOneArrayWithBloomFilter(int *&bpmap_head, 
                     if (barcodeInt == 0) {
                         continue;
                     }
-                    bloomFilter->push(barcodeInt);
+//                    bloomFilter->push_xor(barcodeInt);
                     uint32 mapKey = barcodeInt%MOD;
                     position_all[bpmap_num].key = barcodeInt;
                     position_all[bpmap_num].value = position;
@@ -1649,7 +1649,7 @@ void ChipMaskHDF5::readDataSetHashListOneArrayWithBloomFilter(int *&bpmap_head, 
                 if (barcodeInt == 0) {
                     continue;
                 }
-                bloomFilter->push(barcodeInt);
+//                bloomFilter->push_xor(barcodeInt);
                 uint32 mapKey = barcodeInt%MOD;
                 position_all[bpmap_num].key = barcodeInt;
                 position_all[bpmap_num].value = position;
@@ -1659,33 +1659,74 @@ void ChipMaskHDF5::readDataSetHashListOneArrayWithBloomFilter(int *&bpmap_head, 
             }
         }
     }
-//    int *KeyNum = new int[MOD];
-//    for (int i=0;i<MOD;i++){
-//        KeyNum[i]=0;
-//    }
-//    long long now_time(0),target_time(0);
-//    int min_map_size = MOD+1;
-//    int max_map_size = 0;
-//    for (int i=0;i<MOD;i++){
-//        min_map_size = min(min_map_size,mapKeyNum[i]);
-//        max_map_size = max(max_map_size,mapKeyNum[i]);
-//        KeyNum[mapKeyNum[i]]++;
-//    }
-//    cerr << "Min Map Num is "<< min_map_size<<endl;
-//    cerr << "Max Map Num is "<< max_map_size<<endl;
-//    for (int i=0;i<max_map_size;i++){
-//        cerr << " Map Num " << i << " is "<<KeyNum[i] << endl;
-//        if (i<=1){
-//            target_time += 6ll*KeyNum[i];
-//            now_time    += 6ll*KeyNum[i];
-//        }else{
-//            target_time += (5ll+i)*KeyNum[i];
-//            now_time    += 6ll*KeyNum[i]*i;
-//        }
-//    }
-//    cerr << "target time "<< 1.0*now_time/target_time <<endl;
-//    printf("for  cost %.3f\n", HD5GetTime() - t0);
-//    t0 = HD5GetTime();
+#pragma omp parallel num_threads(2)
+{
+    int num_id = omp_get_thread_num();
+    if (num_id == 0){
+        for (uint32 r = 0; r < dims[0]; r++) {
+            for (uint32 c = 0; c < dims[1]; c++) {
+                if (rank >= 3) {
+                    segment = dims[2];
+                    for (int s = 0; s < segment; s++) {
+                        uint64 barcodeInt = bpMatrix_buffer[r * dims[1] * segment + c * segment + s];
+//                        bloomFilter->push_mod(barcodeInt);
+                        uint32 a = barcodeInt&0xffffffff;
+                        a = (a ^ 61) ^ (a >> 16);
+                        a = a + (a << 3);
+                        a = a ^ (a >> 4);
+                        a = a * 0x27d4eb2d;
+                        a = a ^ (a >> 15);
+                        a = (a>>6)&0x3fff;
+                        // 6 74
+                        uint32 mapkey = (barcodeInt >> 32)|(a << 18);
+                        bloomFilter->hashtable[mapkey>>6] |= (1ll<<(mapkey&0x3f));
+                    }
+                }
+                else{
+                    uint64 barcodeInt = bpMatrix_buffer[r * dims[1] + c];
+//                    bloomFilter->push_mod(barcodeInt);
+                    uint32 a = barcodeInt&0xffffffff;
+                    a = (a ^ 61) ^ (a >> 16);
+                    a = a + (a << 3);
+                    a = a ^ (a >> 4);
+                    a = a * 0x27d4eb2d;
+                    a = a ^ (a >> 15);
+                    a = (a>>6)&0x3fff;
+                    // 6 74
+                    uint32 mapkey = (barcodeInt >> 32)|(a << 18);
+                    bloomFilter->hashtable[mapkey>>6] |= (1ll<<(mapkey&0x3f));
+                }
+            }
+        }
+    }else{
+        for (uint32 r = 0; r < dims[0]; r++) {
+            for (uint32 c = 0; c < dims[1]; c++) {
+                Position1 position = {c, r};
+                if (rank >= 3) {
+                    segment = dims[2];
+                    for (int s = 0; s < segment; s++) {
+                        uint64 barcodeInt = bpMatrix_buffer[r * dims[1] * segment + c * segment + s];
+//                        bloomFilter->push_Classification(barcodeInt);
+                        uint32 mapkey = barcodeInt&0xffffffff;
+                        bloomFilter->hashtableClassification[mapkey>>6] |= (1ll<<(mapkey&0x3f));
+                    }
+                }
+                else{
+                    uint64 barcodeInt = bpMatrix_buffer[r * dims[1] + c];
+//                    bloomFilter->push_Classification(barcodeInt);
+                    uint32 mapkey = barcodeInt&0xffffffff;
+                    bloomFilter->hashtableClassification[mapkey>>6] |= (1ll<<(mapkey&0x3f));
+                }
+            }
+        }
+    }
+}
+
+
+
+
+
+
 
     /*
     for (int r = 0; r<dims[0]; r++){

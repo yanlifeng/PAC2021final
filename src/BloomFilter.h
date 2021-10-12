@@ -23,14 +23,14 @@ public:
     bool push_wang(uint64 key);
     bool get_wang(uint64 key);
 
-private:
+public:
 
     uint64* hashtable;
     uint64* hashtableClassification;
     uint64 size;
 
 
-    const static uint32 HashTableMax = 1ll<<28;
+    const static uint32 HashTableMax = 1ll<<26;
 
 
 

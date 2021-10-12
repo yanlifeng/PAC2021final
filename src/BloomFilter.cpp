@@ -36,7 +36,7 @@ bool BloomFilter::push_mod(uint64 key) {
     a = a ^ (a >> 4);
     a = a * 0x27d4eb2d;
     a = a ^ (a >> 15);
-    a = (a>>15)&0x3fff;
+    a = (a>>6)&0x3fff;
     // 6 74
     uint32 mapkey = (key >> 32)|(a << 18);
     hashtable[mapkey>>6] |= (1ll<<(mapkey&0x3f));
@@ -50,24 +50,22 @@ bool BloomFilter::get_mod(uint64 key) {
     a = a ^ (a >> 4);
     a = a * 0x27d4eb2d;
     a = a ^ (a >> 15);
-    a = (a>>15)&0x3fff;
+    a = (a>>6)&0x3fff;
     uint32 mapkey = (key >> 32)|(a << 18);
     return hashtable[mapkey>>6]&(1ll<<(mapkey&0x3f));
 }
 
 bool BloomFilter::push_xor(uint64 key) {
-//    uint32 mapkey = (key>>32)^(key&0xffffffff);
-    uint32 mapkey = (key>>18)&0xffffffff;
-//    std::cout << "map key is " << (mapkey>>6) << '\n' ;
-//    printf("%ud\n",(mapkey>>6));
+    uint32 mapkey = (key>>32)^(key&0xffffffff);
+//    uint32 mapkey = (key>>18)&0xffffffff;// 神奇 ，效果很棒，过滤完100亿
     hashtable[(mapkey>>6)]|=(1ll<<(mapkey&0x3f));
 //    std::cout << "map is ok!!!" << '\n';
     return false;
 }
 
 bool BloomFilter::get_xor(uint64 key) {
-//    uint32 mapkey = (key>>32)^(key&0xffffffff);
-    uint32 mapkey = (key>>18)&0xffffffff;
+    uint32 mapkey = (key>>32)^(key&0xffffffff);
+//    uint32 mapkey = (key>>18)&0xffffffff;
     return hashtable[mapkey>>6]&(1ll<<(mapkey&0x3f));
 }
 
