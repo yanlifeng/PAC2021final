@@ -39,6 +39,7 @@ TODOs
 - [ ] check pugz&producer and writer&pigz part
 - [ ] inline query function by 👋
 - [ ] fix pugz size bug？？
+- [ ] make pigz not flush to disk
 - [ ] 
 
 ## 0908
@@ -1299,6 +1300,7 @@ update👆。
 | rm -rf /dev/shm/*combine_read* && sleep 2 && mpirun -n 2 ../ST_BarcodeMap-0.0.1 --in DP8400016231TR_D1.barcodeToPos.h5 --in1 V300091300_L03_read_1.fq.gz  --in2 V300091300_L04_read_1.fq.gz --out /dev/shm/combine_read.fq --mismatch 2 --thread 30 --usePugz --pugzThread 2 | 30-32  | 37-39     | 72        | gunzip and push data to memory cost 55<br/>gunzip and push data to memory cost 58<br/>gunzip and push data to memory cost 61<br/>gunzip and push data to memory cost 62 |
 |                                                              |        |           | 71        |                                                              |
 | rm -rf /dev/shm/*combine_read* && sleep 2 && mpirun -n 2 ../ST_BarcodeMap-0.0.1 --in DP8400016231TR_D1.barcodeToPos.h5 --in1 V300091300_L03_read_1.fq.gz  --in2 V300091300_L04_read_1.fq.gz --out /dev/shm/combine_read.fq --mismatch 2 --thread 28 --usePugz --pugzThread 2 |        |           | 72        |                                                              |
+| rm -rf /dev/shm/*combine_read* && sleep 2 && mpirun -n 2 ../ST_BarcodeMap-0.0.1 --in DP8400016231TR_D1.barcodeToPos.h5 --in1 V300091300_L03_read_1.fq.gz  --in2 V300091300_L04_read_1.fq.gz --out /dev/shm/combine_read.fq --mismatch 2 --thread 26 --usePugz --pugzThread 2 |        |           | 75        |                                                              |
 | rm -rf /dev/shm/*combine_read* && sleep 2 && mpirun -n 2 ../ST_BarcodeMap-0.0.1 --in DP8400016231TR_D1.barcodeToPos.h5 --in1 V300091300_L03_read_1.fq.gz  --in2 V300091300_L04_read_1.fq.gz --out /dev/shm/combine_read.fq --mismatch 2 --thread 24 --usePugz --pugzThread 2 |        |           | 77        |                                                              |
 |                                                              |        |           | 76        |                                                              |
 |                                                              |        |           |           |                                                              |
@@ -1321,4 +1323,31 @@ update👆。
 ```
 
 瞅瞅瞅瞅，这些的啥玩意，原来输出文件的大小老是小一丢丢，可能while的时候一直==0，突然来了一个（也是最后一个，wDone置成1，接着-_-），接着dequeue出来了，然后接着if里面size==0，wDone==1，就GG了，最后一块数据就直接不要了。
+
+## 1012
+
+经过简单的测试，查询起码要40s，构建hashmap和bf要30s，pugz可以两个线程（40+s）被构建掩盖，基本上不影响（68-70），但是pigz要10个线程左右才能达到40s，也就是说不会影响查询，但是查询需要>28个线程才能达到40s左右，也就是说单节点压缩的话，只能空出来4个线程给pigz做压缩，显然是不太够的，双节点的话，27+5的结构似乎比较合理，先简单测试一下，不合并：
+
+|                                                   | query | pigz    |      |
+| ------------------------------------------------- | ----- | ------- | ---- |
+| 单纯查询时间32*2                                  | 36/38 |         |      |
+| 单纯查询时间30*2                                  | 37/38 |         |      |
+| 单纯查询时间28*2                                  | 39/40 |         |      |
+| 单纯查询时间26*2                                  | 41/42 |         |      |
+|                                                   |       |         |      |
+| --thread 28 --usePigz --pigzThread 2 --outGzSpilt | 40/40 | 102/121 |      |
+| --thread 28 --usePigz --pigzThread 4 --outGzSpilt | 43/44 | 61/61   |      |
+| --thread 28 --usePigz --pigzThread 6 --outGzSpilt | 42/44 | 44/44   |      |
+|                                                   |       |         |      |
+|                                                   |       |         |      |
+
+好啊，不合并输出效果还是很好的，结果也是对的。
+
+下面写写合并输出，emmmm，和大师兄讨论了一下，觉得两个mpi进程写同一个问价可能会很慢，可以再开一个mpi进程，它先启动一个接收线程收集p0p1发来的fq数据，然后在两个numa节点上分别启动6个线程做pigz。
+
+
+
+
+
+## 1013
 

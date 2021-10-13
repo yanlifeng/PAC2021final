@@ -31,11 +31,12 @@ int main(int argc, char *argv[]) {
     int my_rank, num_procs;
     int proc_len;
     char processor_name[MPI_MAX_PROCESSOR_NAME];
-    MPI_Init(&argc, &argv);
+    MPI_Init(NULL, NULL);
     MPI_Comm_size(MPI_COMM_WORLD, &num_procs);
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
     MPI_Get_processor_name(processor_name, &proc_len);
     printf("Process %d of %d ,processor name is %s\n", my_rank, num_procs, processor_name);
+
 
     cmdline::parser cmd;
     // input/output
@@ -80,7 +81,8 @@ int main(int argc, char *argv[]) {
     cmd.add("verbose", 'V', "output verbose log information (i.e. when every 1M reads are processed).");
     cmd.add("usePugz", 0, "use pugz to decompress\n");
     cmd.add("usePigz", 0, "use pigz to decompress\n");
-    cmd.add<int>("numaId", 0, "for test", false, 3);
+//    cmd.add<int>("numaId", 0, "for test", false, 3);
+    cmd.add("outGzSpilt", 0, "");
 
     cmd.parse_check(argc, argv);
 
@@ -123,18 +125,22 @@ int main(int argc, char *argv[]) {
     opt.transBarcodeToPos.fixedStart = cmd.get<int>("fixedStart");
     opt.transBarcodeToPos.fixedSequenceFile = cmd.get<string>("fixedSequenceFile");
     opt.transBarcodeToPos.PEout = cmd.exist("PEout");
-    opt.numaId = cmd.get<int>("numaId");
+//    opt.numaId = cmd.get<int>("numaId");
+    opt.outGzSpilt = cmd.exist("outGzSpilt");
+
+    printf("outGzSpilt is %d\n", opt.outGzSpilt);
 
     opt.myRank = my_rank;
     opt.numPro = num_procs;
     opt.communicator = MPI_COMM_WORLD;
 
-    if (num_procs > 2) {
-        printf("mpirun -n can't > 2\n");
-        exit(0);
-    }
-    if (num_procs == 2) {
-        opt.numaId = my_rank;
+//    if (num_procs > 2) {
+//        printf("mpirun -n can't > 2\n");
+//        exit(0);
+//    }
+//    opt.numaId = my_rank;
+
+    if (num_procs >= 2) {
         string out_name = opt.out;
         int pos = out_name.find(".fq");
         if (pos < 0 || pos > out_name.size()) {
@@ -145,13 +151,13 @@ int main(int argc, char *argv[]) {
         opt.out = out_name.substr(0, pos) + to_string(my_rank) + sifx;
         opt.transBarcodeToPos.out1 = out_name.substr(0, pos) + to_string(my_rank) + sifx;
     } else if (num_procs == 1) {
-        opt.numaId = 3;
+//        opt.numaId = -1;
     }
 
 //    opt.numaId = 3;
 //    opt.myRank = 0;
 
-    printf("numa id is %d\n", opt.numaId);
+//    printf("numa id is %d\n", opt.numaId);
     printf("pro num is %d\n", opt.numPro);
 
     if (opt.usePugz) {
@@ -186,7 +192,7 @@ int main(int argc, char *argv[]) {
     opt.init();
     opt.validate();
 
-    cout << "action : " << opt.actionInt << endl;
+//    cout << "action : " << opt.actionInt << endl;
 
     if (opt.actionInt == 1) {
         if (opt.transBarcodeToPos.PEout) {
@@ -199,14 +205,18 @@ int main(int argc, char *argv[]) {
             cout << "process cost " << MainGetTime() - t_t0 << endl;
         } else {
 
-            cout << "no pe" << endl;
+
+//            cout << "no pe" << endl;
             auto t_t0 = MainGetTime();
             BarcodeToPositionMulti barcodeToPosMulti(&opt);
-            cout << "new cost " << MainGetTime() - t_t0 << endl;
+//            cout << "new cost " << MainGetTime() - t_t0 << endl;
             t_t0 = MainGetTime();
             barcodeToPosMulti.process();
+            cout << opt.myRank << " work done" << endl;
             if (opt.myRank == 0)
                 cout << "process cost " << MainGetTime() - t_t0 << endl;
+
+
         }
     } else if (opt.actionInt == 2) {
         BarcodeListMerge barcodeListMerge(&opt);
@@ -227,6 +237,7 @@ int main(int argc, char *argv[]) {
         cerr << endl << command << endl;
         cerr << "spatialRNADrawMap" << ", time used: " << (t2 - t1) << " seconds" << endl;
     }
+    MPI_Finalize();
 
     return 0;
 }

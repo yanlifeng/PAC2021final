@@ -5016,17 +5016,22 @@ void BarcodeToPositionMulti::mergeWrite() {
     char *tmpData = NULL;
     long tmpSize = 0;
     long totSize = 0;
+    int cntEnd = 0;
     while (!endTag) {
-        MPI_Recv(&tmpSize, 1, MPI_LONG_LONG, 1, 0, mOptions->communicator, MPI_STATUS_IGNORE);
-        if (tmpSize == -1) {
-            printf("processor 0 get -1\n");
-            endTag = 1;
-        } else {
-            tmpData = new char[tmpSize + 1];
-            MPI_Recv(tmpData, tmpSize, MPI_CHAR, 1, 0, mOptions->communicator, MPI_STATUS_IGNORE);
+        for (int ii = 1; ii < mOptions->numPro; ii++) {
+            MPI_Recv(&tmpSize, 1, MPI_LONG_LONG, ii, 0, mOptions->communicator, MPI_STATUS_IGNORE);
+            if (tmpSize == -1) {
+                printf("processor 0 get -1\n");
+                cntEnd++;
+                if (cntEnd == mOptions->numPro - 1)
+                    endTag = 1;
+            } else {
+                tmpData = new char[tmpSize + 1];
+                MPI_Recv(tmpData, tmpSize, MPI_CHAR, ii, 0, mOptions->communicator, MPI_STATUS_IGNORE);
 //            printf("processor 0 get data %ld\n", tmpSize);
-            totSize += tmpSize;
-            mWriter->input(tmpData, tmpSize);
+                totSize += tmpSize;
+                mWriter->input(tmpData, tmpSize);
+            }
         }
     }
     printf("processor merge get %lld data\n", totSize);
@@ -5077,6 +5082,9 @@ argv p.fq
 }
 
 bool BarcodeToPositionMulti::process() {
+//    if (mOptions->myRank == 2) {
+//        return 0;
+//    }
 
 
     auto t00 = GetTime();
@@ -5102,7 +5110,8 @@ bool BarcodeToPositionMulti::process() {
     t00 = GetTime();
 
 
-    thread producer(bind(&BarcodeToPositionMulti::producerTask, this));
+    thread
+            producer(bind(&BarcodeToPositionMulti::producerTask, this));
 
 //    printf("wait get map thread done...\n");
 //    getMbp->join();
@@ -5136,18 +5145,30 @@ bool BarcodeToPositionMulti::process() {
     thread *mergeThread = NULL;
     if (mWriter) {
         writerThread = new thread(bind(&BarcodeToPositionMulti::writeTask, this, mWriter));
-        if (mOptions->numPro > 1 && mOptions->myRank == 0) {
-            mergeThread = new thread(bind(&BarcodeToPositionMulti::mergeWrite, this));
+
+        if (mOptions->outGzSpilt) {
+
+        } else {
+            if (mOptions->numPro > 1 && mOptions->myRank == 0) {
+                mergeThread = new thread(bind(&BarcodeToPositionMulti::mergeWrite, this));
+            }
         }
+
+
     }
     if (mUnmappedWriter) {
         unMappedWriterThread = new thread(bind(&BarcodeToPositionMulti::writeTask, this, mUnmappedWriter));
     }
 
     thread *pigzThread;
-    if (mOptions->usePigz && mOptions->myRank == 0) {
+    if (mOptions->outGzSpilt) {
         pigzThread = new thread(bind(&BarcodeToPositionMulti::pigzWrite, this));
+    } else {
+        if (mOptions->usePigz && mOptions->myRank == 0) {
+            pigzThread = new thread(bind(&BarcodeToPositionMulti::pigzWrite, this));
+        }
     }
+
 
     producer.join();
 
@@ -5166,19 +5187,30 @@ bool BarcodeToPositionMulti::process() {
     printf("processor %d consumer cost %.4f\n", mOptions->myRank, GetTime() - t00);
 
     if (writerThread) {
-        if (mOptions->numPro > 1 && mOptions->myRank == 0) {
-            mergeThread->join();
-            printf("mergeThread done\n");
-            mergeDone = 1;
+        if (mOptions->outGzSpilt) {
+
+        } else {
+            if (mOptions->numPro > 1 && mOptions->myRank == 0) {
+                mergeThread->join();
+                printf("mergeThread done\n");
+                mergeDone = 1;
+            }
         }
+
         writerThread->join();
         writerDone = 1;
         printf("processor %d writer done\n", mOptions->myRank);
         printf("processor %d writer cost %.4f\n", mOptions->myRank, GetTime() - t00);
-        if (mOptions->usePigz && mOptions->myRank == 0) {
+        if (mOptions->outGzSpilt) {
             pigzThread->join();
-            printf("pigz done\n");
-            printf("pigz cost %.4f\n", GetTime() - t00);
+            printf("processor %d pigz done\n", mOptions->myRank);
+            printf("processor %d pigz cost %.4f\n", mOptions->myRank, GetTime() - t00);
+        } else {
+            if (mOptions->usePigz && mOptions->myRank == 0) {
+                pigzThread->join();
+                printf("pigz done\n");
+                printf("pigz cost %.4f\n", GetTime() - t00);
+            }
         }
     }
     if (unMappedWriterThread)
@@ -5206,59 +5238,86 @@ bool BarcodeToPositionMulti::process() {
         if (mOptions->myRank == 0) {
             printf("=======================print ans from process 0=========================\n");
 
-            Result *resultTmp = new Result(mOptions, true);
-            resultTmp->setBarcodeProcessor(mbpmap->GetHashNum(), mbpmap->GetHashHead(), mbpmap->GetHashMap(),
-                                           mbpmap->GetBloomFilter());
+            vector<Result *> newResList;
+            newResList.push_back(finalResult);
+            for (int ii = 1; ii < mOptions->numPro; ii++) {
+                Result *resultTmp = new Result(mOptions, true);
+                resultTmp->setBarcodeProcessor(mbpmap->GetHashNum(), mbpmap->GetHashHead(), mbpmap->GetHashMap(),
+                                               mbpmap->GetBloomFilter());
 //        printf("p0 waiting first data\n");
-            MPI_Recv(&(resultTmp->mTotalRead), 1, MPI_LONG_LONG, 1, 1, mOptions->communicator, MPI_STATUS_IGNORE);
+                MPI_Recv(&(resultTmp->mTotalRead), 1, MPI_LONG_LONG, ii, 1, mOptions->communicator,
+                         MPI_STATUS_IGNORE);
 //        printf("p0 get first data\n");
-            MPI_Recv(&(resultTmp->mFxiedFilterRead), 1, MPI_LONG_LONG, 1, 1, mOptions->communicator, MPI_STATUS_IGNORE);
-            MPI_Recv(&(resultTmp->mDupRead), 1, MPI_LONG_LONG, 1, 1, mOptions->communicator, MPI_STATUS_IGNORE);
-            MPI_Recv(&(resultTmp->mLowQuaRead), 1, MPI_LONG_LONG, 1, 1, mOptions->communicator, MPI_STATUS_IGNORE);
-            MPI_Recv(&(resultTmp->mWithoutPositionReads), 1, MPI_LONG_LONG, 1, 1, mOptions->communicator,
-                     MPI_STATUS_IGNORE);
-            MPI_Recv(&(resultTmp->overlapReadsWithMis), 1, MPI_LONG_LONG, 1, 1, mOptions->communicator,
-                     MPI_STATUS_IGNORE);
-            MPI_Recv(&(resultTmp->overlapReadsWithN), 1, MPI_LONG_LONG, 1, 1, mOptions->communicator,
-                     MPI_STATUS_IGNORE);
+                MPI_Recv(&(resultTmp->mFxiedFilterRead), 1, MPI_LONG_LONG, ii, 1, mOptions->communicator,
+                         MPI_STATUS_IGNORE);
+                MPI_Recv(&(resultTmp->mDupRead), 1, MPI_LONG_LONG, ii, 1, mOptions->communicator,
+                         MPI_STATUS_IGNORE);
+                MPI_Recv(&(resultTmp->mLowQuaRead), 1, MPI_LONG_LONG, ii, 1, mOptions->communicator,
+                         MPI_STATUS_IGNORE);
+                MPI_Recv(&(resultTmp->mWithoutPositionReads), 1, MPI_LONG_LONG, ii, 1,
+                         mOptions->communicator,
+                         MPI_STATUS_IGNORE);
+                MPI_Recv(&(resultTmp->overlapReadsWithMis), 1, MPI_LONG_LONG, ii, 1, mOptions->communicator,
+                         MPI_STATUS_IGNORE);
+                MPI_Recv(&(resultTmp->overlapReadsWithN), 1, MPI_LONG_LONG, ii, 1, mOptions->communicator,
+                         MPI_STATUS_IGNORE);
 
 
-            MPI_Recv(&(resultTmp->mBarcodeProcessor->totalReads), 1, MPI_LONG_LONG, 1, 1, mOptions->communicator,
-                     MPI_STATUS_IGNORE);
-            MPI_Recv(&(resultTmp->mBarcodeProcessor->mMapToSlideRead), 1, MPI_LONG_LONG, 1, 1, mOptions->communicator,
-                     MPI_STATUS_IGNORE);
-            MPI_Recv(&(resultTmp->mBarcodeProcessor->overlapReads), 1, MPI_LONG_LONG, 1, 1, mOptions->communicator,
-                     MPI_STATUS_IGNORE);
-            MPI_Recv(&(resultTmp->mBarcodeProcessor->overlapReadsWithMis), 1, MPI_LONG_LONG, 1, 1,
-                     mOptions->communicator,
-                     MPI_STATUS_IGNORE);
-            MPI_Recv(&(resultTmp->mBarcodeProcessor->overlapReadsWithN), 1, MPI_LONG_LONG, 1, 1, mOptions->communicator,
-                     MPI_STATUS_IGNORE);
-            MPI_Recv(&(resultTmp->mBarcodeProcessor->barcodeQ10), 1, MPI_LONG_LONG, 1, 1, mOptions->communicator,
-                     MPI_STATUS_IGNORE);
-            MPI_Recv(&(resultTmp->mBarcodeProcessor->barcodeQ20), 1, MPI_LONG_LONG, 1, 1, mOptions->communicator,
-                     MPI_STATUS_IGNORE);
-            MPI_Recv(&(resultTmp->mBarcodeProcessor->barcodeQ30), 1, MPI_LONG_LONG, 1, 1, mOptions->communicator,
-                     MPI_STATUS_IGNORE);
-            MPI_Recv(&(resultTmp->mBarcodeProcessor->umiQ10), 1, MPI_LONG_LONG, 1, 1, mOptions->communicator,
-                     MPI_STATUS_IGNORE);
-            MPI_Recv(&(resultTmp->mBarcodeProcessor->umiQ20), 1, MPI_LONG_LONG, 1, 1, mOptions->communicator,
-                     MPI_STATUS_IGNORE);
-            MPI_Recv(&(resultTmp->mBarcodeProcessor->umiQ30), 1, MPI_LONG_LONG, 1, 1, mOptions->communicator,
-                     MPI_STATUS_IGNORE);
-            MPI_Recv(&(resultTmp->mBarcodeProcessor->umiQ10FilterReads), 1, MPI_LONG_LONG, 1, 1, mOptions->communicator,
-                     MPI_STATUS_IGNORE);
-            MPI_Recv(&(resultTmp->mBarcodeProcessor->umiNFilterReads), 1, MPI_LONG_LONG, 1, 1, mOptions->communicator,
-                     MPI_STATUS_IGNORE);
-            MPI_Recv(&(resultTmp->mBarcodeProcessor->umiPloyAFilterReads), 1, MPI_LONG_LONG, 1, 1,
-                     mOptions->communicator,
-                     MPI_STATUS_IGNORE);
-            MPI_Recv(&(resultTmp->mBarcodeProcessor->totQuery), 1, MPI_LONG_LONG, 1, 1, mOptions->communicator,
-                     MPI_STATUS_IGNORE);
-            MPI_Recv(&(resultTmp->mBarcodeProcessor->filterQuery), 1, MPI_LONG_LONG, 1, 1, mOptions->communicator,
-                     MPI_STATUS_IGNORE);
-            MPI_Recv(&(resultTmp->mBarcodeProcessor->queryYes), 1, MPI_LONG_LONG, 1, 1, mOptions->communicator,
-                     MPI_STATUS_IGNORE);
+                MPI_Recv(&(resultTmp->mBarcodeProcessor->totalReads), 1, MPI_LONG_LONG, ii, 1,
+                         mOptions->communicator,
+                         MPI_STATUS_IGNORE);
+                MPI_Recv(&(resultTmp->mBarcodeProcessor->mMapToSlideRead), 1, MPI_LONG_LONG, ii, 1,
+                         mOptions->communicator,
+                         MPI_STATUS_IGNORE);
+                MPI_Recv(&(resultTmp->mBarcodeProcessor->overlapReads), 1, MPI_LONG_LONG, ii, 1,
+                         mOptions->communicator,
+                         MPI_STATUS_IGNORE);
+                MPI_Recv(&(resultTmp->mBarcodeProcessor->overlapReadsWithMis), 1, MPI_LONG_LONG, ii, 1,
+                         mOptions->communicator,
+                         MPI_STATUS_IGNORE);
+                MPI_Recv(&(resultTmp->mBarcodeProcessor->overlapReadsWithN), 1, MPI_LONG_LONG, ii, 1,
+                         mOptions->communicator,
+                         MPI_STATUS_IGNORE);
+                MPI_Recv(&(resultTmp->mBarcodeProcessor->barcodeQ10), 1, MPI_LONG_LONG, ii, 1,
+                         mOptions->communicator,
+                         MPI_STATUS_IGNORE);
+                MPI_Recv(&(resultTmp->mBarcodeProcessor->barcodeQ20), 1, MPI_LONG_LONG, ii, 1,
+                         mOptions->communicator,
+                         MPI_STATUS_IGNORE);
+                MPI_Recv(&(resultTmp->mBarcodeProcessor->barcodeQ30), 1, MPI_LONG_LONG, ii, 1,
+                         mOptions->communicator,
+                         MPI_STATUS_IGNORE);
+                MPI_Recv(&(resultTmp->mBarcodeProcessor->umiQ10), 1, MPI_LONG_LONG, ii, 1,
+                         mOptions->communicator,
+                         MPI_STATUS_IGNORE);
+                MPI_Recv(&(resultTmp->mBarcodeProcessor->umiQ20), 1, MPI_LONG_LONG, ii, 1,
+                         mOptions->communicator,
+                         MPI_STATUS_IGNORE);
+                MPI_Recv(&(resultTmp->mBarcodeProcessor->umiQ30), 1, MPI_LONG_LONG, ii, 1,
+                         mOptions->communicator,
+                         MPI_STATUS_IGNORE);
+                MPI_Recv(&(resultTmp->mBarcodeProcessor->umiQ10FilterReads), 1, MPI_LONG_LONG, ii, 1,
+                         mOptions->communicator,
+                         MPI_STATUS_IGNORE);
+                MPI_Recv(&(resultTmp->mBarcodeProcessor->umiNFilterReads), 1, MPI_LONG_LONG, ii, 1,
+                         mOptions->communicator,
+                         MPI_STATUS_IGNORE);
+                MPI_Recv(&(resultTmp->mBarcodeProcessor->umiPloyAFilterReads), 1, MPI_LONG_LONG, ii, 1,
+                         mOptions->communicator,
+                         MPI_STATUS_IGNORE);
+                MPI_Recv(&(resultTmp->mBarcodeProcessor->totQuery), 1, MPI_LONG_LONG, ii, 1,
+                         mOptions->communicator,
+                         MPI_STATUS_IGNORE);
+                MPI_Recv(&(resultTmp->mBarcodeProcessor->filterQuery), 1, MPI_LONG_LONG, ii, 1,
+                         mOptions->communicator,
+                         MPI_STATUS_IGNORE);
+                MPI_Recv(&(resultTmp->mBarcodeProcessor->queryYes), 1, MPI_LONG_LONG, ii, 1,
+                         mOptions->communicator,
+                         MPI_STATUS_IGNORE);
+                newResList.push_back(resultTmp);
+
+            }
+
 
 //        printf("process 0 get res done\n");
 
@@ -5266,9 +5325,7 @@ bool BarcodeToPositionMulti::process() {
 //        finalResult->print();
 
 //        printf("----------\n");
-            vector<Result *> newResList;
-            newResList.push_back(finalResult);
-            newResList.push_back(resultTmp);
+
 
             finalResult = Result::merge(newResList);
 
@@ -5590,6 +5647,7 @@ void BarcodeToPositionMulti::producerTask() {
     pair<char *, int> last1;
     pair<char *, int> last2;
     int cnt = 0;
+    int whoTurn = 0;
 
     if (mOptions->usePugz) {
         last1.first = new char[1 << 20];
@@ -5606,17 +5664,16 @@ void BarcodeToPositionMulti::producerTask() {
 //                   chunk_pair->leftpart->size, chunk_pair->rightpart->size);
 //            cout << "read " << (cnt++) << " chunk done, size is " << chunk_pair->leftpart->size << " "
 //                 << chunk_pair->rightpart->size << endl;
-            if (mOptions->numaId == 3) {
+            if (whoTurn == mOptions->myRank) {
                 producePack(chunk_pair);
+                cnt++;
             } else {
-                if ((cnt & 1) == mOptions->numaId) {
-                    producePack(chunk_pair);
-                } else {
-                    pairReader->fastqPool_left->Release(chunk_pair->leftpart);
-                    pairReader->fastqPool_right->Release(chunk_pair->rightpart);
-                }
+                pairReader->fastqPool_left->Release(chunk_pair->leftpart);
+                pairReader->fastqPool_right->Release(chunk_pair->rightpart);
             }
-            cnt++;
+            whoTurn++;
+            whoTurn %= mOptions->numPro;
+
             while (mRepo.writePos - mRepo.readPos > PACK_IN_MEM_LIMIT) {
 //                printf("producer wait consumer\n");
 //                cout << "producer wait consumer" << endl;
@@ -5632,17 +5689,15 @@ void BarcodeToPositionMulti::producerTask() {
                 loginfo("producer read one chunk");
 //            printf("read %d chunk done, size is %lld %lld\n", cnt++,
 //                   chunk_pair->leftpart->size, chunk_pair->rightpart->size);
-            if (mOptions->numaId == 3) {
+            if (whoTurn == mOptions->myRank) {
                 producePack(chunk_pair);
+                cnt++;
             } else {
-                if ((cnt & 1) == mOptions->numaId) {
-                    producePack(chunk_pair);
-                } else {
-                    pairReader->fastqPool_left->Release(chunk_pair->leftpart);
-                    pairReader->fastqPool_right->Release(chunk_pair->rightpart);
-                }
+                pairReader->fastqPool_left->Release(chunk_pair->leftpart);
+                pairReader->fastqPool_right->Release(chunk_pair->rightpart);
             }
-            cnt++;
+            whoTurn++;
+            whoTurn %= mOptions->numPro;
             while (mRepo.writePos - mRepo.readPos > PACK_IN_MEM_LIMIT) {
 //                printf("producer waiting...\n");
                 slept++;
@@ -5657,8 +5712,9 @@ void BarcodeToPositionMulti::producerTask() {
     if (mOptions->verbose)
         loginfo("all reads loaded, start to monitor thread status");
     //lock.unlock();
+    printf("producer %d get %d chunk\n", mOptions->myRank, cnt);
 
-    printf("producer cost %.5f\n", GetTime() - t0);
+    printf("producer %d cost %.5f\n", mOptions->myRank, GetTime() - t0);
     producerDone = 1;
 }
 
@@ -5712,61 +5768,77 @@ void BarcodeToPositionMulti::consumerTask(Result *result) {
 
 
 void BarcodeToPositionMulti::writeTask(WriterThread *config) {
-    if (mOptions->usePigz) {
-        if (mOptions->myRank == 0) {
-            while (true) {
-                //loginfo("writeTask running: " + config->getFilename());
-                if (config->isCompleted() && mergeDone) {
-                    config->output(pigzQueue);
-                    break;
-                }
+
+
+    if (mOptions->outGzSpilt) {//deflate in gz file and use pigz
+        while (true) {
+            //loginfo("writeTask running: " + config->getFilename());
+            if (config->isCompleted()) {
                 config->output(pigzQueue);
+                break;
             }
-            printf("wSum is %ld\n", config->GetWSum());
-        } else {
-            //processor 0 done != all done
-
-            while (true) {
-                //loginfo("writeTask running: " + config->getFilename());
-                if (config->isCompleted()) {
-                    config->output(mOptions->communicator);
-                    break;
-                }
-                config->output(mOptions->communicator);
-            }
-            long tag = -1;
-            printf("processor 1 send data done, now send -1\n");
-            MPI_Send(&(tag), 1, MPI_LONG_LONG, 0, 0, mOptions->communicator);
-            printf("processor 1 send -1 done\n");
+            config->output(pigzQueue);
         }
-
+        printf("processor %d wSum is %ld\n", mOptions->myRank, config->GetWSum());
 
     } else {
-        if (mOptions->myRank == 0) {
-            while (true) {
-                //loginfo("writeTask running: " + config->getFilename());
-
-                if (config->isCompleted() && mergeDone) {
-                    config->output();
-                    break;
+        if (mOptions->usePigz) {
+            if (mOptions->myRank == 0) {
+                while (true) {
+                    //loginfo("writeTask running: " + config->getFilename());
+                    if (config->isCompleted() && mergeDone) {
+                        config->output(pigzQueue);
+                        break;
+                    }
+                    config->output(pigzQueue);
                 }
-                config->output();
+                printf("processor %d wSum is %ld\n", mOptions->myRank, config->GetWSum());
+            } else {
+                //processor 0 done != all done
+
+
+                while (true) {
+                    //loginfo("writeTask running: " + config->getFilename());
+                    if (config->isCompleted()) {
+                        config->output(mOptions->communicator);
+                        break;
+                    }
+                    config->output(mOptions->communicator);
+                }
+                long tag = -1;
+                printf("processor 1 send data done, now send -1\n");
+                MPI_Send(&(tag), 1, MPI_LONG_LONG, 0, 0, mOptions->communicator);
+                printf("processor 1 send -1 done\n");
+
             }
         } else {
-            //processor 0 done != all done
+            if (mOptions->myRank == 0) {
+                while (true) {
+                    //loginfo("writeTask running: " + config->getFilename());
 
-            while (true) {
-                //loginfo("writeTask running: " + config->getFilename());
-                if (config->isCompleted()) {
-                    config->output(mOptions->communicator);
-                    break;
+                    if (config->isCompleted() && mergeDone) {
+                        config->output();
+                        break;
+                    }
+                    config->output();
                 }
-                config->output(mOptions->communicator);
+            } else {
+                //processor 0 done != all done
+
+                while (true) {
+                    //loginfo("writeTask running: " + config->getFilename());
+                    if (config->isCompleted()) {
+                        config->output(mOptions->communicator);
+                        break;
+                    }
+                    config->output(mOptions->communicator);
+                }
+                long tag = -1;
+                printf("processor 1 send data done, now send -1\n");
+                MPI_Send(&(tag), 1, MPI_LONG_LONG, 0, 0, mOptions->communicator);
+                printf("processor 1 send -1 done\n");
             }
-            long tag = -1;
-            printf("processor 1 send data done, now send -1\n");
-            MPI_Send(&(tag), 1, MPI_LONG_LONG, 0, 0, mOptions->communicator);
-            printf("processor 1 send -1 done\n");
+
         }
 
     }

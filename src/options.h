@@ -158,8 +158,8 @@ public:
     //h5 dims1 size
     int dims1Size;
 
-    //test numa socket
-    int numaId;
+//    //test numa socket
+//    int numaId;
 
     //mpi id
     int myRank;
@@ -169,6 +169,9 @@ public:
 
     //test
     MPI_Comm communicator;
+
+    //out gz spilt
+    bool outGzSpilt;
 
     string rcString;
     int rc;
