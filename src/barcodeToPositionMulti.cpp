@@ -5067,7 +5067,7 @@ argv p.fq
     memcpy(infos[2], th_num_s.c_str(), th_num_s.length());
     infos[2][th_num_s.length()] = '\0';
     infos[3] = "-k";
-    infos[4] = "-4";
+    infos[4] = "-1";
     infos[5] = "-f";
     infos[6] = "-b";
     infos[7] = "4096";
@@ -5094,12 +5094,21 @@ bool BarcodeToPositionMulti::process() {
     thread *pugzer1;
     thread *pugzer2;
 
+
+    auto getMbp = new thread(bind(&BarcodeToPositionMulti::getMbpmap, this));
+
+
+//    printf("wait get map thread done...\n");
+//    getMbp->join();
+//    printf("get map thread done\n");
+//
+//    printf("get map cost %.4f\n", GetTime() - t00);
+//    t00 = GetTime();
+
     if (mOptions->usePugz) {
         pugzer1 = new thread(bind(&BarcodeToPositionMulti::pugzTask1, this));
         pugzer2 = new thread(bind(&BarcodeToPositionMulti::pugzTask2, this));
     }
-
-    auto getMbp = new thread(bind(&BarcodeToPositionMulti::getMbpmap, this));
 
 
     printf("wait get map thread done...\n");
@@ -5110,16 +5119,17 @@ bool BarcodeToPositionMulti::process() {
     t00 = GetTime();
 
 
-    thread
-            producer(bind(&BarcodeToPositionMulti::producerTask, this));
+    thread producer(bind(&BarcodeToPositionMulti::producerTask, this));
 
 //    printf("wait get map thread done...\n");
 //    getMbp->join();
 //    printf("get map thread done\n");
 //
 //    printf("get map cost %.4f\n", GetTime() - t00);
+//    t00 = GetTime();
 
     mOptions->dims1Size = mbpmap->GetDims1();
+
 
     Result **results = new Result *[mOptions->thread];
     BarcodeProcessor **barcodeProcessors = new BarcodeProcessor *[mOptions->thread];
@@ -5230,6 +5240,7 @@ bool BarcodeToPositionMulti::process() {
     if (mOptions->numPro == 1) {
         finalResult->print();
         printf("format cost %f\n", finalResult->GetCostFormat());
+
     } else {
         printf("watind barrier\n");
         MPI_Barrier(mOptions->communicator);
@@ -5332,6 +5343,8 @@ bool BarcodeToPositionMulti::process() {
 //        printf("merger done, start print\n");
 
             finalResult->print();
+            printf("format cost %f\n", finalResult->GetCostFormat());
+
             printf("========================================================================\n");
 
         } else {
@@ -5649,6 +5662,13 @@ void BarcodeToPositionMulti::producerTask() {
     int cnt = 0;
     int whoTurn = 0;
 
+    int mps[7] = {0, 0, 0, 1, 1, 1, 1};
+    printf("mps\n");
+    for (int i = 0; i < 7; i++)
+        printf("%d ", mps[i]);
+    printf("\n");
+
+
     if (mOptions->usePugz) {
         last1.first = new char[1 << 20];
         last1.second = 0;
@@ -5664,7 +5684,7 @@ void BarcodeToPositionMulti::producerTask() {
 //                   chunk_pair->leftpart->size, chunk_pair->rightpart->size);
 //            cout << "read " << (cnt++) << " chunk done, size is " << chunk_pair->leftpart->size << " "
 //                 << chunk_pair->rightpart->size << endl;
-            if (whoTurn == mOptions->myRank) {
+            if (mps[whoTurn] == mOptions->myRank) {
                 producePack(chunk_pair);
                 cnt++;
             } else {
@@ -5672,8 +5692,7 @@ void BarcodeToPositionMulti::producerTask() {
                 pairReader->fastqPool_right->Release(chunk_pair->rightpart);
             }
             whoTurn++;
-            whoTurn %= mOptions->numPro;
-
+            whoTurn %= 7;
             while (mRepo.writePos - mRepo.readPos > PACK_IN_MEM_LIMIT) {
 //                printf("producer wait consumer\n");
 //                cout << "producer wait consumer" << endl;
@@ -5689,7 +5708,7 @@ void BarcodeToPositionMulti::producerTask() {
                 loginfo("producer read one chunk");
 //            printf("read %d chunk done, size is %lld %lld\n", cnt++,
 //                   chunk_pair->leftpart->size, chunk_pair->rightpart->size);
-            if (whoTurn == mOptions->myRank) {
+            if (mps[whoTurn] == mOptions->myRank) {
                 producePack(chunk_pair);
                 cnt++;
             } else {
@@ -5697,9 +5716,9 @@ void BarcodeToPositionMulti::producerTask() {
                 pairReader->fastqPool_right->Release(chunk_pair->rightpart);
             }
             whoTurn++;
-            whoTurn %= mOptions->numPro;
+            whoTurn %= 7;
             while (mRepo.writePos - mRepo.readPos > PACK_IN_MEM_LIMIT) {
-//                printf("producer waiting...\n");
+                printf("producer waiting...\n");
                 slept++;
                 usleep(100);
             }

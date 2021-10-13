@@ -76,6 +76,7 @@ int main(int argc, char *argv[]) {
                  "chose one action you want to run [map_barcode_to_slide = 1, merge_barcode_list = 2, mask_format_change = 3, mask_merge = 4].",
                  false, 1);
     cmd.add<int>("thread", 'w', "number of thread that will be used to run.", false, 2);
+    cmd.add<int>("thread2", 0, "number of thread that will be used to run.", false, 2);
     cmd.add<int>("pugzThread", 0, "number of thread that will be used to pugz.", false, 1);
     cmd.add<int>("pigzThread", 0, "number of thread that will be used to pigz.", false, 1);
     cmd.add("verbose", 'V', "output verbose log information (i.e. when every 1M reads are processed).");
@@ -104,6 +105,7 @@ int main(int argc, char *argv[]) {
     opt.usePugz = cmd.exist("usePugz");
     opt.usePigz = cmd.exist("usePigz");
     opt.thread = cmd.get<int>("thread");
+    opt.thread2 = cmd.get<int>("thread2");
     opt.pugzThread = cmd.get<int>("pugzThread");
     opt.pigzThread = cmd.get<int>("pigzThread");
     opt.report = cmd.get<string>("report");
@@ -126,6 +128,10 @@ int main(int argc, char *argv[]) {
     opt.transBarcodeToPos.fixedSequenceFile = cmd.get<string>("fixedSequenceFile");
     opt.transBarcodeToPos.PEout = cmd.exist("PEout");
 //    opt.numaId = cmd.get<int>("numaId");
+
+
+
+
     opt.outGzSpilt = cmd.exist("outGzSpilt");
 
     printf("outGzSpilt is %d\n", opt.outGzSpilt);
@@ -133,6 +139,13 @@ int main(int argc, char *argv[]) {
     opt.myRank = my_rank;
     opt.numPro = num_procs;
     opt.communicator = MPI_COMM_WORLD;
+
+    if (opt.myRank == 1) {
+        opt.thread = opt.thread2;
+
+    }
+    printf("processor %d thread is %d\n", opt.myRank, opt.thread);
+
 
 //    if (num_procs > 2) {
 //        printf("mpirun -n can't > 2\n");

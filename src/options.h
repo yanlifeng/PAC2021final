@@ -151,6 +151,7 @@ public:
     bool verbose;
     bool usePugz;
     int thread;
+    int thread2;
     int pugzThread;
     int usePigz;
     int pigzThread;
