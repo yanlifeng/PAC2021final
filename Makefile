@@ -43,7 +43,7 @@ endif
 
 CXX = mpigxx
 CXXFLAGS := -std=c++11 -g -O3 -w -I${DIR_INC} -mssse3 -I./ -I./common $(foreach includedir,$(INCLUDE_DIRS),-I$(includedir)) ${CXXFLAGS} \
-$(call cc-option,-flto=jobserver,-flto) -march=native -mtune=native
+$(call cc-option,-flto=jobserver,-flto) -march=native -mtune=native -fopenmp
 
 CXX2 = mpigcc
 CXXFLAGS2 :=  -O3 -w -Wall -Wextra -Wno-unknown-pragmas -Wcast-qual

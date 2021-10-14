@@ -18,6 +18,7 @@ Result::Result(Options *opt, int threadId, bool paired) {
 
 
     costFormat = 0;
+    costPE = 0;
 
 }
 
@@ -33,6 +34,7 @@ Result *Result::merge(vector<Result *> &list) {
 
     for (int i = 0; i < list.size(); i++) {
         result->costFormat = max(result->costFormat, list[i]->costFormat);
+        result->costPE = max(result->costPE, list[i]->costPE);
         result->mTotalRead += list[i]->mTotalRead;
         result->mFxiedFilterRead += list[i]->mFxiedFilterRead;
         result->mWithoutPositionReads += list[i]->mWithoutPositionReads;
@@ -158,6 +160,10 @@ void Result::setBarcodeProcessor() {
 
 double Result::GetCostFormat() const {
     return costFormat;
+}
+
+double Result::GetCostPe() const {
+    return costPE;
 }
 
 

@@ -8,7 +8,6 @@ BarcodePositionMap::BarcodePositionMap(Options *opt) {
     segment = opt->barcodeSegment;
     split(opt->in, inMasks, ",");
     loadbpmap();
-//    printf("test3 val is %d\n", hashHead[109547259]);
 }
 
 BarcodePositionMap::~BarcodePositionMap() {
@@ -102,20 +101,9 @@ void BarcodePositionMap::loadbpmap() {
         }
         mapReader.close();
     } else if (ends_with(barcodePositionMapFile, "h5") || ends_with(barcodePositionMapFile, "hdf5")) {
-//        printf("name is %s\n", barcodePositionMapFile.c_str());
         ChipMaskHDF5 chipMaskH5(barcodePositionMapFile);
-//        printf("111\n");
         chipMaskH5.openFile();
-//        printf("222\n");
-//        chipMaskH5.readDataSet(bpmap);
-//        printf("now hashHead postion is %d\n", hashHead);
-
         chipMaskH5.readDataSet(hashNum, hashHead, hashMap, dims1, bloomFilter);
-//        printf("now2 map size is %d\n", hashNum);
-//        printf("now hashHead postion is %d\n", hashHead);
-//        printf("test2 val is %d\n", hashHead[109547259]);
-
-
     } else {
         uint64 barcodeInt;
         Position1 position;

@@ -167,9 +167,10 @@ void ChipMaskHDF5::readDataSet(int &hashNum, int *&hashHead, node *&hashMap, int
         segment = dims[2];
     }
 
-    uint64 *bpMatrix_buffer = new uint64[matrixLen]();
+//    uint64 *bpMatrix_buffer = new uint64[matrixLen]();
+    uint64 *bpMatrix_buffer = new uint64[matrixLen];
 
-    printf("new buffer cost %.3f\n", HD5GetTime() - t0);
+    printf("new buffer cost %.6f\n", HD5GetTime() - t0);
     t0 = HD5GetTime();
     //cerr << "read bpMatrix finished..." <<endl;
 
@@ -206,8 +207,6 @@ void ChipMaskHDF5::readDataSet(int &hashNum, int *&hashHead, node *&hashMap, int
     }
     uint64 totSize = 1ll * dims[0] * dims[1] * dims[2];
     hashMap = new node[totSize];
-    printf("new hash map cost %.3f\n", HD5GetTime() - t0);
-    t0 = HD5GetTime();
 
     bloomFilter = new uint64[1 << 28];
 
@@ -215,6 +214,11 @@ void ChipMaskHDF5::readDataSet(int &hashNum, int *&hashHead, node *&hashMap, int
     for (int i = 0; i < (1 << 28); i++) {
         bloomFilter[i] = 0;
     }
+
+    printf("new + init hash map and bf cost %.3f\n", HD5GetTime() - t0);
+    t0 = HD5GetTime();
+
+
 
 //#pragma omp parallel for num_threads(64)
     for (uint32 r = 0; r < dims[0]; r++) {
@@ -289,33 +293,51 @@ void ChipMaskHDF5::readDataSet(int &hashNum, int *&hashHead, node *&hashMap, int
                 }
                 //add item to bf
                 {
+//                        uint32 idx0 = Hash0(barcodeInt);
+//                        uint32 idx1 = Hash1(barcodeInt);
+//                        uint32 idx2 = Hash2(barcodeInt);
+                    uint32 idx3 = Hash3(barcodeInt);
+//                        uint32 idx4 = Hash4(barcodeInt);
 
+
+//                        bloomFilter[idx0 >> 6] |= 1ll << (idx0 & 0x3F);
+//                        bloomFilter[idx1 >> 6] |= 1ll << (idx1 & 0x3F);
+//                        bloomFilter[idx2 >> 6] |= 1ll << (idx2 & 0x3F);
+                    bloomFilter[idx3 >> 6] |= 1ll << (idx3 & 0x3F);
+//                        bloomFilter[idx4 >> 6] |= 1ll << (idx4 & 0x3F);
                 }
+
+//                    printf("ready to insert is %lld\n", barcodeInt);
                 //add item to hash map
                 {
                     int key = barcodeInt % mod;
-//                    int key = mol(barcodeInt);
-//                    if (key >= mod)key -= mod;
+//                        int key = mol(barcodeInt);
+//                        if (key >= mod)key -= mod;
 
+//                        if (key != barcodeInt % mod) {
+//                            printf("%lld %d %lld\n", barcodeInt, key, barcodeInt % mod);
+//                            exit(0);
+//                        }
+//                        printf("after mod is %d\n", key);
                     int ok = 0;
                     //find item and update postion
                     for (int i = hashHead[key]; i != -1; i = hashMap[i].pre)
                         if (hashMap[i].v == barcodeInt) {
-//                            hashMap[i].p1 = position;
-//                            hashMap[i].x = c;
-//                            hashMap[i].y = r;
+//                                hashMap[i].p1 = position;
+//                                hashMap[i].x = c;
+//                                hashMap[i].y = r;
                             hashMap[i].p = r * dims[1] + c;
-
                             ok = 1;
                             break;
                         }
                     //not find item, then add to map
                     if (ok == 0) {
                         hashMap[hashNum].v = barcodeInt;
-//                        hashMap[hashNum].p1 = position;
-//                        hashMap[hashNum].x = c;
-//                        hashMap[hashNum].y = r;
+//                            hashMap[hashNum].p1 = position;
+//                            hashMap[hashNum].x = c;
+//                            hashMap[hashNum].y = r;
                         hashMap[hashNum].p = r * dims[1] + c;
+
                         hashMap[hashNum].pre = hashHead[key];
                         hashHead[key] = hashNum;
                         hashNum++;
@@ -331,7 +353,6 @@ void ChipMaskHDF5::readDataSet(int &hashNum, int *&hashHead, node *&hashMap, int
 //    printf("now map size is %d\n", hashNum);
 
     printf("for  cost %.3f\n", HD5GetTime() - t0);
-    t0 = HD5GetTime();
 
 
 //    printf("now analyze hash map\n");

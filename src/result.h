@@ -41,6 +41,9 @@ private:
 
 public:
     Options *mOptions;
+
+    double GetCostPe() const;
+
     bool mPaired;
     long mTotalRead;
     long mFxiedFilterRead;
@@ -56,6 +59,7 @@ public:
     double GetCostFormat() const;
 
     double costFormat;
+    double costPE;
 
 };
 

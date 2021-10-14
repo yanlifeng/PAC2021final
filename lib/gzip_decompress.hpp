@@ -52,9 +52,9 @@ libdeflate_gzip_decompress(const byte* in, size_t in_nbytes, unsigned nthreads, 
 
     PRINT_DEBUG("Using %u threads\n", nthreads);
 
-    printf("use %d threads\n", nthreads);
-    std::cout << "mmap size " << in_nbytes << std::endl;
-    std::cout << "in size " << in_size << std::endl;
+//    printf("use %d threads\n", nthreads);
+//    std::cout << "mmap size " << in_nbytes << std::endl;
+//    std::cout << "in size " << in_size << std::endl;
 
     std::vector<std::thread>    threads;
     std::vector<DeflateThread*> deflate_threads(nthreads);
@@ -73,10 +73,10 @@ libdeflate_gzip_decompress(const byte* in, size_t in_nbytes, unsigned nthreads, 
 
 
     if (nthreads == 1) n_sections = 1;
-    std::cout << "n_sections " << n_sections << std::endl;
+//    std::cout << "n_sections " << n_sections << std::endl;
 
     section_size = in_size / n_sections;
-    std::cout << "section_size " << section_size << std::endl;
+//    std::cout << "section_size " << section_size << std::endl;
 
     // Section are chunked to nethreads
     size_t chunk_size = section_size / nthreads;
@@ -86,8 +86,8 @@ libdeflate_gzip_decompress(const byte* in, size_t in_nbytes, unsigned nthreads, 
         chunk_size       = (nthreads * chunk_size - first_chunk_size) / (nthreads - 1);
         first_chunk_size = section_size - chunk_size * (nthreads - 1);
     }
-    std::cout << "chunk_size " << chunk_size << std::endl;
-    std::cout << "first_chunk_size " << first_chunk_size << std::endl;
+//    std::cout << "chunk_size " << chunk_size << std::endl;
+//    std::cout << "first_chunk_size " << first_chunk_size << std::endl;
 
     for (unsigned chunk_idx = 0; chunk_idx < nthreads; chunk_idx++) {
         if (chunk_idx == 0) {
