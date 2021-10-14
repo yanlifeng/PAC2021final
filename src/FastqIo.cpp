@@ -75,31 +75,65 @@ namespace dsrc {
             }
         }
 
+//        int chunkFormat(FastqDataChunk *&chunk, std::vector<Read *> &data, bool mHasQuality) {
+//            //format a whole chunk and return number of reads
+//            int seq_count = 0;
+//            int line_count = 0;
+//            int pos_ = 0;
+//            while (true) {
+//                string name = getLine(chunk, pos_);
+//                if (name.empty()) break;//dsrc guarantees that read are completed!
+//                //std::cerr << name << std::endl;
+//
+//                string sequence = getLine(chunk, pos_);
+//                //std::cerr<< sequence << std::endl;
+//
+//                string strand = getLine(chunk, pos_);
+//                //std::cerr << strand << std::endl;
+//                if (!mHasQuality) {
+//                    string quality = string(sequence.length(), 'K');
+//                    //std::cerr << quality << std::endl;
+//                    data.push_back(new Read(name, sequence, strand, quality));
+//                    seq_count++;
+//
+//                } else {
+//                    string quality = getLine(chunk, pos_);
+//                    //std::cerr << quality << std::endl;
+//                    data.push_back(new Read(name, sequence, strand, quality));
+//                    seq_count++;
+//                }
+//            }
+//
+//            return seq_count;
+//        }
+
+
         int chunkFormat(FastqDataChunk *&chunk, std::vector<Read *> &data, bool mHasQuality) {
             //format a whole chunk and return number of reads
             int seq_count = 0;
             int line_count = 0;
             int pos_ = 0;
             while (true) {
-                string name = getLine(chunk, pos_);
-                if (name.empty()) break;//dsrc guarantees that read are completed!
+                Read *read = new Read("", "", "", "");
+                read->mName = getLine(chunk, pos_);
+                if (read->mName.empty()) break;//dsrc guarantees that read are completed!
                 //std::cerr << name << std::endl;
 
-                string sequence = getLine(chunk, pos_);
+                read->mSeq.mStr = getLine(chunk, pos_);
                 //std::cerr<< sequence << std::endl;
 
-                string strand = getLine(chunk, pos_);
+                read->mStrand = getLine(chunk, pos_);
                 //std::cerr << strand << std::endl;
                 if (!mHasQuality) {
-                    string quality = string(sequence.length(), 'K');
+                    read->mQuality = string(read->mSeq.mStr.length(), 'K');
                     //std::cerr << quality << std::endl;
-                    data.push_back(new Read(name, sequence, strand, quality));
+                    data.push_back(read);
                     seq_count++;
 
                 } else {
-                    string quality = getLine(chunk, pos_);
+                    read->mQuality = getLine(chunk, pos_);
                     //std::cerr << quality << std::endl;
-                    data.push_back(new Read(name, sequence, strand, quality));
+                    data.push_back(read);
                     seq_count++;
                 }
             }

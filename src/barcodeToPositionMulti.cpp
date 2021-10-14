@@ -574,10 +574,9 @@ void BarcodeToPositionMulti::consumePack(Result *result) {
     mRepo.readPos++;
     mInputMutx.unlock();
     double t = GetTime();
+
     leftPack->count = dsrc::fq::chunkFormat(chunkpair->leftpart, leftPack->data, true);
     rightPack->count = dsrc::fq::chunkFormat(chunkpair->rightpart, rightPack->data, true);
-
-
     data->count = leftPack->count < rightPack->count ? leftPack->count : rightPack->count;
     for (int i = 0; i < data->count; ++i) {
         data->data.push_back(new ReadPair(leftPack->data[i], rightPack->data[i]));
