@@ -6,29 +6,38 @@
 #define PAC2022_BLOOMFILTER_H
 
 
-#include <iostream>
-#include <bitset>
-
 #include "common.h"
-
+#include <iostream>
 class BloomFilter {
 public:
-    std::bitset<4300000000ll> bits;
-public:
     BloomFilter();
+    bool push(uint64 key);
+    bool get(uint64 key);
+    bool push_mod(uint64 key);
+    bool get_mod(uint64 key);
 
-    void Set(uint64 barCode);
+    bool push_xor(uint64 key);
+    bool get_xor(uint64 key);
 
-    bool Get(uint64 barCode);
+    bool push_Classification(uint64 key);
+    bool get_Classification(uint64 key);
 
-    ll Hash1(uint64 barCode);
+    bool push_wang(uint64 key);
+    bool get_wang(uint64 key);
 
-    ll Hash2(uint64 barCode);
+public:
 
-    uint32 Hash3(uint64 barCode);
+    uint64* hashtable;
+    uint64* hashtableClassification;
+    uint64 size;
 
-    int Hash4(uint64 barCode);
+
+    const static uint32 HashTableMax = 1ll<<26;
+
+
+
+    const uint64 Bloom_MOD = 73939133;
+
 };
-
 
 #endif //PAC2022_BLOOMFILTER_H

@@ -107,7 +107,6 @@ namespace dsrc {
 //            return seq_count;
 //        }
 
-
         int chunkFormat(FastqDataChunk *&chunk, std::vector<Read *> &data, bool mHasQuality) {
             //format a whole chunk and return number of reads
             int seq_count = 0;

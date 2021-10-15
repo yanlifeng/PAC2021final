@@ -34,7 +34,12 @@ public:
 
     void setBarcodeProcessor(unordered_map<uint64, Position1> *bpmap);
 
-    void setBarcodeProcessor(int headNum, int *hashHead, node *hashMap, uint64 *bloomFilter);
+//    void setBarcodeProcessor(int headNum, int *hashHead, node *hashMap, uint64 *bloomFilter);
+
+    void
+    setBarcodeProcessorHashTableOneArrayWithBloomFilter(int *bpmap_head, int *bpmap_nxt, bpmap_key_value *position_all,
+                                                        BloomFilter *bloomFilter);
+
 
 private:
     void setBarcodeProcessor();
@@ -51,6 +56,13 @@ public:
     long mLowQuaRead;
     long mWithoutPositionReads;
     long overlapReadsWithMis = 0;
+
+    double GetCostWait() const;
+
+    double GetCostNew() const;
+
+    double GetCostAll() const;
+
     long overlapReadsWithN = 0;
     Writer *mWriter;
     BarcodeProcessor *mBarcodeProcessor;
@@ -58,8 +70,11 @@ public:
 
     double GetCostFormat() const;
 
+    double costWait;
     double costFormat;
+    double costNew;
     double costPE;
+    double costAll;
 
 };
 

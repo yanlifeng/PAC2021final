@@ -16,9 +16,11 @@ Result::Result(Options *opt, int threadId, bool paired) {
         loginfo(msg);
     }
 
-
+    costWait = 0;
     costFormat = 0;
     costPE = 0;
+    costAll = 0;
+    costNew = 0;
 
 }
 
@@ -33,8 +35,11 @@ Result *Result::merge(vector<Result *> &list) {
     result->setBarcodeProcessor();
 
     for (int i = 0; i < list.size(); i++) {
-        result->costFormat = max(result->costFormat, list[i]->costFormat);
+        result->costWait = max(result->costWait, list[i]->costWait);
         result->costPE = max(result->costPE, list[i]->costPE);
+        result->costNew = max(result->costNew, list[i]->costNew);
+        result->costFormat = max(result->costFormat, list[i]->costFormat);
+        result->costAll = max(result->costAll, list[i]->costAll);
         result->mTotalRead += list[i]->mTotalRead;
         result->mFxiedFilterRead += list[i]->mFxiedFilterRead;
         result->mWithoutPositionReads += list[i]->mWithoutPositionReads;
@@ -150,8 +155,14 @@ void Result::setBarcodeProcessor(unordered_map<uint64, Position1> *bpmap) {
     mBarcodeProcessor = new BarcodeProcessor(mOptions, bpmap);
 }
 
-void Result::setBarcodeProcessor(int headNum, int *hashHead, node *hashMap, uint64 *bloomFilter) {
-    mBarcodeProcessor = new BarcodeProcessor(mOptions, headNum, hashHead, hashMap, bloomFilter);
+//void Result::setBarcodeProcessor(int headNum, int *hashHead, node *hashMap, uint64 *bloomFilter) {
+//    mBarcodeProcessor = new BarcodeProcessor(mOptions, headNum, hashHead, hashMap, bloomFilter);
+//}
+
+void Result::setBarcodeProcessorHashTableOneArrayWithBloomFilter(int *bpmap_head, int *bpmap_nxt,
+                                                                 bpmap_key_value *position_all,
+                                                                 BloomFilter *bloomFilter) {
+    mBarcodeProcessor = new BarcodeProcessor(mOptions, bpmap_head, bpmap_nxt, position_all, bloomFilter);
 }
 
 void Result::setBarcodeProcessor() {
@@ -164,6 +175,18 @@ double Result::GetCostFormat() const {
 
 double Result::GetCostPe() const {
     return costPE;
+}
+
+double Result::GetCostWait() const {
+    return costWait;
+}
+
+double Result::GetCostNew() const {
+    return costNew;
+}
+
+double Result::GetCostAll() const {
+    return costAll;
 }
 
 

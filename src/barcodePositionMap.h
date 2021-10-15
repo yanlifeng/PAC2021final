@@ -50,7 +50,16 @@ public:
 
     int GetDims1() const;
 
-    uint64 *GetBloomFilter() const;
+    BloomFilter *GetBloomFilter() const;
+
+    Position1*                                   getPosition() {return position_index;}
+    int*                                         getHead(){return bpmap_head;}
+    int*                                         getNext(){return bpmap_nxt;}
+    uint64*                                      getKey() {return bpmap_key;}
+    int*                                         getValue(){return bpmap_value;}
+    int*                                         getLen(){return bpmap_len;}
+    BloomFilter*                                 getBloomFilter(){return bloomFilter;}
+    bpmap_key_value*                             getPositionAll(){return position_all;}
 
 public:
     unordered_map<uint64, Position1> bpmap;
@@ -65,10 +74,19 @@ public:
 
     //***********bloom filter add by ylf************//
 
-//    BloomFilter *bloomFilter;
-    uint64 *bloomFilter;
+    BloomFilter *bloomFilter;
+//    uint64 *bloomFilter;
 
     //******************************************//
+
+    int *bpmap_head;
+    int *bpmap_nxt;
+    int *bpmap_value;
+    uint64 *bpmap_key;
+    bpmap_key_value* position_all;
+    int *bpmap_len;
+
+    Position1* position_index;
 
 
     Options *mOptions;

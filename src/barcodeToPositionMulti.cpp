@@ -240,8 +240,12 @@ bool BarcodeToPositionMulti::process() {
     BarcodeProcessor **barcodeProcessors = new BarcodeProcessor *[mOptions->thread];
     for (int t = 0; t < mOptions->thread; t++) {
         results[t] = new Result(mOptions, true);
-        results[t]->setBarcodeProcessor(mbpmap->GetHashNum(), mbpmap->GetHashHead(), mbpmap->GetHashMap(),
-                                        mbpmap->GetBloomFilter());
+//        results[t]->setBarcodeProcessor(mbpmap->GetHashNum(), mbpmap->GetHashHead(), mbpmap->GetHashMap(),
+//                                        mbpmap->GetBloomFilter());
+        results[t]->setBarcodeProcessorHashTableOneArrayWithBloomFilter(mbpmap->getHead(), mbpmap->getNext(),
+                                                                        mbpmap->getPositionAll(),
+                                                                        mbpmap->getBloomFilter());
+
     }
     printf("processor %d get results done,cost %.4f\n", mOptions->myRank, GetTime() - t0);
 
@@ -319,10 +323,14 @@ bool BarcodeToPositionMulti::process() {
     }
     Result *finalResult = Result::merge(resultList);
 
+    printf("processor %d wait cost %f\n", mOptions->myRank, finalResult->GetCostWait());
+    printf("processor %d format cost %f\n", mOptions->myRank, finalResult->GetCostFormat());
+    printf("processor %d new cost %f\n", mOptions->myRank, finalResult->GetCostNew());
+    printf("processor %d pe cost %f\n", mOptions->myRank, finalResult->GetCostPe());
+    printf("processor %d all cost %f\n", mOptions->myRank, finalResult->GetCostAll());
+
     if (mOptions->numPro == 1) {
         finalResult->print();
-        printf("format cost %f\n", finalResult->GetCostFormat());
-        printf("pe cost %f\n", finalResult->GetCostPe());
     } else {
         printf("watind barrier\n");
         MPI_Barrier(mOptions->communicator);
@@ -335,8 +343,10 @@ bool BarcodeToPositionMulti::process() {
             newResList.push_back(finalResult);
             for (int ii = 1; ii < mOptions->numPro; ii++) {
                 Result *resultTmp = new Result(mOptions, true);
-                resultTmp->setBarcodeProcessor(mbpmap->GetHashNum(), mbpmap->GetHashHead(), mbpmap->GetHashMap(),
-                                               mbpmap->GetBloomFilter());
+                resultTmp->setBarcodeProcessorHashTableOneArrayWithBloomFilter(mbpmap->getHead(), mbpmap->getNext(),
+                                                                               mbpmap->getPositionAll(),
+                                                                               mbpmap->getBloomFilter());
+
                 MPI_Recv(&(resultTmp->mTotalRead), 1, MPI_LONG_LONG, ii, 1, mOptions->communicator,
                          MPI_STATUS_IGNORE);
                 MPI_Recv(&(resultTmp->mFxiedFilterRead), 1, MPI_LONG_LONG, ii, 1, mOptions->communicator,
@@ -407,8 +417,6 @@ bool BarcodeToPositionMulti::process() {
             }
             finalResult = Result::merge(newResList);
             finalResult->print();
-            printf("format cost %f\n", finalResult->GetCostFormat());
-            printf("pe cost %f\n", finalResult->GetCostPe());
 
             printf("========================================================================\n");
         } else {
@@ -557,6 +565,9 @@ void BarcodeToPositionMulti::producePack(ChunkPair *pack) {
 }
 
 void BarcodeToPositionMulti::consumePack(Result *result) {
+    double tt = GetTime();
+
+    double t = GetTime();
     dsrc::fq::FastqDataChunk *chunk;
     ChunkPair *chunkpair;
     ReadPairPack *data = new ReadPairPack;
@@ -573,23 +584,33 @@ void BarcodeToPositionMulti::consumePack(Result *result) {
     chunkpair = mRepo.packBuffer[mRepo.readPos];
     mRepo.readPos++;
     mInputMutx.unlock();
-    double t = GetTime();
+    result->costWait += GetTime() - t;
 
+
+    t = GetTime();
     leftPack->count = dsrc::fq::chunkFormat(chunkpair->leftpart, leftPack->data, true);
     rightPack->count = dsrc::fq::chunkFormat(chunkpair->rightpart, rightPack->data, true);
+    result->costFormat += GetTime() - t;
+
+
+    t = GetTime();
     data->count = leftPack->count < rightPack->count ? leftPack->count : rightPack->count;
     for (int i = 0; i < data->count; ++i) {
         data->data.push_back(new ReadPair(leftPack->data[i], rightPack->data[i]));
     }
     pairReader->fastqPool_left->Release(chunkpair->leftpart);
     pairReader->fastqPool_right->Release(chunkpair->rightpart);
-    result->costFormat += GetTime() - t;
+    result->costNew += GetTime() - t;
+
+
     t = GetTime();
     processPairEnd(data, result);
     result->costPE += GetTime() - t;
 
+
     delete leftPack;
     delete rightPack;
+    result->costAll += GetTime() - tt;
 }
 
 
@@ -671,6 +692,7 @@ void BarcodeToPositionMulti::pugzTask2() {
     std::cout << "pugz1 done, cost " << GetTime() - t0 << std::endl;
 }
 
+#define whoNumber 5
 
 void BarcodeToPositionMulti::producerTask() {
     double t0 = GetTime();
@@ -687,10 +709,9 @@ void BarcodeToPositionMulti::producerTask() {
     pair<char *, int> last2;
     int cnt = 0;
     int whoTurn = 0;
-
-    int mps[7] = {0, 0, 0, 1, 1, 1, 1};
+    int mps[whoNumber] = {0, 0, 1, 1, 1};
     printf("mps\n");
-    for (int i = 0; i < 7; i++)
+    for (int i = 0; i < whoNumber; i++)
         printf("%d ", mps[i]);
     printf("\n");
 
@@ -718,7 +739,7 @@ void BarcodeToPositionMulti::producerTask() {
                 pairReader->fastqPool_right->Release(chunk_pair->rightpart);
             }
             whoTurn++;
-            whoTurn %= 7;
+            whoTurn %= whoNumber;
             while (mRepo.writePos - mRepo.readPos > PACK_IN_MEM_LIMIT) {
 //                printf("producer wait consumer\n");
 //                cout << "producer wait consumer" << endl;
@@ -742,7 +763,7 @@ void BarcodeToPositionMulti::producerTask() {
                 pairReader->fastqPool_right->Release(chunk_pair->rightpart);
             }
             whoTurn++;
-            whoTurn %= 7;
+            whoTurn %= whoNumber;
             while (mRepo.writePos - mRepo.readPos > PACK_IN_MEM_LIMIT) {
                 printf("producer waiting...\n");
                 slept++;

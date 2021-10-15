@@ -103,7 +103,8 @@ void BarcodePositionMap::loadbpmap() {
     } else if (ends_with(barcodePositionMapFile, "h5") || ends_with(barcodePositionMapFile, "hdf5")) {
         ChipMaskHDF5 chipMaskH5(barcodePositionMapFile);
         chipMaskH5.openFile();
-        chipMaskH5.readDataSet(hashNum, hashHead, hashMap, dims1, bloomFilter);
+//        chipMaskH5.readDataSet(hashNum, hashHead, hashMap, dims1, bloomFilter);
+        chipMaskH5.readDataSetHashListOneArrayWithBloomFilter(bpmap_head, bpmap_nxt,position_all,bloomFilter);
     } else {
         uint64 barcodeInt;
         Position1 position;
@@ -159,6 +160,6 @@ int BarcodePositionMap::GetDims1() const {
     return dims1;
 }
 
-uint64 *BarcodePositionMap::GetBloomFilter() const {
+BloomFilter *BarcodePositionMap::GetBloomFilter() const {
     return bloomFilter;
 }

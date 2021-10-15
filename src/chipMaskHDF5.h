@@ -42,6 +42,8 @@ public:
     void
     readDataSet(int &headNum, int *&hashHead, node *&hashMap, int &dims1, uint64 *&bloomFilter, int index = 1);
 
+    void readDataSetHashListOneArrayWithBloomFilter(int *&bpmap_head, int *&bpmap_nxt,bpmap_key_value *& position_all, BloomFilter* &bloomFilter,int index = 1);
+
 public:
     std::string fileName;
     hid_t fileID;

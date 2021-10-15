@@ -33,6 +33,8 @@ static const long long int MAX_BARCODE = 0xffffffffffffffff;
 typedef long long ll;
 typedef __int128_t i128;
 
+#define MOD 1073807359
+
 #pragma pack(2)
 
 
@@ -162,7 +164,10 @@ typedef struct node {
 } node;
 
 
-
+typedef struct bpmap_key_value{
+    uint64 key;
+    Position1 value;
+}bpmap_key_value;
 
 
 
