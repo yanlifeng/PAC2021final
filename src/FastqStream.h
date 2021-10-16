@@ -124,72 +124,128 @@ namespace dsrc {
                 }
             }
 
-            int64 Read(byte *memory_, uint64 size_, moodycamel::ReaderWriterQueue<std::pair<char *, int>> *q,
-                       atomic_int &done, pair<char *, int> &lastInfo, int num) {
-//                printf("===============================\n");
-//                printf("now ready to read %lld data\n", size_);
-//                printf("now last info size is %d\n", lastInfo.second);
-                int64 resSum = 0;
-                int64 numFor = 0;
-                //TODO lastInfo.size > size_
-                if (lastInfo.second > size_) {
-                    printf("lastInfo.second>size_\n");
-                    exit(0);
-                }
-                if (lastInfo.second != 0) {
-                    memcpy(memory_, lastInfo.first, lastInfo.second);
-                    resSum += lastInfo.second;
-                    memory_ += lastInfo.second;
-                }
-                int cntt = 0;
-
-                while (resSum < size_) {
-
-//                    if (numFor > 5000) {
-//                        printf("num for > 5000 ,break\n");
-//                        break;
-//                    }
-
-
-                    std::pair<char *, int> now;
-                    if (q->try_dequeue(now)) {
-
-                        cntt = 0;
-//                        cout << "get one small chunk, size is " << now.second << "queue size " << q->size_approx()
-//                             << endl;
-                        if (resSum + now.second <= size_) {
-//                            printf("read all small chunk to memory_...\n");
-                            memcpy(memory_, now.first, now.second);
-                            resSum += now.second;
-                            memory_ += now.second;
-//                            printf("read after res sum is %lld\n\n", resSum);
-                            delete[] now.first;
-                        } else {
-//                            printf("read part of small chunk to memory_...\n");
-                            int canCpoy = size_ - resSum;
-                            memcpy(memory_, now.first, canCpoy);
-                            resSum += canCpoy;
-                            memory_ += canCpoy;
-                            lastInfo.second = now.second - canCpoy;
-                            memcpy(lastInfo.first, now.first + canCpoy, lastInfo.second);
-//                            printf("read after res sum is %lld\n\n", resSum);
-
-                            delete[] now.first;
-                            break;
-                        }
-                    } else if (q->size_approx() == 0) {
-                        if (done == 1)break;
-                        numFor++;
-//                        printf("prudocer wait pugz %d\n", cntt++);
-//                        cout << "prudocer " << num << " wait pugz " << cntt++ << " q->size_approx() "
-//                             << q->size_approx() << endl;
-                        usleep(100);
+            int64 Read(byte *buf, uint64 len, moodycamel::ReaderWriterQueue<std::pair<char *, int>> *Q,
+                       atomic_int *done, pair<char *, int> &L, int num) {
+                pair<char *, int> now;
+                int64 ret;
+                int64 got = 0;
+                if (L.second > 0) {
+                    if (L.second >= len) {
+                        memcpy(buf, L.first, len);
+                        char *tmp = new char[L.second - len];
+                        memcpy(tmp, L.first + len, L.second - len);
+                        memcpy(L.first, tmp, L.second - len);
+                        delete[]tmp;
+                        L.second = L.second - len;
+                        ret = len;
+                        buf += ret;
+                        len -= ret;
+                        got += ret;
+                        return got;
+                    } else {
+                        memcpy(buf, L.first, L.second);
+                        ret = L.second;
+                        L.second = 0;
+                        buf += ret;
+                        len -= ret;
+                        got += ret;
                     }
                 }
-//                printf("ok of one read, now res sum is %lld, need to read is %lld, leave %d to read next time\n",
-//                       resSum, size_, lastInfo.second);
-//                printf("===============================\n");
-                return resSum;
+                bool overWhile = false;
+                while (len > 0) {
+                    while (Q->try_dequeue(now) == 0) {
+                        if (Q->size_approx() == 0 && *done == 1) {
+                            ret = 0;
+                            overWhile = true;
+                            break;
+                        }
+                        usleep(100);
+                    }
+                    if (overWhile) {
+                        ret = 0;
+                        break;
+                    }
+                    if (now.second <= len) {
+                        memcpy(buf, now.first, now.second);
+                        delete[] now.first;
+                        ret = now.second;
+                    } else {
+                        int move_last = now.second - len;
+                        memcpy(buf, now.first, len);
+                        memcpy(L.first, now.first + len, move_last);
+                        L.second = move_last;
+                        delete[] now.first;
+                        ret = len;
+                    }
+
+                    buf += ret;
+                    len -= ret;
+                    got += ret;
+                }
+
+                return got;
+//
+//                int64 resSum = 0;
+//                int64 numFor = 0;
+//                //TODO lastInfo.size > size_
+//                if (lastInfo.second > size_) {
+//                    printf("lastInfo.second>size_\n");
+//                    exit(0);
+//                }
+//                if (lastInfo.second != 0) {
+//                    memcpy(memory_, lastInfo.first, lastInfo.second);
+//                    resSum += lastInfo.second;
+//                    memory_ += lastInfo.second;
+//                }
+//                int cntt = 0;
+//
+//                while (resSum < size_) {
+//
+////                    if (numFor > 5000) {
+////                        printf("num for > 5000 ,break\n");
+////                        break;
+////                    }
+//
+//
+//                    std::pair<char *, int> now;
+//                    if (q->try_dequeue(now)) {
+//
+//                        cntt = 0;
+////                        cout << "get one small chunk, size is " << now.second << "queue size " << q->size_approx()
+////                             << endl;
+//                        if (resSum + now.second <= size_) {
+////                            printf("read all small chunk to memory_...\n");
+//                            memcpy(memory_, now.first, now.second);
+//                            resSum += now.second;
+//                            memory_ += now.second;
+////                            printf("read after res sum is %lld\n\n", resSum);
+//                            delete[] now.first;
+//                        } else {
+////                            printf("read part of small chunk to memory_...\n");
+//                            int canCpoy = size_ - resSum;
+//                            memcpy(memory_, now.first, canCpoy);
+//                            resSum += canCpoy;
+//                            memory_ += canCpoy;
+//                            lastInfo.second = now.second - canCpoy;
+//                            memcpy(lastInfo.first, now.first + canCpoy, lastInfo.second);
+////                            printf("read after res sum is %lld\n\n", resSum);
+//
+//                            delete[] now.first;
+//                            break;
+//                        }
+//                    } else if (q->size_approx() == 0) {
+//                        if (done == 1)break;
+//                        numFor++;
+////                        printf("prudocer wait pugz %d\n", cntt++);
+////                        cout << "prudocer " << num << " wait pugz " << cntt++ << " q->size_approx() "
+////                             << q->size_approx() << endl;
+//                        usleep(100);
+//                    }
+//                }
+////                printf("ok of one read, now res sum is %lld, need to read is %lld, leave %d to read next time\n",
+////                       resSum, size_, lastInfo.second);
+////                printf("===============================\n");
+//                return resSum;
             }
 
         private:

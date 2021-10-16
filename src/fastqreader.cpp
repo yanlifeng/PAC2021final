@@ -364,7 +364,7 @@ ChunkPair *FastqChunkReaderPair::readNextChunkPair() {
 
 ChunkPair *FastqChunkReaderPair::readNextChunkPair(moodycamel::ReaderWriterQueue<std::pair<char *, int>> *q1,
                                                    moodycamel::ReaderWriterQueue<std::pair<char *, int>> *q2,
-                                                   atomic_int &d1, atomic_int &d2,
+                                                   atomic_int *d1, atomic_int *d2,
                                                    pair<char *, int> &last1, pair<char *, int> &last2) {
     if (mInterleaved) {
         //interleaved code here
@@ -649,7 +649,7 @@ ChunkPair *FastqChunkReaderPair::readNextChunkPair_interleaved() {
 ChunkPair *
 FastqChunkReaderPair::readNextChunkPair_interleaved(moodycamel::ReaderWriterQueue<std::pair<char *, int>> *q1,
                                                     moodycamel::ReaderWriterQueue<std::pair<char *, int>> *q2,
-                                                    atomic_int &d1, atomic_int &d2,
+                                                    atomic_int *d1, atomic_int *d2,
                                                     pair<char *, int> &last1, pair<char *, int> &last2) {
     ChunkPair *pair = new ChunkPair;
     dsrc::fq::FastqDataChunk *leftPart = NULL;

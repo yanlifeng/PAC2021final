@@ -203,6 +203,7 @@
 
 #define VERSION "pigz 2.6"
 
+
 #include "pigz.h"
 /* To-do:
     - make source portable for Windows, VMS, etc. (see gzip source code)
@@ -1010,8 +1011,8 @@ local size_t readn(int desc, unsigned char *buf, size_t len) {
 // Read up to len bytes into buf from queue, repeating read() calls as needed.
 // Add by ylf
 local size_t
-readFromQueue(moodycamel::ReaderWriterQueue <std::pair<char *, int>> *Q, std::atomic_int *wDone,
-        std::pair<char *, int> &L, unsigned char *buf, size_t len) {
+readFromQueue(moodycamel::ReaderWriterQueue<std::pair<char *, int>> *Q, std::atomic_int *wDone,
+              std::pair<char *, int> &L, unsigned char *buf, size_t len) {
     ssize_t ret;
     size_t got;
 
@@ -2128,12 +2129,21 @@ local void append_len(struct job *job, size_t len) {
     }
 }
 
+#include <sys/time.h>
+
+double PigzGetTime() {
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    return (double) tv.tv_sec + (double) tv.tv_usec / 1000000;
+}
+
 // Compress ind to outd, using multiple threads for the compression and check
 // value calculations and one other threadPigz for writing the output. Compress
 // threads will be launched and left running (waiting actually) to support
 // subsequent calls of parallel_compress().
-local void parallel_compress(moodycamel::ReaderWriterQueue <std::pair<char *, int>> *Q, std::atomic_int *wDone,
+local void parallel_compress(moodycamel::ReaderWriterQueue<std::pair<char *, int>> *Q, std::atomic_int *wDone,
                              std::pair<char *, int> &L) {
+    double t0 = PigzGetTime();
     long seq;                       // sequence number
     struct space *curr;             // input data to compress
     struct space *next;             // input data that follows curr
@@ -2167,6 +2177,10 @@ local void parallel_compress(moodycamel::ReaderWriterQueue <std::pair<char *, in
     scan = next->buf;
     hash = RSYNCHIT;
     left = 0;
+
+//    printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~in in init cost %.7f\n", PigzGetTime() - t0);
+    t0 = PigzGetTime();
+
     do {
         // create a new job
         job = static_cast<struct job *>(alloc(NULL, sizeof(struct job)));
@@ -2302,6 +2316,8 @@ local void parallel_compress(moodycamel::ReaderWriterQueue <std::pair<char *, in
         compress_tail = &(job->next);
         twist_pigz(compress_have, BY, +1);
     } while (more);
+//    printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~in in do-while cost %.7f\n", PigzGetTime() - t0);
+    t0 = PigzGetTime();
     drop_space(next);
 
 
@@ -2311,6 +2327,7 @@ local void parallel_compress(moodycamel::ReaderWriterQueue <std::pair<char *, in
     join_pigz(writeth);
     writeth = NULL;
     Trace(("-- write threadPigz joined"));
+//    printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~in in end cost %.7f\n", PigzGetTime() - t0);
 }
 
 #endif
@@ -3946,10 +3963,14 @@ local void out_push(void) {
         throw (errno, "sync error on %s (%s)", g.outf, strerror(errno));
 }
 
+
+
 // Process provided input file, or stdin if path is NULL. process() can call
 // itself for recursive directory processing.
-local void process(char *path, moodycamel::ReaderWriterQueue <std::pair<char *, int>> *Q, std::atomic_int *wDone,
+local void process(char *path, moodycamel::ReaderWriterQueue<std::pair<char *, int>> *Q, std::atomic_int *wDone,
                    std::pair<char *, int> &L) {
+
+    auto t0 = PigzGetTime();
     volatile int method = -1;       // get_header() return value
     size_t len;                     // length of base name (minus suffix)
     struct stat st;                 // to get file type and mod time
@@ -4205,7 +4226,8 @@ local void process(char *path, moodycamel::ReaderWriterQueue <std::pair<char *, 
     // process ind to outd
     if (g.verbosity > 1)
         fprintf(stderr, "%s to %s ", g.inf, g.outf);
-
+//    printf("-----------------in pigz init cost %.7f\n", PigzGetTime() - t0);
+    t0 = PigzGetTime();
     printf("start compress...\n");
 
     if (g.decode) {
@@ -4238,7 +4260,8 @@ local void process(char *path, moodycamel::ReaderWriterQueue <std::pair<char *, 
 #endif
     else
         single_compress(0);
-
+//    printf("-----------------in pigz compress cost %.7f\n", PigzGetTime() - t0);
+    t0 = PigzGetTime();
     printf("compress done\n");
 
     if (g.verbosity > 1) {
@@ -4263,6 +4286,8 @@ local void process(char *path, moodycamel::ReaderWriterQueue <std::pair<char *, 
             touch(g.outf, g.stamp);
     }
     RELEASE(g.outf);
+    printf("-----------------in pigz finish cost %.7f\n", PigzGetTime() - t0);
+
 }
 
 local char *helptext[] = {
@@ -4702,9 +4727,11 @@ local void cut_yarn(int err) {
 
 #endif
 
+
 // Process command line arguments.
-int main_pigz(int argc, char **argv, moodycamel::ReaderWriterQueue <std::pair<char *, int>> *Q, std::atomic_int *wDone,
+int main_pigz(int argc, char **argv, moodycamel::ReaderWriterQueue<std::pair<char *, int>> *Q, std::atomic_int *wDone,
               std::pair<char *, int> &L) {
+    auto t0 = PigzGetTime();
 //    printf("argc %d\n", argc);
 //    for (int i = 0; i < argc; i++) {
 //        printf("argv %s\n", argv[i]);
@@ -4835,6 +4862,8 @@ int main_pigz(int argc, char **argv, moodycamel::ReaderWriterQueue <std::pair<ch
 
                     // process command-line filenames
                     done = 0;
+//                    printf("============pigz init cost %.6f\n", PigzGetTime() - t0);
+                    t0 = PigzGetTime();
                     for (n = 1; n < argc; n++)
                         if (argv[n] != NULL) {
                             if (done == 1 && g.pipeout && !g.decode && !g.list && g.form > 1) {
@@ -4845,12 +4874,16 @@ int main_pigz(int argc, char **argv, moodycamel::ReaderWriterQueue <std::pair<ch
                             process(n < nop && strcmp(argv[n], "-") == 0 ? NULL : argv[n], Q, wDone, L);
                             done++;
                         }
+//                    printf("============pigz process0 cost %.6f\n", PigzGetTime() - t0);
+                    t0 = PigzGetTime();
 //                    printf("777\n");
 
                     // list stdin or compress stdin to stdout if no file names provided
                     if (done == 0)
                         process(NULL, Q, wDone, L);
 //                    printf("888\n");
+//                    printf("============pigz process1 cost %.6f\n", PigzGetTime() - t0);
+                    t0 = PigzGetTime();
                 }
         always
             {
@@ -4865,5 +4898,7 @@ int main_pigz(int argc, char **argv, moodycamel::ReaderWriterQueue <std::pair<ch
 //    printf("9991\n");
     // show log (if any)
     log_dump();
+//    printf("============pigz end cost %.6f\n", PigzGetTime() - t0);
+    t0 = PigzGetTime();
     return g.ret;
 }

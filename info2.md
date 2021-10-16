@@ -22,20 +22,20 @@ TODOs
 - [x] change block size in pigz
 - [ ] change queue1 queue2 to dataPool to decrease new and delete operations
 - [x] fix pigzWrite bug？？
-- [ ] mod all barcode to 1e9, use it dirctely, cal time
+- [x] mod all barcode to 1e9, use it dirctely, cal time
 - [x] test G‘s map
 - [ ] test 0 3 6 9
 - [x] merge mip write part
 - [x] check👆
 - [x] add bloom filter
-- [ ] make bf bitset smaller or more small bitset to replace the big one
-- [ ] make bf bitset bigger
-- [ ] try bf with 3 bitset
+- [x] make bf bitset smaller or more small bitset to replace the big one
+- [x] make bf bitset bigger
+- [x] try bf with 3 bitset
 - [x] calculate bf size
 - [x] add mpi pugz
 - [x] add mpi pigz
-- [ ] merge hashHead hashMap
-- [ ] check asm to find why gcc11 has a good perfermance
+- [x] merge hashHead hashMap
+- [ ] check asm to find out why gcc11 has a good perfermance
 - [ ] check pugz&producer and writer&pigz part
 - [ ] inline query function by 👋
 - [ ] fix pugz size bug？？
@@ -44,6 +44,9 @@ TODOs
 - [ ] optmize chunk format paty
 - [ ] optimize add position to name part
 - [ ] use rabbit io
+- [ ] why sometimes gz version be killed(segmentation fault)
+- [ ] optimize pugz(2 threads -> 4 threads)
+- [ ] optimize pigz write disk problem
 
 
 
@@ -110,4 +113,1620 @@ new int[n] VS new int[n]()
 
 ## 1016
 
-把zz的代码合过来了，标准流程65s左右（shm）
+把zz的代码合过来了，标准流程65s左右（shm），列举了目前几个todo，加了一些timer。
+
+发现shm和parallel disk的时候pigz能差10s左右，目前猜测是同步写文件等待产生的，看看能不能搞成异步。
+
+## 1017
+
+早上早点来测测哪个节点性能好。
+
+| node          | getmap（gz/fq） | total（gz/fq） |
+| ------------- | --------------- | -------------- |
+| compute012    | 16/15           | 59/51          |
+| compute005    | 15/17           | 57/56          |
+| compute007    | 18/18           | 62/56          |
+| compute008    | 14/20           | 57/72          |
+| compute010🌟🌟🌟 | 14/14           | 57/49          |
+| compute014    | 15/17           | 59/55          |
+| compute015    | 20/17           | 66/55          |
+| compute004    | 17/18           | 61/55          |
+
+compute004
+
+```
+gz
+[PAC20217111@compute003 data]$ ./cc.sh
+Process 1 of 2 ,processor name is compute003
+processor 1 thread is 32
+now out name is /dev/shm/combine_read1.fq
+Process 0 of 2 ,processor name is compute003
+processor num is 2
+processor 0 thread is 24
+outGzSpilt is 0
+now use pugz, 2 threads
+now use pigz, 8 threads
+now out name is /dev/shm/combine_read0.fq
+mergeDone 0
+mergeDone 0
+now use pugz0 to decompress(2 threads)
+now use pugz1 to decompress(2 threads)
+###############load barcodeToPosition map begin...
+new and hdf5 pre cost 0.000176
+now use pugz0 to decompress(2 threads)
+now use pugz1 to decompress(2 threads)
+###############load barcodeToPosition map begin...
+new and hdf5 pre cost 0.000206
+read and close hdf5 cost 8.423941
+new,init bf and hashMap cost 0.192147
+read and close hdf5 cost 8.601177
+new,init bf and hashMap cost 0.193374
+parallel for cost 8.673084
+###############load barcodeToPosition map finished, time used: 17 seconds
+getBarcodePositionMap_uniqBarcodeTypes: 0
+processor 1 get map thread done,cost 17.4457
+mps
+0 0 1 1 1
+processor 1 get results done,cost 0.0009
+parallel for cost 8.792366
+###############load barcodeToPosition map finished, time used: 17 seconds
+getBarcodePositionMap_uniqBarcodeTypes: 0
+processor 0 get map thread done,cost 17.8035
+mps
+0 0 1 1 1
+processor 0 get results done,cost 0.0007
+============pigz init cost 0.000063
+path is /dev/shm/combine_read0.fq
+-----------------in pigz init cost 0.0000260
+start compress...
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~in in init cost 0.2173131
+pugz0 done, cost 57
+processor 0 producer get 1984 chunk done, cost 39.03800
+pugz0 done, cost 58
+processor 1 producer get 2974 chunk done, cost 40.85720
+processor 1 send data done, now send -1
+processor 1 send -1 done
+processor 0 get -1
+processor merge get 13353484789 data
+processor 0 get data done
+merge done, cost 40.8191
+pugz1 done, cost 60
+processor 0 consumer cost 42.2536
+processor 0 wSum is 22258049527
+processor 0 writer done, cost 42.2539
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~in in do-while cost 42.0361378
+pigz pSum is 22258049527
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~in in end cost 0.0574210
+-----------------in pigz compress cost 42.3109009
+compress done
+-----------------in pigz finish cost 0.0000219
+============pigz process0 cost 42.310956
+============pigz process1 cost 0.000001
+============pigz end cost 0.003845
+pigz done, cost 42.3154
+###processor 0 wait cost 3.660699
+###processor 0 format cost 2.168895
+###processor 0 new cost 0.152588
+###processor 0 pe cost 33.696407
+###processor 0 all cost 38.616104
+watind barrier
+pugz1 done, cost 61
+processor 1 consumer cost 43.5574
+processor 1 writer done, cost 43.5574
+###processor 1 wait cost 1.980945
+###processor 1 format cost 2.660482
+###processor 1 new cost 0.139075
+###processor 1 pe cost 37.347276
+###processor 1 all cost 40.793619
+watind barrier
+all merge done
+=======================print ans from process 0=========================
+all merge done
+total_query_cnt:	0
+after_filter_query_cnt:	0
+find_query_cnt:	0
+total_reads:	195794682
+fixed_sequence_contianing_reads:	0	0.00%
+pass_filter_reads:	195794682
+mapped_reads:	144646378	73.88%
+barcode_exactlyOverlap_reads:	118394902	60.47%
+barcode_misOverlap_reads:	26251476	13.41%
+barcode_withN_reads:	0	0.00%
+Q10_bases_in_barcode:	99.38%
+Q20_bases_in_barcode:	97.16%
+Q30_bases_in_barcode:	91.39%
+Q10_bases_in_umi:	98.17%
+Q20_bases_in_umi:	93.36%
+Q30_bases_in_umi:	85.47%
+umi_filter_reads:	3876700	1.98%
+umi_with_N_reads:	77	0.00%
+umi_with_polyA_reads:	8509	0.00%
+umi_with_low_quality_base_reads:	3868114	1.98%
+========================================================================
+1 work done
+final and delete cost 43.2047
+0 work done
+process cost 61
+my time : 61
+
+../ST_BarcodeMap-0.0.1 --in /dev/shm/DP8400016231TR_D1.barcodeToPos.h5 --in1 /dev/shm/V300091300_L03_read_1.fq.gz --in2 /dev/shm/V300091300_L04_read_1.fq.gz --out /dev/shm/combine_read.fq.gz --mismatch 2 --thread 24 --thread2 32 --usePugz --pugzThread 2 --usePigz --pigzThread 8
+spatialRNADrawMap, time used: 61 seconds
+```
+
+compute012
+
+```
+gz
+[PAC20217111@compute012 data]$ rm -rf /dev/shm/*combine_read* && sleep 4 && mpirun -n 2 ../ST_BarcodeMap-0.0.1 --in /dev/shm/DP8400016231TR_D1.barcodeToPos.h5 --in1 /dev/shm/V300091300_L03_read_1.fq.gz --in2 /dev/shm/V300091300_L04_read_1.fq.gz --out /dev/shm/combine_read.fq.gz --mismatch 2 --thread 24 --thread2 32 --usePugz --pugzThread 2 --usePigz --pigzThread 8
+Process 0 of 2 ,processor name is compute012
+processor num is 2
+processor 0 thread is 24
+outGzSpilt is 0
+now use pugz, 2 threads
+now use pigz, 8 threads
+now out name is /dev/shm/combine_read0.fq
+Process 1 of 2 ,processor name is compute012
+processor 1 thread is 32
+now out name is /dev/shm/combine_read1.fq
+mergeDone 0
+mergeDone 0
+now use pugz0 to decompress(2 threads)
+now use pugz1 to decompress(2 threads)
+###############load barcodeToPosition map begin...
+new and hdf5 pre cost 0.000178
+now use pugz0 to decompress(2 threads)
+now use pugz1 to decompress(2 threads)
+###############load barcodeToPosition map begin...
+new and hdf5 pre cost 0.000171
+read and close hdf5 cost 8.000669
+read and close hdf5 cost 8.003879
+new,init bf and hashMap cost 0.083650
+new,init bf and hashMap cost 0.124764
+parallel for cost 7.130631
+###############load barcodeToPosition map finished, time used: 15 seconds
+getBarcodePositionMap_uniqBarcodeTypes: 0
+processor 1 get map thread done,cost 15.2585
+mps
+0 0 1 1 1
+processor 1 get results done,cost 0.0010
+parallel for cost 7.732617
+###############load barcodeToPosition map finished, time used: 16 seconds
+getBarcodePositionMap_uniqBarcodeTypes: 0
+processor 0 get map thread done,cost 15.9042
+mps
+0 0 1 1 1
+processor 0 get results done,cost 0.0008
+============pigz init cost 0.000042
+path is /dev/shm/combine_read0.fq
+-----------------in pigz init cost 0.0000360
+start compress...
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~in in init cost 0.0071330
+pugz0 done, cost 56
+processor 0 producer get 1984 chunk done, cost 39.82136
+pugz0 done, cost 56
+processor 1 producer get 2974 chunk done, cost 40.82755
+processor 0 get -1
+processor 1 send data done, now send -1
+processor 1 send -1 done
+processor merge get 13353484789 data
+processor 0 get data done
+merge done, cost 40.4785
+pugz1 done, cost 59
+processor 0 consumer cost 43.0058
+processor 0 wSum is 22258049527
+processor 0 writer done, cost 43.0061
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~in in do-while cost 42.9979169
+pigz pSum is 22258049527
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~in in end cost 0.0575669
+-----------------in pigz compress cost 43.0626380
+compress done
+-----------------in pigz finish cost 0.0000181
+============pigz process0 cost 43.062700
+============pigz process1 cost 0.000000
+============pigz end cost 0.001551
+pigz done, cost 43.0655
+###processor 0 wait cost 4.844267
+###processor 0 format cost 2.099919
+###processor 0 new cost 0.117409
+###processor 0 pe cost 33.044374
+###processor 0 all cost 38.837631
+watind barrier
+pugz1 done, cost 59
+processor 1 consumer cost 44.0098
+processor 1 writer done, cost 44.0098
+###processor 1 wait cost 3.184241
+###processor 1 format cost 2.292191
+###processor 1 new cost 0.147797
+###processor 1 pe cost 35.804281
+###processor 1 all cost 40.548262
+watind barrier
+all merge done
+=======================print ans from process 0=========================
+all merge done
+total_query_cnt:	0
+after_filter_query_cnt:	0
+find_query_cnt:	0
+total_reads:	195794682
+fixed_sequence_contianing_reads:	0	0.00%
+pass_filter_reads:	195794682
+mapped_reads:	144646378	73.88%
+barcode_exactlyOverlap_reads:	118394902	60.47%
+barcode_misOverlap_reads:	26251476	13.41%
+barcode_withN_reads:	0	0.00%
+Q10_bases_in_barcode:	99.38%
+Q20_bases_in_barcode:	97.16%
+Q30_bases_in_barcode:	91.39%
+Q10_bases_in_umi:	98.17%
+Q20_bases_in_umi:	93.36%
+Q30_bases_in_umi:	85.47%
+umi_filter_reads:	3876700	1.98%
+umi_with_N_reads:	77	0.00%
+umi_with_polyA_reads:	8509	0.00%
+umi_with_low_quality_base_reads:	3868114	1.98%
+========================================================================
+1 work done
+final and delete cost 43.3664
+0 work done
+process cost 59
+my time : 59
+
+../ST_BarcodeMap-0.0.1 --in /dev/shm/DP8400016231TR_D1.barcodeToPos.h5 --in1 /dev/shm/V300091300_L03_read_1.fq.gz --in2 /dev/shm/V300091300_L04_read_1.fq.gz --out /dev/shm/combine_read.fq.gz --mismatch 2 --thread 24 --thread2 32 --usePugz --pugzThread 2 --usePigz --pigzThread 8
+spatialRNADrawMap, time used: 59 seconds
+
+
+fq
+[PAC20217111@compute012 data]$ rm -rf /dev/shm/*combine_read* && sleep 4 && mpirun -n 2 ../ST_BarcodeMap-0.0.1 --in /dev/shm/DP8400016231TR_D1.barcodeToPos.h5 --in1 /dev/shm/p1.fq --in2 /dev/shm/p2.fq --out /dev/shm/combine_read.fq --mismatch 2 --thread 24 --thread2 32
+Process 1 of 2 ,processor name is compute012
+processor 1 thread is 32
+now out name is /dev/shm/combine_read1.fq
+mergeDone 0
+Process 0 of 2 ,processor name is compute012
+processor num is 2
+processor 0 thread is 24
+outGzSpilt is 0
+now out name is /dev/shm/combine_read0.fq
+mergeDone 0
+###############load barcodeToPosition map begin...
+###############load barcodeToPosition map begin...
+new and hdf5 pre cost 0.000187
+new and hdf5 pre cost 0.000161
+read and close hdf5 cost 7.885903
+read and close hdf5 cost 7.885263
+new,init bf and hashMap cost 0.074352
+new,init bf and hashMap cost 0.106234
+parallel for cost 6.569177
+###############load barcodeToPosition map finished, time used: 14 seconds
+getBarcodePositionMap_uniqBarcodeTypes: 0
+processor 1 get map thread done,cost 14.5725
+mps
+0 0 1 1 1
+processor 1 get results done,cost 0.0007
+parallel for cost 7.186687
+###############load barcodeToPosition map finished, time used: 15 seconds
+getBarcodePositionMap_uniqBarcodeTypes: 0
+processor 0 get map thread done,cost 15.2199
+mps
+0 0 1 1 1
+processor 0 get results done,cost 0.0006
+processor 0 producer get 1984 chunk done, cost 28.39740
+processor 0 consumer cost 30.4706
+processor 1 producer get 2974 chunk done, cost 34.79901
+processor 1 consumer cost 36.5190
+processor 1 send data done, now send -1
+processor 1 send -1 done
+processor 0 get -1
+processor merge get 13353484789 data
+processor 0 get data done
+merge done, cost 35.8693
+processor 1 writer done, cost 36.5194
+###processor 1 wait cost 0.591279
+###processor 1 format cost 2.505424
+###processor 1 new cost 0.143143
+###processor 1 pe cost 34.459930
+###processor 1 all cost 36.494834
+watind barrier
+processor 0 writer done, cost 35.8717
+###processor 0 wait cost 0.351024
+###processor 0 format cost 2.103566
+###processor 0 new cost 0.102690
+###processor 0 pe cost 28.572079
+###processor 0 all cost 30.444797
+watind barrier
+all merge done
+=======================print ans from process 0=========================
+all merge done
+total_query_cnt:	0
+after_filter_query_cnt:	0
+find_query_cnt:	0
+total_reads:	195794682
+fixed_sequence_contianing_reads:	0	0.00%
+pass_filter_reads:	195794682
+mapped_reads:	144646378	73.88%
+barcode_exactlyOverlap_reads:	118394902	60.47%
+barcode_misOverlap_reads:	26251476	13.41%
+barcode_withN_reads:	0	0.00%
+Q10_bases_in_barcode:	99.38%
+Q20_bases_in_barcode:	97.16%
+Q30_bases_in_barcode:	91.39%
+Q10_bases_in_umi:	98.17%
+Q20_bases_in_umi:	93.36%
+Q30_bases_in_umi:	85.47%
+umi_filter_reads:	3876700	1.98%
+umi_with_N_reads:	77	0.00%
+umi_with_polyA_reads:	8509	0.00%
+umi_with_low_quality_base_reads:	3868114	1.98%
+========================================================================
+1 work done
+final and delete cost 35.8724
+0 work done
+process cost 51
+my time : 51
+
+../ST_BarcodeMap-0.0.1 --in /dev/shm/DP8400016231TR_D1.barcodeToPos.h5 --in1 /dev/shm/p1.fq --in2 /dev/shm/p2.fq --out /dev/shm/combine_read.fq --mismatch 2 --thread 24 --thread2 32
+spatialRNADrawMap, time used: 51 seconds
+```
+
+compute005
+
+```
+gz
+[PAC20217111@compute005 data]$ rm -rf /dev/shm/*combine_read* && sleep 4 && mpirun -n 2 ../ST_BarcodeMap-0.0.1 --in /dev/shm/DP8400016231TR_D1.barcodeToPos.h5 --in1 /dev/shm/V300091300_L03_read_1.fq.gz --in2 /dev/shm/V300091300_L04_read_1.fq.gz --out /dev/shm/combine_read.fq.gz --mismatch 2 --thread 24 --thread2 32 --usePugz --pugzThread 2 --usePigz --pigzThread 8
+Process 0 of 2 ,processor name is compute005
+processor num is 2
+processor 0 thread is 24
+outGzSpilt is 0
+now use pugz, 2 threads
+now use pigz, 8 threads
+now out name is /dev/shm/combine_read0.fq
+Process 1 of 2 ,processor name is compute005
+processor 1 thread is 32
+now out name is /dev/shm/combine_read1.fq
+mergeDone 0
+mergeDone 0
+now use pugz0 to decompress(2 threads)
+now use pugz1 to decompress(2 threads)
+###############load barcodeToPosition map begin...
+now use pugz0 to decompress(2 threads)
+now use pugz1 to decompress(2 threads)
+###############load barcodeToPosition map begin...
+new and hdf5 pre cost 0.000197
+new and hdf5 pre cost 0.000178
+read and close hdf5 cost 7.983673
+read and close hdf5 cost 8.008758
+new,init bf and hashMap cost 0.085322
+new,init bf and hashMap cost 0.083203
+parallel for cost 6.403619
+###############load barcodeToPosition map finished, time used: 14 seconds
+getBarcodePositionMap_uniqBarcodeTypes: 0
+processor 1 get map thread done,cost 14.5155
+mps
+0 0 1 1 1
+processor 1 get results done,cost 0.0010
+parallel for cost 6.922235
+###############load barcodeToPosition map finished, time used: 15 seconds
+getBarcodePositionMap_uniqBarcodeTypes: 0
+processor 0 get map thread done,cost 15.0574
+mps
+0 0 1 1 1
+processor 0 get results done,cost 0.0006
+============pigz init cost 0.000053
+path is /dev/shm/combine_read0.fq
+-----------------in pigz init cost 0.0000260
+start compress...
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~in in init cost 0.0086870
+pugz0 done, cost 54
+processor 0 producer get 1984 chunk done, cost 38.92601
+pugz0 done, cost 54
+processor 1 producer get 2974 chunk done, cost 40.00893
+processor 0 get -1
+processor 1 send data done, now send -1
+processor 1 send -1 done
+processor merge get 13353484789 data
+processor 0 get data done
+merge done, cost 39.7324
+pugz1 done, cost 57
+processor 0 consumer cost 42.1150
+processor 0 wSum is 22258049527
+processor 0 writer done, cost 42.1153
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~in in do-while cost 42.1054239
+pigz pSum is 22258049527
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~in in end cost 0.0576129
+-----------------in pigz compress cost 42.1717460
+compress done
+-----------------in pigz finish cost 0.0000200
+============pigz process0 cost 42.171801
+============pigz process1 cost 0.000000
+============pigz end cost 0.001375
+pigz done, cost 42.1744
+###processor 0 wait cost 7.148757
+###processor 0 format cost 2.061954
+###processor 0 new cost 0.237257
+###processor 0 pe cost 29.735631
+###processor 0 all cost 37.205092
+watind barrier
+pugz1 done, cost 58
+processor 1 consumer cost 43.1822
+processor 1 writer done, cost 43.1822
+###processor 1 wait cost 4.573623
+###processor 1 format cost 2.171423
+###processor 1 new cost 0.174380
+###processor 1 pe cost 33.250231
+###processor 1 all cost 39.131708
+watind barrier
+all merge done
+=======================print ans from process 0=========================
+all merge done
+total_query_cnt:	0
+after_filter_query_cnt:	0
+find_query_cnt:	0
+total_reads:	195794682
+fixed_sequence_contianing_reads:	0	0.00%
+pass_filter_reads:	195794682
+mapped_reads:	144646378	73.88%
+barcode_exactlyOverlap_reads:	118394902	60.47%
+barcode_misOverlap_reads:	26251476	13.41%
+barcode_withN_reads:	0	0.00%
+Q10_bases_in_barcode:	99.38%
+Q20_bases_in_barcode:	97.16%
+Q30_bases_in_barcode:	91.39%
+Q10_bases_in_umi:	98.17%
+Q20_bases_in_umi:	93.36%
+Q30_bases_in_umi:	85.47%
+umi_filter_reads:	3876700	1.98%
+umi_with_N_reads:	77	0.00%
+umi_with_polyA_reads:	8509	0.00%
+umi_with_low_quality_base_reads:	3868114	1.98%
+========================================================================
+final and delete cost 42.6425
+0 work done
+process cost 58
+my time : 58
+
+../ST_BarcodeMap-0.0.1 --in /dev/shm/DP8400016231TR_D1.barcodeToPos.h5 --in1 /dev/shm/V300091300_L03_read_1.fq.gz --in2 /dev/shm/V300091300_L04_read_1.fq.gz --out /dev/shm/combine_read.fq.gz --mismatch 2 --thread 24 --thread2 32 --usePugz --pugzThread 2 --usePigz --pigzThread 8
+spatialRNADrawMap, time used: 57 seconds
+1 work done
+
+fq
+
+[PAC20217111@compute005 data]$ rm -rf /dev/shm/*combine_read* && sleep 4 && mpirun -n 2 ../ST_BarcodeMap-0.0.1 --in /dev/shm/DP8400016231TR_D1.barcodeToPos.h5 --in1 /dev/shm/p1.fq --in2 /dev/shm/p2.fq --out /dev/shm/combine_read.fq --mismatch 2 --thread 24 --thread2 32
+Process 1 of 2 ,processor name is compute005
+processor 1 thread is 32
+now out name is /dev/shm/combine_read1.fq
+mergeDone 0
+Process 0 of 2 ,processor name is compute005
+processor num is 2
+processor 0 thread is 24
+outGzSpilt is 0
+now out name is /dev/shm/combine_read0.fq
+mergeDone 0
+###############load barcodeToPosition map begin...
+new and hdf5 pre cost 0.000173
+###############load barcodeToPosition map begin...
+new and hdf5 pre cost 0.000170
+read and close hdf5 cost 7.919240
+new,init bf and hashMap cost 0.077104
+read and close hdf5 cost 8.228332
+new,init bf and hashMap cost 0.154349
+parallel for cost 6.722351
+###############load barcodeToPosition map finished, time used: 15 seconds
+getBarcodePositionMap_uniqBarcodeTypes: 0
+processor 0 get map thread done,cost 14.7607
+mps
+0 0 1 1 1
+processor 0 get results done,cost 0.0006
+parallel for cost 8.281942
+###############load barcodeToPosition map finished, time used: 17 seconds
+getBarcodePositionMap_uniqBarcodeTypes: 0
+processor 1 get map thread done,cost 16.9024
+mps
+0 0 1 1 1
+processor 1 get results done,cost 0.0008
+processor 0 producer get 1984 chunk done, cost 28.29557
+processor 0 consumer cost 30.3705
+processor 1 producer get 2974 chunk done, cost 36.79365
+processor 1 consumer cost 38.5923
+processor 1 send data done, now send -1
+processor 1 send -1 done
+processor 0 get -1
+processor merge get 13353484789 data
+processor 0 get data done
+processor 1 writer done, cost 38.5928
+merge done, cost 40.7315
+###processor 1 wait cost 0.866960
+###processor 1 format cost 2.659929
+###processor 1 new cost 0.145838
+###processor 1 pe cost 36.457780
+###processor 1 all cost 38.540482
+watind barrier
+processor 0 writer done, cost 40.7337
+###processor 0 wait cost 0.431712
+###processor 0 format cost 2.185818
+###processor 0 new cost 0.105282
+###processor 0 pe cost 28.637534
+###processor 0 all cost 30.365396
+watind barrier
+all merge done
+=======================print ans from process 0=========================
+all merge done
+total_query_cnt:	0
+after_filter_query_cnt:	0
+find_query_cnt:	0
+total_reads:	195794682
+fixed_sequence_contianing_reads:	0	0.00%
+pass_filter_reads:	195794682
+mapped_reads:	144646378	73.88%
+barcode_exactlyOverlap_reads:	118394902	60.47%
+barcode_misOverlap_reads:	26251476	13.41%
+barcode_withN_reads:	0	0.00%
+Q10_bases_in_barcode:	99.38%
+Q20_bases_in_barcode:	97.16%
+Q30_bases_in_barcode:	91.39%
+Q10_bases_in_umi:	98.17%
+Q20_bases_in_umi:	93.36%
+Q30_bases_in_umi:	85.47%
+umi_filter_reads:	3876700	1.98%
+umi_with_N_reads:	77	0.00%
+umi_with_polyA_reads:	8509	0.00%
+umi_with_low_quality_base_reads:	3868114	1.98%
+========================================================================
+final and delete cost 40.7344
+0 work done
+process cost 55
+my time : 55
+
+../ST_BarcodeMap-0.0.1 --in /dev/shm/DP8400016231TR_D1.barcodeToPos.h5 --in1 /dev/shm/p1.fq --in2 /dev/shm/p2.fq --out /dev/shm/combine_read.fq --mismatch 2 --thread 24 --thread2 32
+spatialRNADrawMap, time used: 56 seconds
+1 work done
+```
+
+compute007
+
+```
+gz
+[PAC20217111@compute007 data]$ rm -rf /dev/shm/*combine_read* && sleep 4 && mpirun -n 2 ../ST_BarcodeMap-0.0.1 --in /dev/shm/DP8400016231TR_D1.barcodeToPos.h5 --in1 /dev/shm/V300091300_L03_read_1.fq.gz --in2 /dev/shm/V300091300_L04_read_1.fq.gz --out /dev/shm/combine_read.fq.gz --mismatch 2 --thread 24 --thread2 32 --usePugz --pugzThread 2 --usePigz --pigzThread 8
+Process 0 of 2 ,processor name is compute007
+processor num is 2
+processor 0 thread is 24
+outGzSpilt is 0
+now use pugz, 2 threads
+now use pigz, 8 threads
+now out name is /dev/shm/combine_read0.fq
+Process 1 of 2 ,processor name is compute007
+processor 1 thread is 32
+now out name is /dev/shm/combine_read1.fq
+mergeDone 0
+mergeDone 0
+now use pugz0 to decompress(2 threads)
+now use pugz1 to decompress(2 threads)
+###############load barcodeToPosition map begin...
+new and hdf5 pre cost 0.000197
+now use pugz0 to decompress(2 threads)
+now use pugz1 to decompress(2 threads)
+###############load barcodeToPosition map begin...
+new and hdf5 pre cost 0.000183
+read and close hdf5 cost 8.470440
+read and close hdf5 cost 8.471711
+new,init bf and hashMap cost 0.183665
+new,init bf and hashMap cost 0.182481
+parallel for cost 8.561019
+parallel for cost 8.683377
+###############load barcodeToPosition map finished, time used: 18 seconds
+getBarcodePositionMap_uniqBarcodeTypes: 0
+processor 1 get map thread done,cost 17.4542
+mps
+0 0 1 1 1
+processor 1 get results done,cost 0.0009
+###############load barcodeToPosition map finished, time used: 18 seconds
+getBarcodePositionMap_uniqBarcodeTypes: 0
+processor 0 get map thread done,cost 17.5714
+mps
+0 0 1 1 1
+processor 0 get results done,cost 0.0007
+============pigz init cost 0.000045
+path is /dev/shm/combine_read0.fq
+-----------------in pigz init cost 0.0000179
+start compress...
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~in in init cost 0.4151361
+pugz0 done, cost 58
+processor 0 producer get 1984 chunk done, cost 40.98045
+pugz0 done, cost 59
+processor 1 producer get 2974 chunk done, cost 41.18140
+processor 1 send data done, now send -1
+processor 1 send -1 done
+processor 0 get -1
+processor merge get 13353484789 data
+processor 0 get data done
+merge done, cost 41.3969
+pugz1 done, cost 60
+processor 1 consumer cost 42.7595
+processor 1 writer done, cost 42.7595
+###processor 1 wait cost 2.118826
+###processor 1 format cost 2.390167
+###processor 1 new cost 0.142766
+###processor 1 pe cost 37.054794
+###processor 1 all cost 40.886889
+watind barrier
+pugz1 done, cost 62
+processor 0 consumer cost 44.1931
+processor 0 wSum is 22258049527
+processor 0 writer done, cost 44.1933
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~in in do-while cost 43.7775738
+pigz pSum is 22258049527
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~in in end cost 0.0574570
+-----------------in pigz compress cost 44.2502050
+compress done
+-----------------in pigz finish cost 0.0000300
+============pigz process0 cost 44.250261
+============pigz process1 cost 0.000000
+============pigz end cost 0.008550
+pigz done, cost 44.2595
+###processor 0 wait cost 4.177049
+###processor 0 format cost 2.188567
+###processor 0 new cost 0.121327
+###processor 0 pe cost 35.151993
+###processor 0 all cost 40.169655
+watind barrier
+all merge done
+=======================print ans from process 0=========================
+all merge done
+total_query_cnt:	0
+after_filter_query_cnt:	0
+find_query_cnt:	0
+total_reads:	195794682
+fixed_sequence_contianing_reads:	0	0.00%
+pass_filter_reads:	195794682
+mapped_reads:	144646378	73.88%
+barcode_exactlyOverlap_reads:	118394902	60.47%
+barcode_misOverlap_reads:	26251476	13.41%
+barcode_withN_reads:	0	0.00%
+Q10_bases_in_barcode:	99.38%
+Q20_bases_in_barcode:	97.16%
+Q30_bases_in_barcode:	91.39%
+Q10_bases_in_umi:	98.17%
+Q20_bases_in_umi:	93.36%
+Q30_bases_in_umi:	85.47%
+umi_filter_reads:	3876700	1.98%
+umi_with_N_reads:	77	0.00%
+umi_with_polyA_reads:	8509	0.00%
+umi_with_low_quality_base_reads:	3868114	1.98%
+========================================================================
+1 work done
+final and delete cost 44.2661
+0 work done
+process cost 62
+my time : 62
+
+../ST_BarcodeMap-0.0.1 --in /dev/shm/DP8400016231TR_D1.barcodeToPos.h5 --in1 /dev/shm/V300091300_L03_read_1.fq.gz --in2 /dev/shm/V300091300_L04_read_1.fq.gz --out /dev/shm/combine_read.fq.gz --mismatch 2 --thread 24 --thread2 32 --usePugz --pugzThread 2 --usePigz --pigzThread 8
+spatialRNADrawMap, time used: 62 seconds
+
+fq
+[PAC20217111@compute007 data]$ rm -rf /dev/shm/*combine_read* && sleep 4 && mpirun -n 2 ../ST_BarcodeMap-0.0.1 --in /dev/shm/DP8400016231TR_D1.barcodeToPos.h5 --in1 /dev/shm/p1.fq --in2 /dev/shm/p2.fq --out /dev/shm/combine_read.fq --mismatch 2 --thread 24 --thread2 32
+Process 0 of 2 ,processor name is compute007
+processor num is 2
+processor 0 thread is 24
+outGzSpilt is 0
+now out name is /dev/shm/combine_read0.fq
+mergeDone 0
+Process 1 of 2 ,processor name is compute007
+processor 1 thread is 32
+now out name is /dev/shm/combine_read1.fq
+mergeDone 0
+###############load barcodeToPosition map begin...
+new and hdf5 pre cost 0.000180
+###############load barcodeToPosition map begin...
+new and hdf5 pre cost 0.000161
+read and close hdf5 cost 8.214679
+read and close hdf5 cost 8.253049
+new,init bf and hashMap cost 0.160793
+new,init bf and hashMap cost 0.156819
+parallel for cost 8.431186
+###############load barcodeToPosition map finished, time used: 17 seconds
+getBarcodePositionMap_uniqBarcodeTypes: 0
+processor 1 get map thread done,cost 17.0412
+mps
+0 0 1 1 1
+processor 1 get results done,cost 0.0007
+parallel for cost 8.627693
+###############load barcodeToPosition map finished, time used: 18 seconds
+getBarcodePositionMap_uniqBarcodeTypes: 0
+processor 0 get map thread done,cost 17.2837
+mps
+0 0 1 1 1
+processor 0 get results done,cost 0.0005
+processor 0 producer get 1984 chunk done, cost 29.91204
+processor 0 consumer cost 32.0669
+processor 1 producer get 2974 chunk done, cost 36.58900
+processor 1 consumer cost 38.3471
+processor 0 get -1
+processor 1 send data done, now send -1
+processor 1 send -1 done
+processor 1 writer done, cost 38.3476
+processor merge get 13353484789 data
+processor 0 get data done
+merge done, cost 38.1068
+###processor 1 wait cost 0.997855
+###processor 1 format cost 2.628181
+###processor 1 new cost 0.126705
+###processor 1 pe cost 36.203278
+###processor 1 all cost 38.328640
+watind barrier
+processor 0 writer done, cost 38.1086
+###processor 0 wait cost 0.535733
+###processor 0 format cost 2.170028
+###processor 0 new cost 0.105982
+###processor 0 pe cost 30.203140
+###processor 0 all cost 32.061972
+watind barrier
+all merge done
+=======================print ans from process 0=========================
+all merge done
+total_query_cnt:	0
+after_filter_query_cnt:	0
+find_query_cnt:	0
+total_reads:	195794682
+fixed_sequence_contianing_reads:	0	0.00%
+pass_filter_reads:	195794682
+mapped_reads:	144646378	73.88%
+barcode_exactlyOverlap_reads:	118394902	60.47%
+barcode_misOverlap_reads:	26251476	13.41%
+barcode_withN_reads:	0	0.00%
+Q10_bases_in_barcode:	99.38%
+Q20_bases_in_barcode:	97.16%
+Q30_bases_in_barcode:	91.39%
+Q10_bases_in_umi:	98.17%
+Q20_bases_in_umi:	93.36%
+Q30_bases_in_umi:	85.47%
+umi_filter_reads:	3876700	1.98%
+umi_with_N_reads:	77	0.00%
+umi_with_polyA_reads:	8509	0.00%
+umi_with_low_quality_base_reads:	3868114	1.98%
+========================================================================
+1 work done
+final and delete cost 38.1154
+0 work done
+process cost 55
+my time : 55
+
+../ST_BarcodeMap-0.0.1 --in /dev/shm/DP8400016231TR_D1.barcodeToPos.h5 --in1 /dev/shm/p1.fq --in2 /dev/shm/p2.fq --out /dev/shm/combine_read.fq --mismatch 2 --thread 24 --thread2 32
+spatialRNADrawMap, time used: 56 seconds
+
+```
+
+compute008
+
+```
+gz
+[PAC20217111@compute008 data]$ ./cc.sh
+Process 1 of 2 ,processor name is compute008
+processor 1 thread is 32
+now out name is /dev/shm/combine_read1.fq
+Process 0 of 2 ,processor name is compute008
+processor num is 2
+processor 0 thread is 24
+outGzSpilt is 0
+now use pugz, 2 threads
+now use pigz, 8 threads
+now out name is /dev/shm/combine_read0.fq
+mergeDone 0
+mergeDone 0
+now use pugz0 to decompress(2 threads)
+now use pugz1 to decompress(2 threads)
+###############load barcodeToPosition map begin...
+new and hdf5 pre cost 0.000182
+now use pugz0 to decompress(2 threads)
+now use pugz1 to decompress(2 threads)
+###############load barcodeToPosition map begin...
+new and hdf5 pre cost 0.000187
+read and close hdf5 cost 7.991441
+read and close hdf5 cost 7.996402
+new,init bf and hashMap cost 0.084762
+new,init bf and hashMap cost 0.086976
+parallel for cost 5.901750
+###############load barcodeToPosition map finished, time used: 14 seconds
+getBarcodePositionMap_uniqBarcodeTypes: 0
+processor 1 get map thread done,cost 14.0212
+mps
+0 0 1 1 1
+processor 1 get results done,cost 0.0008
+parallel for cost 5.931086
+###############load barcodeToPosition map finished, time used: 14 seconds
+getBarcodePositionMap_uniqBarcodeTypes: 0
+processor 0 get map thread done,cost 14.0604
+mps
+0 0 1 1 1
+processor 0 get results done,cost 0.0008
+============pigz init cost 0.000040
+path is /dev/shm/combine_read0.fq
+-----------------in pigz init cost 0.0000200
+start compress...
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~in in init cost 0.4183841
+pugz0 done, cost 52
+processor 0 producer get 1984 chunk done, cost 38.48731
+pugz0 done, cost 54
+processor 1 producer get 2974 chunk done, cost 40.20071
+processor 1 send data done, now send -1
+processor 1 send -1 done
+processor 0 get -1
+processor merge get 13353484789 data
+processor 0 get data done
+merge done, cost 40.4317
+pugz1 done, cost 56
+processor 0 consumer cost 41.6690
+processor 0 wSum is 22258049527
+processor 0 writer done, cost 41.6692
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~in in do-while cost 41.2496870
+pigz pSum is 22258049527
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~in in end cost 0.0576541
+-----------------in pigz compress cost 41.7257578
+compress done
+-----------------in pigz finish cost 0.0000229
+============pigz process0 cost 41.725810
+============pigz process1 cost 0.000000
+============pigz end cost 0.000633
+pigz done, cost 41.7286
+###processor 0 wait cost 9.268026
+###processor 0 format cost 1.994989
+###processor 0 new cost 0.131142
+###processor 0 pe cost 26.863962
+###processor 0 all cost 36.672822
+watind barrier
+pugz1 done, cost 57
+processor 1 consumer cost 43.3802
+processor 1 writer done, cost 43.3802
+###processor 1 wait cost 6.649961
+###processor 1 format cost 2.229878
+###processor 1 new cost 0.127270
+###processor 1 pe cost 32.547339
+###processor 1 all cost 39.204861
+watind barrier
+all merge done
+=======================print ans from process 0=========================
+all merge done
+total_query_cnt:	0
+after_filter_query_cnt:	0
+find_query_cnt:	0
+total_reads:	195794682
+fixed_sequence_contianing_reads:	0	0.00%
+pass_filter_reads:	195794682
+mapped_reads:	144646378	73.88%
+barcode_exactlyOverlap_reads:	118394902	60.47%
+barcode_misOverlap_reads:	26251476	13.41%
+barcode_withN_reads:	0	0.00%
+Q10_bases_in_barcode:	99.38%
+Q20_bases_in_barcode:	97.16%
+Q30_bases_in_barcode:	91.39%
+Q10_bases_in_umi:	98.17%
+Q20_bases_in_umi:	93.36%
+Q30_bases_in_umi:	85.47%
+umi_filter_reads:	3876700	1.98%
+umi_with_N_reads:	77	0.00%
+umi_with_polyA_reads:	8509	0.00%
+umi_with_low_quality_base_reads:	3868114	1.98%
+========================================================================
+1 work done
+final and delete cost 43.3385
+0 work done
+process cost 57
+my time : 57
+
+../ST_BarcodeMap-0.0.1 --in /dev/shm/DP8400016231TR_D1.barcodeToPos.h5 --in1 /dev/shm/V300091300_L03_read_1.fq.gz --in2 /dev/shm/V300091300_L04_read_1.fq.gz --out /dev/shm/combine_read.fq.gz --mismatch 2 --thread 24 --thread2 32 --usePugz --pugzThread 2 --usePigz --pigzThread 8
+spatialRNADrawMap, time used: 57 seconds
+
+fq
+[PAC20217111@compute008 data]$ rm -rf /dev/shm/*combine_read* && sleep 4 && mpirun -n 2 ../ST_BarcodeMap-0.0.1 --in /dev/shm/DP8400016231TR_D1.barcodeToPos.h5 --in1 /dev/shm/p1.fq --in2 /dev/shm/p2.fq --out /dev/shm/combine_read.fq --mismatch 2 --thread 24 --thread2 32
+Process 1 of 2 ,processor name is compute008
+processor 1 thread is 32
+now out name is /dev/shm/combine_read1.fq
+mergeDone 0
+Process 0 of 2 ,processor name is compute008
+processor num is 2
+processor 0 thread is 24
+outGzSpilt is 0
+now out name is /dev/shm/combine_read0.fq
+mergeDone 0
+###############load barcodeToPosition map begin...
+new and hdf5 pre cost 0.000164
+###############load barcodeToPosition map begin...
+new and hdf5 pre cost 0.000176
+read and close hdf5 cost 7.880119
+read and close hdf5 cost 7.883158
+new,init bf and hashMap cost 0.096953
+new,init bf and hashMap cost 0.220151
+parallel for cost 6.454005
+###############load barcodeToPosition map finished, time used: 14 seconds
+getBarcodePositionMap_uniqBarcodeTypes: 0
+processor 0 get map thread done,cost 14.4767
+mps
+0 0 1 1 1
+processor 0 get results done,cost 0.0006
+parallel for cost 11.871690
+###############load barcodeToPosition map finished, time used: 20 seconds
+getBarcodePositionMap_uniqBarcodeTypes: 0
+processor 1 get map thread done,cost 20.0291
+mps
+0 0 1 1 1
+processor 1 get results done,cost 0.0008
+processor 0 producer get 1984 chunk done, cost 30.01932
+processor 0 consumer cost 32.3746
+processor 1 producer get 2974 chunk done, cost 49.91949
+processor 1 consumer cost 52.2389
+processor 1 send data done, now send -1
+processor 1 send -1 done
+processor 0 get -1
+processor merge get 13353484789 data
+processor 0 get data done
+merge done, cost 57.7887
+processor 1 writer done, cost 52.2397
+###processor 1 wait cost 0.759143
+###processor 1 format cost 3.145860
+###processor 1 new cost 0.147949
+###processor 1 pe cost 50.049358
+###processor 1 all cost 52.227792
+watind barrier
+processor 0 writer done, cost 57.7908
+###processor 0 wait cost 0.337761
+###processor 0 format cost 1.962817
+###processor 0 new cost 0.096252
+###processor 0 pe cost 30.390674
+###processor 0 all cost 32.344887
+watind barrier
+all merge done
+=======================print ans from process 0=========================
+all merge done
+total_query_cnt:	0
+after_filter_query_cnt:	0
+find_query_cnt:	0
+total_reads:	195794682
+fixed_sequence_contianing_reads:	0	0.00%
+pass_filter_reads:	195794682
+mapped_reads:	144646378	73.88%
+barcode_exactlyOverlap_reads:	118394902	60.47%
+barcode_misOverlap_reads:	26251476	13.41%
+barcode_withN_reads:	0	0.00%
+Q10_bases_in_barcode:	99.38%
+Q20_bases_in_barcode:	97.16%
+Q30_bases_in_barcode:	91.39%
+Q10_bases_in_umi:	98.17%
+Q20_bases_in_umi:	93.36%
+Q30_bases_in_umi:	85.47%
+umi_filter_reads:	3876700	1.98%
+umi_with_N_reads:	77	0.00%
+umi_with_polyA_reads:	8509	0.00%
+umi_with_low_quality_base_reads:	3868114	1.98%
+========================================================================
+1 work done
+final and delete cost 57.7914
+0 work done
+process cost 72
+my time : 72
+
+../ST_BarcodeMap-0.0.1 --in /dev/shm/DP8400016231TR_D1.barcodeToPos.h5 --in1 /dev/shm/p1.fq --in2 /dev/shm/p2.fq --out /dev/shm/combine_read.fq --mismatch 2 --thread 24 --thread2 32
+spatialRNADrawMap, time used: 72 seconds
+```
+
+compute010
+
+```
+gz
+[PAC20217111@compute010 data]$ ./cc.sh
+Process 0 of 2 ,processor name is compute010
+processor num is 2
+processor 0 thread is 24
+outGzSpilt is 0
+now use pugz, 2 threads
+now use pigz, 8 threads
+now out name is /dev/shm/combine_read0.fq
+Process 1 of 2 ,processor name is compute010
+processor 1 thread is 32
+now out name is /dev/shm/combine_read1.fq
+mergeDone 0
+mergeDone 0
+now use pugz0 to decompress(2 threads)
+now use pugz1 to decompress(2 threads)
+###############load barcodeToPosition map begin...
+now use pugz0 to decompress(2 threads)
+now use pugz1 to decompress(2 threads)
+###############load barcodeToPosition map begin...
+new and hdf5 pre cost 0.000185
+new and hdf5 pre cost 0.000173
+read and close hdf5 cost 8.030203
+read and close hdf5 cost 8.036187
+new,init bf and hashMap cost 0.086633
+new,init bf and hashMap cost 0.086035
+parallel for cost 5.978657
+###############load barcodeToPosition map finished, time used: 14 seconds
+getBarcodePositionMap_uniqBarcodeTypes: 0
+processor 0 get map thread done,cost 14.1431
+mps
+0 0 1 1 1
+processor 0 get results done,cost 0.0007
+============pigz init cost 0.000041
+path is /dev/shm/combine_read0.fq
+-----------------in pigz init cost 0.0000188
+start compress...
+parallel for cost 6.062790
+###############load barcodeToPosition map finished, time used: 14 seconds
+getBarcodePositionMap_uniqBarcodeTypes: 0
+processor 1 get map thread done,cost 14.2224
+mps
+0 0 1 1 1
+processor 1 get results done,cost 0.0008
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~in in init cost 0.4225070
+pugz0 done, cost 53
+processor 0 producer get 1984 chunk done, cost 38.73215
+pugz0 done, cost 54
+processor 1 producer get 2974 chunk done, cost 40.08248
+processor 1 send data done, now send -1
+processor 1 send -1 done
+processor 0 get -1
+processor merge get 13353484789 data
+processor 0 get data done
+merge done, cost 40.4411
+pugz1 done, cost 56
+processor 0 consumer cost 41.9231
+processor 0 wSum is 22258049527
+processor 0 writer done, cost 41.9233
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~in in do-while cost 41.4996631
+pigz pSum is 22258049527
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~in in end cost 0.0574100
+-----------------in pigz compress cost 41.9796119
+compress done
+-----------------in pigz finish cost 0.0000222
+============pigz process0 cost 41.979665
+============pigz process1 cost 0.000000
+============pigz end cost 0.000688
+pigz done, cost 41.9816
+###processor 0 wait cost 8.337979
+###processor 0 format cost 2.000743
+###processor 0 new cost 0.122997
+###processor 0 pe cost 27.812561
+###processor 0 all cost 37.014950
+watind barrier
+pugz1 done, cost 57
+processor 1 consumer cost 43.2641
+processor 1 writer done, cost 43.2641
+###processor 1 wait cost 6.034956
+###processor 1 format cost 2.154869
+###processor 1 new cost 0.143006
+###processor 1 pe cost 32.411165
+###processor 1 all cost 39.386309
+watind barrier
+all merge done
+=======================print ans from process 0=========================
+all merge done
+total_query_cnt:	0
+after_filter_query_cnt:	0
+find_query_cnt:	0
+total_reads:	195794682
+fixed_sequence_contianing_reads:	0	0.00%
+pass_filter_reads:	195794682
+mapped_reads:	144646378	73.88%
+barcode_exactlyOverlap_reads:	118394902	60.47%
+barcode_misOverlap_reads:	26251476	13.41%
+barcode_withN_reads:	0	0.00%
+Q10_bases_in_barcode:	99.38%
+Q20_bases_in_barcode:	97.16%
+Q30_bases_in_barcode:	91.39%
+Q10_bases_in_umi:	98.17%
+Q20_bases_in_umi:	93.36%
+Q30_bases_in_umi:	85.47%
+umi_filter_reads:	3876700	1.98%
+umi_with_N_reads:	77	0.00%
+umi_with_polyA_reads:	8509	0.00%
+umi_with_low_quality_base_reads:	3868114	1.98%
+========================================================================
+1 work done
+final and delete cost 43.3448
+0 work done
+process cost 57
+my time : 57
+
+../ST_BarcodeMap-0.0.1 --in /dev/shm/DP8400016231TR_D1.barcodeToPos.h5 --in1 /dev/shm/V300091300_L03_read_1.fq.gz --in2 /dev/shm/V300091300_L04_read_1.fq.gz --out /dev/shm/combine_read.fq.gz --mismatch 2 --thread 24 --thread2 32 --usePugz --pugzThread 2 --usePigz --pigzThread 8
+spatialRNADrawMap, time used: 57 seconds
+
+fq
+[PAC20217111@compute010 data]$ rm -rf /dev/shm/*combine_read* && sleep 4 && mpirun -n 2 ../ST_BarcodeMap-0.0.1 --in /dev/shm/DP8400016231TR_D1.barcodeToPos.h5 --in1 /dev/shm/p1.fq --in2 /dev/shm/p2.fq --out /dev/shm/combine_read.fq --mismatch 2 --thread 24 --thread2 32
+Process 1 of 2 ,processor name is compute010
+processor 1 thread is 32
+now out name is /dev/shm/combine_read1.fq
+mergeDone 0
+Process 0 of 2 ,processor name is compute010
+processor num is 2
+processor 0 thread is 24
+outGzSpilt is 0
+now out name is /dev/shm/combine_read0.fq
+mergeDone 0
+###############load barcodeToPosition map begin...
+new and hdf5 pre cost 0.000191
+###############load barcodeToPosition map begin...
+new and hdf5 pre cost 0.000166
+read and close hdf5 cost 7.895348
+read and close hdf5 cost 7.933743
+new,init bf and hashMap cost 0.076202
+new,init bf and hashMap cost 0.100627
+parallel for cost 5.828639
+###############load barcodeToPosition map finished, time used: 14 seconds
+getBarcodePositionMap_uniqBarcodeTypes: 0
+processor 0 get map thread done,cost 13.8427
+mps
+0 0 1 1 1
+processor 0 get results done,cost 0.0006
+parallel for cost 5.904521
+###############load barcodeToPosition map finished, time used: 14 seconds
+getBarcodePositionMap_uniqBarcodeTypes: 0
+processor 1 get map thread done,cost 13.9819
+mps
+0 0 1 1 1
+processor 1 get results done,cost 0.0008
+processor 0 producer get 1984 chunk done, cost 26.98687
+processor 0 consumer cost 29.0251
+processor 1 producer get 2974 chunk done, cost 33.38385
+processor 1 consumer cost 35.0239
+processor 1 send data done, now send -1
+processor 1 send -1 done
+processor 0 get -1
+processor merge get 13353484789 data
+processor 0 get data done
+processor 1 writer done, cost 35.0244
+merge done, cost 35.1607
+###processor 1 wait cost 0.498956
+###processor 1 format cost 2.409965
+###processor 1 new cost 0.135312
+###processor 1 pe cost 32.886512
+###processor 1 all cost 35.006682
+watind barrier
+processor 0 writer done, cost 35.1627
+###processor 0 wait cost 0.319696
+###processor 0 format cost 1.939143
+###processor 0 new cost 0.101153
+###processor 0 pe cost 27.126623
+###processor 0 all cost 29.015084
+watind barrier
+all merge done
+=======================print ans from process 0=========================
+all merge done
+total_query_cnt:	0
+after_filter_query_cnt:	0
+find_query_cnt:	0
+total_reads:	195794682
+fixed_sequence_contianing_reads:	0	0.00%
+pass_filter_reads:	195794682
+mapped_reads:	144646378	73.88%
+barcode_exactlyOverlap_reads:	118394902	60.47%
+barcode_misOverlap_reads:	26251476	13.41%
+barcode_withN_reads:	0	0.00%
+Q10_bases_in_barcode:	99.38%
+Q20_bases_in_barcode:	97.16%
+Q30_bases_in_barcode:	91.39%
+Q10_bases_in_umi:	98.17%
+Q20_bases_in_umi:	93.36%
+Q30_bases_in_umi:	85.47%
+umi_filter_reads:	3876700	1.98%
+umi_with_N_reads:	77	0.00%
+umi_with_polyA_reads:	8509	0.00%
+umi_with_low_quality_base_reads:	3868114	1.98%
+========================================================================
+1 work done
+final and delete cost 35.1633
+0 work done
+process cost 49
+my time : 49
+
+../ST_BarcodeMap-0.0.1 --in /dev/shm/DP8400016231TR_D1.barcodeToPos.h5 --in1 /dev/shm/p1.fq --in2 /dev/shm/p2.fq --out /dev/shm/combine_read.fq --mismatch 2 --thread 24 --thread2 32
+spatialRNADrawMap, time used: 49 seconds
+```
+
+compute013
+
+```
+gz
+[PAC20217111@compute014 data]$ ./cc.sh
+Process 0 of 2 ,processor name is compute014
+processor num is 2
+processor 0 thread is 24
+outGzSpilt is 0
+now use pugz, 2 threads
+now use pigz, 8 threads
+now out name is /dev/shm/combine_read0.fq
+Process 1 of 2 ,processor name is compute014
+processor 1 thread is 32
+now out name is /dev/shm/combine_read1.fq
+mergeDone 0
+mergeDone 0
+now use pugz0 to decompress(2 threads)
+now use pugz1 to decompress(2 threads)
+###############load barcodeToPosition map begin...
+new and hdf5 pre cost 0.000177
+now use pugz0 to decompress(2 threads)
+now use pugz1 to decompress(2 threads)
+###############load barcodeToPosition map begin...
+new and hdf5 pre cost 0.000186
+read and close hdf5 cost 8.012235
+read and close hdf5 cost 8.019614
+new,init bf and hashMap cost 0.083944
+new,init bf and hashMap cost 0.083605
+parallel for cost 6.318918
+###############load barcodeToPosition map finished, time used: 15 seconds
+getBarcodePositionMap_uniqBarcodeTypes: 0
+processor 1 get map thread done,cost 14.4692
+mps
+0 0 1 1 1
+processor 1 get results done,cost 0.0010
+parallel for cost 6.886917
+###############load barcodeToPosition map finished, time used: 15 seconds
+getBarcodePositionMap_uniqBarcodeTypes: 0
+processor 0 get map thread done,cost 15.0262
+mps
+0 0 1 1 1
+processor 0 get results done,cost 0.0006
+============pigz init cost 0.000071
+path is /dev/shm/combine_read0.fq
+-----------------in pigz init cost 0.0000219
+start compress...
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~in in init cost 0.0056272
+pugz0 done, cost 54
+processor 0 producer get 1984 chunk done, cost 39.28690
+pugz0 done, cost 55
+processor 1 producer get 2974 chunk done, cost 40.59858
+processor 1 send data done, now send -1
+processor 1 send -1 done
+processor 0 get -1
+processor merge get 13353484789 data
+processor 0 get data done
+merge done, cost 40.3253
+pugz1 done, cost 57
+processor 0 consumer cost 42.4939
+processor 0 wSum is 22258049527
+processor 0 writer done, cost 42.4942
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~in in do-while cost 42.4874170
+pigz pSum is 22258049527
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~in in end cost 0.0573978
+-----------------in pigz compress cost 42.5504630
+compress done
+-----------------in pigz finish cost 0.0000231
+============pigz process0 cost 42.550515
+============pigz process1 cost 0.000000
+============pigz end cost 0.001709
+pigz done, cost 42.5535
+###processor 0 wait cost 6.317080
+###processor 0 format cost 2.096271
+###processor 0 new cost 0.167590
+###processor 0 pe cost 30.392684
+###processor 0 all cost 37.632100
+watind barrier
+pugz1 done, cost 58
+processor 1 consumer cost 43.7862
+processor 1 writer done, cost 43.7862
+###processor 1 wait cost 5.272305
+###processor 1 format cost 2.226142
+###processor 1 new cost 0.137952
+###processor 1 pe cost 33.587350
+###processor 1 all cost 39.878051
+watind barrier
+all merge done
+=======================print ans from process 0=========================
+all merge done
+total_query_cnt:	0
+after_filter_query_cnt:	0
+find_query_cnt:	0
+total_reads:	195794682
+fixed_sequence_contianing_reads:	0	0.00%
+pass_filter_reads:	195794682
+mapped_reads:	144646378	73.88%
+barcode_exactlyOverlap_reads:	118394902	60.47%
+barcode_misOverlap_reads:	26251476	13.41%
+barcode_withN_reads:	0	0.00%
+Q10_bases_in_barcode:	99.38%
+Q20_bases_in_barcode:	97.16%
+Q30_bases_in_barcode:	91.39%
+Q10_bases_in_umi:	98.17%
+Q20_bases_in_umi:	93.36%
+Q30_bases_in_umi:	85.47%
+umi_filter_reads:	3876700	1.98%
+umi_with_N_reads:	77	0.00%
+umi_with_polyA_reads:	8509	0.00%
+umi_with_low_quality_base_reads:	3868114	1.98%
+========================================================================
+1 work done
+final and delete cost 43.2315
+0 work done
+process cost 58
+my time : 58
+
+../ST_BarcodeMap-0.0.1 --in /dev/shm/DP8400016231TR_D1.barcodeToPos.h5 --in1 /dev/shm/V300091300_L03_read_1.fq.gz --in2 /dev/shm/V300091300_L04_read_1.fq.gz --out /dev/shm/combine_read.fq.gz --mismatch 2 --thread 24 --thread2 32 --usePugz --pugzThread 2 --usePigz --pigzThread 8
+spatialRNADrawMap, time used: 59 seconds
+
+fq
+[PAC20217111@compute014 data]$ rm -rf /dev/shm/*combine_read* && sleep 4 && mpirun -n 2 ../ST_BarcodeMap-0.0.1 --in /dev/shm/DP8400016231TR_D1.barcodeToPos.h5 --in1 /dev/shm/p1.fq --in2 /dev/shm/p2.fq --out /dev/shm/combine_read.fq --mismatch 2 --thread 24 --thread2 32
+Process 0 of 2 ,processor name is compute014
+processor num is 2
+processor 0 thread is 24
+outGzSpilt is 0
+now out name is /dev/shm/combine_read0.fq
+mergeDone 0
+Process 1 of 2 ,processor name is compute014
+processor 1 thread is 32
+now out name is /dev/shm/combine_read1.fq
+mergeDone 0
+###############load barcodeToPosition map begin...
+new and hdf5 pre cost 0.000163
+###############load barcodeToPosition map begin...
+new and hdf5 pre cost 0.000174
+read and close hdf5 cost 8.197635
+read and close hdf5 cost 8.246239
+new,init bf and hashMap cost 0.156594
+new,init bf and hashMap cost 0.159096
+parallel for cost 8.117793
+parallel for cost 8.200136
+###############load barcodeToPosition map finished, time used: 17 seconds
+getBarcodePositionMap_uniqBarcodeTypes: 0
+processor 0 get map thread done,cost 16.7321
+mps
+0 0 1 1 1
+processor 0 get results done,cost 0.0006
+###############load barcodeToPosition map finished, time used: 17 seconds
+getBarcodePositionMap_uniqBarcodeTypes: 0
+processor 1 get map thread done,cost 16.7839
+mps
+0 0 1 1 1
+processor 1 get results done,cost 0.0006
+processor 0 producer get 1984 chunk done, cost 29.69789
+processor 0 consumer cost 31.9075
+processor 1 producer get 2974 chunk done, cost 36.64232
+processor 1 consumer cost 38.4106
+processor 1 send data done, now send -1
+processor 1 send -1 done
+processor 0 get -1
+processor merge get 13353484789 data
+processor 0 get data done
+processor 1 writer done, cost 38.4112
+merge done, cost 38.4638
+###processor 1 wait cost 0.742487
+###processor 1 format cost 2.562079
+###processor 1 new cost 0.155219
+###processor 1 pe cost 36.199150
+###processor 1 all cost 38.397568
+watind barrier
+processor 0 writer done, cost 38.4665
+###processor 0 wait cost 0.578184
+###processor 0 format cost 2.138513
+###processor 0 new cost 0.103340
+###processor 0 pe cost 30.150868
+###processor 0 all cost 31.902517
+watind barrier
+all merge done
+=======================print ans from process 0=========================
+all merge done
+total_query_cnt:	0
+after_filter_query_cnt:	0
+find_query_cnt:	0
+total_reads:	195794682
+fixed_sequence_contianing_reads:	0	0.00%
+pass_filter_reads:	195794682
+mapped_reads:	144646378	73.88%
+barcode_exactlyOverlap_reads:	118394902	60.47%
+barcode_misOverlap_reads:	26251476	13.41%
+barcode_withN_reads:	0	0.00%
+Q10_bases_in_barcode:	99.38%
+Q20_bases_in_barcode:	97.16%
+Q30_bases_in_barcode:	91.39%
+Q10_bases_in_umi:	98.17%
+Q20_bases_in_umi:	93.36%
+Q30_bases_in_umi:	85.47%
+umi_filter_reads:	3876700	1.98%
+umi_with_N_reads:	77	0.00%
+umi_with_polyA_reads:	8509	0.00%
+umi_with_low_quality_base_reads:	3868114	1.98%
+========================================================================
+final and delete cost 38.4672
+0 work done
+process cost 55
+my time : 55
+
+../ST_BarcodeMap-0.0.1 --in /dev/shm/DP8400016231TR_D1.barcodeToPos.h5 --in1 /dev/shm/p1.fq --in2 /dev/shm/p2.fq --out /dev/shm/combine_read.fq --mismatch 2 --thread 24 --thread2 32
+spatialRNADrawMap, time used: 55 seconds
+1 work done
+```
+
+compute015
+
+```
+gz
+[PAC20217111@compute015 data]$ ./cc.sh
+Process 0 of 2 ,processor name is compute015
+processor num is 2
+processor 0 thread is 24
+outGzSpilt is 0
+now use pugz, 2 threads
+now use pigz, 8 threads
+now out name is /dev/shm/combine_read0.fq
+Process 1 of 2 ,processor name is compute015
+processor 1 thread is 32
+now out name is /dev/shm/combine_read1.fq
+mergeDone 0
+mergeDone 0
+now use pugz0 to decompress(2 threads)
+now use pugz1 to decompress(2 threads)
+###############load barcodeToPosition map begin...
+new and hdf5 pre cost 0.000205
+now use pugz0 to decompress(2 threads)
+now use pugz1 to decompress(2 threads)
+###############load barcodeToPosition map begin...
+new and hdf5 pre cost 0.000182
+read and close hdf5 cost 8.033340
+read and close hdf5 cost 8.033145
+new,init bf and hashMap cost 0.088184
+new,init bf and hashMap cost 0.198487
+parallel for cost 6.667828
+###############load barcodeToPosition map finished, time used: 15 seconds
+getBarcodePositionMap_uniqBarcodeTypes: 0
+processor 1 get map thread done,cost 14.8326
+mps
+0 0 1 1 1
+processor 1 get results done,cost 0.0012
+parallel for cost 11.305626
+###############load barcodeToPosition map finished, time used: 20 seconds
+getBarcodePositionMap_uniqBarcodeTypes: 0
+processor 0 get map thread done,cost 19.5799
+mps
+0 0 1 1 1
+processor 0 get results done,cost 0.0007
+============pigz init cost 0.000045
+path is /dev/shm/combine_read0.fq
+-----------------in pigz init cost 0.0000391
+start compress...
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~in in init cost 0.0042880
+pugz0 done, cost 56
+processor 1 producer get 2974 chunk done, cost 41.46547
+processor 1 send data done, now send -1
+processor 1 send -1 done
+processor 0 get -1
+processor merge get 13353484789 data
+processor 0 get data done
+merge done, cost 37.0358
+pugz1 done, cost 59
+processor 1 consumer cost 44.1034
+processor 1 writer done, cost 44.1034
+###processor 1 wait cost 4.053728
+###processor 1 format cost 2.315779
+###processor 1 new cost 0.252660
+###processor 1 pe cost 35.203392
+###processor 1 all cost 40.623659
+watind barrier
+pugz0 done, cost 62
+processor 0 producer get 1984 chunk done, cost 42.84014
+pugz1 done, cost 65
+processor 0 consumer cost 45.7804
+processor 0 wSum is 22258049527
+processor 0 writer done, cost 45.7806
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~in in do-while cost 45.7752080
+pigz pSum is 22258049527
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~in in end cost 0.0575409
+-----------------in pigz compress cost 45.8370590
+compress done
+-----------------in pigz finish cost 0.0000210
+============pigz process0 cost 45.837126
+============pigz process1 cost 0.000000
+============pigz end cost 0.001552
+pigz done, cost 45.8399
+###processor 0 wait cost 2.221505
+###processor 0 format cost 2.525633
+###processor 0 new cost 0.167236
+###processor 0 pe cost 42.482757
+###processor 0 all cost 44.966081
+watind barrier
+all merge done
+=======================print ans from process 0=========================
+all merge done
+total_query_cnt:	0
+after_filter_query_cnt:	0
+find_query_cnt:	0
+total_reads:	195794682
+fixed_sequence_contianing_reads:	0	0.00%
+pass_filter_reads:	195794682
+mapped_reads:	144646378	73.88%
+barcode_exactlyOverlap_reads:	118394902	60.47%
+barcode_misOverlap_reads:	26251476	13.41%
+barcode_withN_reads:	0	0.00%
+Q10_bases_in_barcode:	99.38%
+Q20_bases_in_barcode:	97.16%
+Q30_bases_in_barcode:	91.39%
+Q10_bases_in_umi:	98.17%
+Q20_bases_in_umi:	93.36%
+Q30_bases_in_umi:	85.47%
+umi_filter_reads:	3876700	1.98%
+umi_with_N_reads:	77	0.00%
+umi_with_polyA_reads:	8509	0.00%
+umi_with_low_quality_base_reads:	3868114	1.98%
+========================================================================
+final and delete cost 45.8404
+0 work done
+process cost 65
+my time : 65
+
+1 work done../ST_BarcodeMap-0.0.1 --in /dev/shm/DP8400016231TR_D1.barcodeToPos.h5 --in1 /dev/shm/V300091300_L03_read_1.fq.gz --in2 /dev/shm/V300091300_L04_read_1.fq.gz --out /dev/shm/combine_read.fq.gz --mismatch 2 --thread 24 --thread2 32 --usePugz --pugzThread 2 --usePigz --pigzThread 8
+spatialRNADrawMap, time used: 66 seconds
+
+
+fq
+
+```
+
+嘶
+
+👆todos加几个比较急的，今天弄完
+
+## 1017
+
+- [ ] why sometimes gz version be killed(segmentation fault)
+- [ ] optimize pugz(2 threads -> 4 threads or 2 threads 40s)
+- [x] optimize pigz write disk problem
+
+先搞搞3吧。
+
+现在010节点上，输出信息👇：
+
+```
+pugz0 done, cost 53
+processor 0 producer get 1984 chunk done, cost 38.81280
+pugz0 done, cost 54
+processor 1 producer get 2974 chunk done, cost 39.98529
+processor 1 send data done, now send -1
+processor 1 send -1 done
+processor 0 get -1
+processor merge get 13353484789 data
+processor 0 get data done
+merge done, cost 40.2831
+pugz1 done, cost 56
+processor 0 consumer cost 42.0017
+processor 0 wSum is 22253539332
+processor 0 writer done, cost 42.0020
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~in in do-while cost 41.5865941
+pigz pSum is 22253539332
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~in in end cost 0.0580671
+-----------------in pigz compress cost 42.0589049
+compress done
+-----------------in pigz finish cost 0.0000210
+============pigz process0 cost 42.058955
+============pigz process1 cost 0.000000
+============pigz end cost 0.000646
+pigz done, cost 42.0608
+###processor 0 wait cost 8.691439
+###processor 0 format cost 1.988438
+###processor 0 new cost 0.131712
+###processor 0 pe cost 28.123457
+###processor 0 all cost 36.540631
+watind barrier
+pugz1 done, cost 57
+processor 1 consumer cost 43.1772
+processor 1 writer done, cost 43.1772
+###processor 1 wait cost 5.907558
+###processor 1 format cost 2.174287
+###processor 1 new cost 0.141517
+###processor 1 pe cost 32.303529
+###processor 1 all cost 38.963934
+watind barrier
+all merge done
+```
+
+嘶，好像是pugz拖慢了后面的速度。。。。
+
+--thread 22 --thread2 32 --usePugz --pugzThread 4 --usePigz --pigzThread 10
+
+👆这样不会卡在pugz上，也不会卡在pigz上，能到54s。
+
+<img src="/Users/ylf9811/Library/Application Support/typora-user-images/image-20211016194632959.png" alt="image-20211016194632959" style="zoom:30%;" />
+
+好，现在确定还是用两个节点。
+
+把输出搞到/users就基本解决了pigz输出的问题。
+
+现在先找找为啥被kill，综合之前的情况看，gz in的时候问题不大，gz out的时候有概率会gg，而且下午试了40次单节点gz out也没有出错，暂时把bug定位到mpi且gz out的部分，还有下午试了pugz6线程会gg？
+
+好像确实是这样的。
+
+```
+//TODO lastInfo.size > size_
+```
+
+？？？咋

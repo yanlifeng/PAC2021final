@@ -195,7 +195,7 @@ argv p.fq
     memcpy(infos[2], th_num_s.c_str(), th_num_s.length());
     infos[2][th_num_s.length()] = '\0';
     infos[3] = "-k";
-    infos[4] = "-1";
+    infos[4] = "-4";
     infos[5] = "-f";
     infos[6] = "-b";
     infos[7] = "4096";
@@ -305,7 +305,7 @@ bool BarcodeToPositionMulti::process() {
         } else {
             if (mOptions->usePigz && mOptions->myRank == 0) {
                 pigzThread->join();
-                printf("processor %d pigz done, cost %.4f\n", mOptions->myRank, GetTime() - t0);
+                printf("pigz done, cost %.4f\n", GetTime() - t0);
             }
         }
     }
@@ -323,14 +323,18 @@ bool BarcodeToPositionMulti::process() {
     }
     Result *finalResult = Result::merge(resultList);
 
-    printf("processor %d wait cost %f\n", mOptions->myRank, finalResult->GetCostWait());
-    printf("processor %d format cost %f\n", mOptions->myRank, finalResult->GetCostFormat());
-    printf("processor %d new cost %f\n", mOptions->myRank, finalResult->GetCostNew());
-    printf("processor %d pe cost %f\n", mOptions->myRank, finalResult->GetCostPe());
-    printf("processor %d all cost %f\n", mOptions->myRank, finalResult->GetCostAll());
+    printf("###processor %d wait cost %f\n", mOptions->myRank, finalResult->GetCostWait());
+    printf("###processor %d format cost %f\n", mOptions->myRank, finalResult->GetCostFormat());
+    printf("###processor %d new cost %f\n", mOptions->myRank, finalResult->GetCostNew());
+    printf("###processor %d pe cost %f\n", mOptions->myRank, finalResult->GetCostPe());
+    printf("###processor %d all cost %f\n", mOptions->myRank, finalResult->GetCostAll());
 
     if (mOptions->numPro == 1) {
+        printf("=======================print ans from process 0=========================\n");
+
         finalResult->print();
+        printf("========================================================================\n");
+
     } else {
         printf("watind barrier\n");
         MPI_Barrier(mOptions->communicator);
@@ -574,13 +578,16 @@ void BarcodeToPositionMulti::consumePack(Result *result) {
     ReadPack *leftPack = new ReadPack;
     ReadPack *rightPack = new ReadPack;
     mInputMutx.lock();
+    int cnt = 0;
     while (mRepo.writePos <= mRepo.readPos) {
         usleep(100);
+        cnt++;
         if (mProduceFinished) {
             mInputMutx.unlock();
             return;
         }
     }
+//    printf("P wait C %d times\n", cnt);
     chunkpair = mRepo.packBuffer[mRepo.readPos];
     mRepo.readPos++;
     mInputMutx.unlock();
@@ -692,7 +699,7 @@ void BarcodeToPositionMulti::pugzTask2() {
     std::cout << "pugz1 done, cost " << GetTime() - t0 << std::endl;
 }
 
-#define whoNumber 5
+#define whoNumber 3
 
 void BarcodeToPositionMulti::producerTask() {
     double t0 = GetTime();
@@ -709,7 +716,16 @@ void BarcodeToPositionMulti::producerTask() {
     pair<char *, int> last2;
     int cnt = 0;
     int whoTurn = 0;
-    int mps[whoNumber] = {0, 0, 1, 1, 1};
+    int mps[whoNumber];
+    if (mOptions->numPro == 1) {
+        mps[0] = 0;
+        mps[1] = 0;
+        mps[2] = 0;
+    } else {
+        mps[0] = 0;
+        mps[1] = 1;
+        mps[2] = 1;
+    }
     printf("mps\n");
     for (int i = 0; i < whoNumber; i++)
         printf("%d ", mps[i]);
@@ -722,7 +738,7 @@ void BarcodeToPositionMulti::producerTask() {
         last2.first = new char[1 << 20];
         last2.second = 0;
 
-        while ((chunk_pair = pairReader->readNextChunkPair(pugzQueue1, pugzQueue2, pugz1Done, pugz2Done,
+        while ((chunk_pair = pairReader->readNextChunkPair(pugzQueue1, pugzQueue2, &pugz1Done, &pugz2Done,
                                                            last1, last2)) != NULL) {
             //cerr << (char*)chunk_pair->leftpart->data.Pointer();
             if (mOptions->verbose)

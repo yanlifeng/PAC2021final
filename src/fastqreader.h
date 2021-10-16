@@ -106,7 +106,7 @@ public:
 
     ChunkPair *readNextChunkPair(moodycamel::ReaderWriterQueue<std::pair<char *, int>> *q1,
                                  moodycamel::ReaderWriterQueue<std::pair<char *, int>> *q2,
-                                 atomic_int &d1, atomic_int &d2,
+                                 atomic_int *d1, atomic_int *d2,
                                  pair<char *, int> &last1, pair<char *, int> &last2);
 
     ChunkPair *readNextChunkPair();
@@ -115,7 +115,7 @@ public:
 
     ChunkPair *readNextChunkPair_interleaved(moodycamel::ReaderWriterQueue<std::pair<char *, int>> *q1,
                                              moodycamel::ReaderWriterQueue<std::pair<char *, int>> *q2,
-                                             atomic_int &d1, atomic_int &d2,
+                                             atomic_int *d1, atomic_int *d2,
                                              pair<char *, int> &last1, pair<char *, int> &last2);
 
 public:

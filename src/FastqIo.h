@@ -51,7 +51,7 @@ namespace dsrc {
 
             int64
             Read(byte *memory_, uint64 size_, moodycamel::ReaderWriterQueue<std::pair<char *, int>> *q,
-                 atomic_int &done, pair<char *, int> &lastInfo, int num) {
+                 atomic_int *done, pair<char *, int> &lastInfo, int num) {
                 int64 n = fileReader.Read(memory_, size_, q, done, lastInfo, num);
                 return n;
             }
