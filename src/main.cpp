@@ -31,7 +31,7 @@ int main(int argc, char *argv[]) {
     int my_rank, num_procs;
     int proc_len;
     char processor_name[MPI_MAX_PROCESSOR_NAME];
-    MPI_Init(NULL, NULL);
+    MPI_Init(&argc, &argv);
     MPI_Comm_size(MPI_COMM_WORLD, &num_procs);
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
     MPI_Get_processor_name(processor_name, &proc_len);

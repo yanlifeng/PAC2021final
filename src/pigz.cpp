@@ -990,6 +990,7 @@ local inline size_t vstrcpy(char **str, size_t *size, size_t off, void *cpy) {
 
 // Read up to len bytes into buf, repeating read() calls as needed.
 local size_t readn(int desc, unsigned char *buf, size_t len) {
+    printf("GGGGGO\n");
     ssize_t ret;
     size_t got;
 
@@ -1011,18 +1012,21 @@ local size_t readn(int desc, unsigned char *buf, size_t len) {
 // Read up to len bytes into buf from queue, repeating read() calls as needed.
 // Add by ylf
 local size_t
-readFromQueue(moodycamel::ReaderWriterQueue<std::pair<char *, int>> *Q, std::atomic_int *wDone,
+readFromQueue(moodycamel::ReaderWriterQueue<std::pair<int, std::pair<char *, int>>> *Q, std::atomic_int *wDone,
               std::pair<char *, int> &L, unsigned char *buf, size_t len) {
+
+    int nowAdd = 0;
+    int canAdd = len;
     ssize_t ret;
     size_t got;
 
     got = 0;
-    std::pair<char *, int> now;
+    std::pair<int, std::pair<char *, int>> now;
 
     if (L.second > 0) {
-//        printf("put last data to buf, size is %d\n", L.second);
+        printf("put last data to buf, size is %d\n", L.second);
         if (L.second >= len) {
-//            printf("L.second > len\n");
+            printf("L.second > len\n");
             memcpy(buf, L.first, len);
             char *tmp = new char[L.second - len];
             memcpy(tmp, L.first + len, L.second - len);
@@ -1035,10 +1039,11 @@ readFromQueue(moodycamel::ReaderWriterQueue<std::pair<char *, int>> *Q, std::ato
             got += (size_t) ret;
             return got;
         } else {
-//            printf("L.second < len\n");
+            printf("L.second < len\n");
             memcpy(buf, L.first, L.second);
             ret = L.second;
             L.second = 0;
+            nowAdd += ret;
             buf += ret;
             len -= (size_t) ret;
             got += (size_t) ret;
@@ -1048,10 +1053,12 @@ readFromQueue(moodycamel::ReaderWriterQueue<std::pair<char *, int>> *Q, std::ato
     while (len > 0) {
 //        ret = read(desc, buf, len);
         while (Q->try_dequeue(now) == 0) {
-            if (Q->size_approx() == 0 && *wDone == 1) {
-                ret = 0;
-                overWhile = true;
-                break;
+            if (*wDone == 1) {
+                if (Q->size_approx() == 0) {
+                    ret = 0;
+                    overWhile = true;
+                    break;
+                }
             }
             usleep(100);
         }
@@ -1059,28 +1066,96 @@ readFromQueue(moodycamel::ReaderWriterQueue<std::pair<char *, int>> *Q, std::ato
             ret = 0;
             break;
         }
-//        printf("get a chunk from pigz queue, now queue size is %d\n", Q->size_approx());
-        if (now.second <= len) {
-            memcpy(buf, now.first, now.second);
-            delete[] now.first;
-            ret = now.second;
+        printf("get a chunk from pigz queue, now queue size is %zu\n", Q->size_approx());
+        int tag = now.first;
+        int getSize = now.second.second;
+        char *getPos = now.second.first;
+        printf("getSize is %d, len is %zu, tag is %d\n", getSize, len, tag);
+        if (getSize <= len) {
+            memcpy(buf, getPos, getSize);
+            delete[] getPos;
+            ret = getSize;
         } else {
-            int move_last = now.second - len;
-            memcpy(buf, now.first, len);
-            memcpy(L.first, now.first + len, move_last);
+            int move_last = getSize - len;
+            printf("00 move_last is %d, 01 len is %zu\n", move_last, len);
+            int nowSS = len;
+            if (10 < nowSS)nowSS = 10;
+            printf("print getPos %d\n", nowSS);
+            for (int i = 0; i < nowSS; i++) {
+                printf("%c", getPos[i]);
+            }
+            printf("\n");
+            fflush(stdout);
+
+            for (int i = nowSS - 1; i >= 0; i--) {
+                printf("%c", getPos[len - i - 1]);
+            }
+            printf("\n");
+            fflush(stdout);
+            printf("print pre buf %d\n", nowSS);
+            for (int i = 0; i < nowSS; i++) {
+                printf("%c", buf[i]);
+            }
+            printf("\n");
+            for (int i = nowSS - 1; i >= 0; i--) {
+                printf("%c", buf[len - i - 1]);
+            }
+            printf("\n");
+            fflush(stdout);
+
+            memcpy(buf, getPos, len);
+            printf("print buf %d\n", nowSS);
+            for (int i = 0; i < nowSS; i++) {
+                printf("%c", buf[i]);
+            }
+            printf("\n");
+            fflush(stdout);
+
+            for (int i = nowSS - 1; i >= 0; i--) {
+                printf("%c", buf[len - i - 1]);
+            }
+            printf("\n");
+            fflush(stdout);
+
+
+            printf("memcpy1 done\n");
+            fflush(stdout);
+
+//            if (move_last > (1 << 23)) {
+//                printf("got it!!!!!\n");
+//                exit(0);
+//            }
+            memcpy(L.first, getPos + len, move_last);
+            printf("memcpy2 done\n");
+            fflush(stdout);
+
+
             L.second = move_last;
-            delete[] now.first;
+            delete[] getPos;
+            printf("delete done\n");
+            fflush(stdout);
+
+
             ret = len;
         }
 
-        if (ret < 0)
+        if (ret < 0) {
+            printf("ret < 0\n");
             throw (errno, "read error on %s (%s)", g.inf, strerror(errno));
+        }
         if (ret == 0)
             break;
 
         buf += ret;
+        nowAdd += ret;
         len -= (size_t) ret;
         got += (size_t) ret;
+        printf("ret is %zd, len is %zu, got is %zu\n", ret, len, got);
+    }
+
+    if (nowAdd > canAdd) {
+        printf("nmsl\n");
+        exit(0);
     }
 
     return got;
@@ -1534,6 +1609,7 @@ local void new_pool(struct pool *pool, size_t size, int limit) {
 // Get a space from a pool. The use count is initially set to one, so there is
 // no need to call use_space() for the first use.
 local struct space *get_space(struct pool *pool) {
+    printf("now get a space...\n");
     struct space *space;
 
     // if can't create any more, wait for a space to show up
@@ -1549,6 +1625,7 @@ local struct space *get_space(struct pool *pool) {
         possess_pigz(space->use);
         twist_pigz(space->use, TO, 1);       // initially one user
         space->len = 0;
+        printf("get from pool\n");
         return space;
     }
 
@@ -1564,6 +1641,7 @@ local struct space *get_space(struct pool *pool) {
     space->size = pool->size;
     space->len = 0;
     space->pool = pool;                 // remember the pool this belongs to
+    printf("get from new\n");
     return space;
 }
 
@@ -2141,8 +2219,9 @@ double PigzGetTime() {
 // value calculations and one other threadPigz for writing the output. Compress
 // threads will be launched and left running (waiting actually) to support
 // subsequent calls of parallel_compress().
-local void parallel_compress(moodycamel::ReaderWriterQueue<std::pair<char *, int>> *Q, std::atomic_int *wDone,
-                             std::pair<char *, int> &L) {
+local void
+parallel_compress(moodycamel::ReaderWriterQueue<std::pair<int, std::pair<char *, int>>> *Q, std::atomic_int *wDone,
+                  std::pair<char *, int> &L) {
     double t0 = PigzGetTime();
     long seq;                       // sequence number
     struct space *curr;             // input data to compress
@@ -2169,7 +2248,9 @@ local void parallel_compress(moodycamel::ReaderWriterQueue<std::pair<char *, int
     seq = 0;
     next = get_space(&in_pool);
     long pSum = 0;
+    printf("---0readFromQueue\n");
     next->len = readFromQueue(Q, wDone, L, next->buf, next->size);
+    printf("---1readFromQueue\n");
     pSum += next->len;
 //    next->len = readn(g.ind, next->buf, next->size);
     hold = NULL;
@@ -2195,7 +2276,9 @@ local void parallel_compress(moodycamel::ReaderWriterQueue<std::pair<char *, int
         if (next == NULL) {
             next = get_space(&in_pool);
 //            next->len = readn(g.ind, next->buf, next->size);
+            printf("---0readFromQueue\n");
             next->len = readFromQueue(Q, wDone, L, next->buf, next->size);
+            printf("---1readFromQueue\n");
             pSum += next->len;
 
         }
@@ -3967,8 +4050,9 @@ local void out_push(void) {
 
 // Process provided input file, or stdin if path is NULL. process() can call
 // itself for recursive directory processing.
-local void process(char *path, moodycamel::ReaderWriterQueue<std::pair<char *, int>> *Q, std::atomic_int *wDone,
-                   std::pair<char *, int> &L) {
+local void
+process(char *path, moodycamel::ReaderWriterQueue<std::pair<int, std::pair<char *, int>>> *Q, std::atomic_int *wDone,
+        std::pair<char *, int> &L) {
 
     auto t0 = PigzGetTime();
     volatile int method = -1;       // get_header() return value
@@ -4729,8 +4813,8 @@ local void cut_yarn(int err) {
 
 
 // Process command line arguments.
-int main_pigz(int argc, char **argv, moodycamel::ReaderWriterQueue<std::pair<char *, int>> *Q, std::atomic_int *wDone,
-              std::pair<char *, int> &L) {
+int main_pigz(int argc, char **argv, moodycamel::ReaderWriterQueue<std::pair<int, std::pair<char *, int>>> *Q,
+              std::atomic_int *wDone, std::pair<char *, int> &L) {
     auto t0 = PigzGetTime();
 //    printf("argc %d\n", argc);
 //    for (int i = 0; i < argc; i++) {

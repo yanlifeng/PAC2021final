@@ -92,7 +92,7 @@ public:
     moodycamel::ReaderWriterQueue<std::pair<char *, int>> *pugzQueue1;
     moodycamel::ReaderWriterQueue<std::pair<char *, int>> *pugzQueue2;
 
-    moodycamel::ReaderWriterQueue<std::pair<char *, int>> *pigzQueue;
+    moodycamel::ReaderWriterQueue<std::pair<int, std::pair<char *, int>>> *pigzQueue;
 //    moodycamel::ReaderWriterQueue<std::pair<char *, int>> *mergeQueue;
 
 

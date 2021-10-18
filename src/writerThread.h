@@ -11,12 +11,16 @@
 #include <mutex>
 #include "atomicops.h"
 #include "readerwriterqueue.h"
+#include "util.h"
+#include "options.h"
 
 using namespace std;
 
 class WriterThread {
 public:
     WriterThread(string filename, int compressionLevel = 4);
+
+    WriterThread(string filename, Options *options, int compressionLevel = 4);
 
     ~WriterThread();
 
@@ -34,9 +38,12 @@ public:
 
     void output(MPI_Comm communicator);
 
-    void output(moodycamel::ReaderWriterQueue<pair<char *, int>> *Q);
+    void output(moodycamel::ReaderWriterQueue<pair<int, pair<char *, int>>> *Q);
 
     void input(char *data, size_t size);
+
+    void inputFromMerge(char *data, size_t size);
+
 
     bool setInputCompleted();
 
@@ -51,6 +58,8 @@ private:
     Writer *mWriter1;
     int compression;
     string mFilename;
+    Options *mOptions;
+
 
     //for split output
     bool mInputCompleted;
@@ -58,6 +67,7 @@ private:
     atomic_long mOutputCounter;
     char **mRingBuffer;
     size_t *mRingBufferSizes;
+    int *mRingBufferTags;
 
     long wSum;
 public:

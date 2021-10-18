@@ -1730,3 +1730,22 @@ all merge done
 ```
 
 ？？？咋
+
+搞完上面的bug之后，又测了测，发现outGzSpilt的话就不会re，基本锁定了是mpi的问题，仔细看了看mpi部分吗，把原来long--longlong的改了，把merge result的部分注释了，还是有1/5的概率会gg。
+
+## 1018
+
+现在试试把通信子改成用全局的，还是会1/10的概率GG。应该可以定位到mpi的问题了，但是之前测的，不用pigz的话mpi通信也不会有问题？还有一种可能就是thread开的太多会导致re？或者pigz/pugz内存使用太大导致re？
+
+嘶 都试了试，感觉好像可能大概八成是因为线程数开的太多了，保证不超过32的话，测试的是35次才会第一个re，并且测了测故意多开好多线程，第三次就gg了。
+
+⌨️没电了。。活了活了
+
+好啊，现在关于段错误的问题，大约是开的线程越多，发生的概率越高；并且，取消mpi的通信的话，32+32+8+16不会报错；但是保留mpi，读写fq也不会报错，所以段错误即和pigz有关，也和mpi通信有关，
+
+![image-20211017235043450](/Users/ylf9811/Library/Application Support/typora-user-images/image-20211017235043450.png)
+
+![image-20211018001425782](/Users/ylf9811/Library/Application Support/typora-user-images/image-20211018001425782.png)
+
+直接yue了，好像psum wsum经常出错啊？？？？？？算了 不太配回宿舍睡觉了
+

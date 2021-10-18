@@ -14,7 +14,30 @@ WriterThread::WriterThread(string filename, int compressionLevel) {
     mRingBuffer = new char *[PACK_NUM_LIMIT];
     memset(mRingBuffer, 0, sizeof(char *) * PACK_NUM_LIMIT);
     mRingBufferSizes = new size_t[PACK_NUM_LIMIT];
+    mRingBufferTags = new int[PACK_NUM_LIMIT];
     memset(mRingBufferSizes, 0, sizeof(size_t) * PACK_NUM_LIMIT);
+    memset(mRingBufferTags, 0, sizeof(int) * PACK_NUM_LIMIT);
+    initWriter(filename);
+}
+
+WriterThread::WriterThread(string filename, Options *options, int compressionLevel) {
+    compression = compressionLevel;
+    mOptions = options;
+
+    mWriter1 = NULL;
+
+    mInputCounter = 0;
+    mOutputCounter = 0;
+    mInputCompleted = false;
+    mFilename = filename;
+    wSum = 0;
+
+    mRingBuffer = new char *[PACK_NUM_LIMIT];
+    memset(mRingBuffer, 0, sizeof(char *) * PACK_NUM_LIMIT);
+    mRingBufferSizes = new size_t[PACK_NUM_LIMIT];
+    mRingBufferTags = new int[PACK_NUM_LIMIT];
+    memset(mRingBufferSizes, 0, sizeof(size_t) * PACK_NUM_LIMIT);
+    memset(mRingBufferTags, 0, sizeof(int) * PACK_NUM_LIMIT);
     initWriter(filename);
 }
 
@@ -39,6 +62,8 @@ void WriterThread::output() {
     while (mOutputCounter < mInputCounter) {
         mWriter1->write(mRingBuffer[mOutputCounter], mRingBufferSizes[mOutputCounter]);
         delete mRingBuffer[mOutputCounter];
+        wSum += mRingBufferSizes[mOutputCounter];
+
         mRingBuffer[mOutputCounter] = NULL;
         mOutputCounter++;
         //cout << "Writer thread: " <<  mFilename <<  " mOutputCounter: " << mOutputCounter << " mInputCounter: " << mInputCounter << endl;
@@ -50,11 +75,29 @@ void WriterThread::output(MPI_Comm communicator) {
         usleep(100);
     }
     while (mOutputCounter < mInputCounter) {
-//        printf("processor 1 send data %ld\n", mRingBufferSizes[mOutputCounter]);
 
-        long tmpSize = mRingBufferSizes[mOutputCounter];
-        MPI_Send(&(tmpSize), 1, MPI_LONG_LONG, 0, 0, communicator);
-        MPI_Send(mRingBuffer[mOutputCounter], tmpSize, MPI_CHAR, 0, 0, communicator);
+        int tmpSize = mRingBufferSizes[mOutputCounter];
+
+//        MPI_Send(&(tmpSize), 1, MPI_INT, 0, 0, communicator);
+//        printf("processor 1 send size %d\n", tmpSize);
+//        usleep(100);
+
+//        loginfo("processor " + to_string(mOptions->myRank) + " send size " + to_string(tmpSize));
+//        cout << "processor 1 send size " << tmpSize << endl;
+
+        MPI_Send(&(tmpSize), 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
+        MPI_Barrier(MPI_COMM_WORLD);
+//        usleep(100);
+
+//        printf("processor 1 send data %d\n", tmpSize);
+//        loginfo("processor " + to_string(mOptions->myRank) + " send data " + to_string(tmpSize));
+
+//        cout << "processor 1 send data " << tmpSize << endl;
+
+//                MPI_Send(mRingBuffer[mOutputCounter], tmpSize, MPI_CHAR, 0, 0, communicator);
+        MPI_Send(mRingBuffer[mOutputCounter], tmpSize, MPI_CHAR, 0, 1, MPI_COMM_WORLD);
+        MPI_Barrier(MPI_COMM_WORLD);
+//        usleep(100);
 
         delete mRingBuffer[mOutputCounter];
         mRingBuffer[mOutputCounter] = NULL;
@@ -63,7 +106,7 @@ void WriterThread::output(MPI_Comm communicator) {
     }
 }
 
-void WriterThread::output(moodycamel::ReaderWriterQueue<pair<char *, int>> *Q) {
+void WriterThread::output(moodycamel::ReaderWriterQueue<std::pair<int, std::pair<char *, int>>> *Q) {
 
     if (mOutputCounter >= mInputCounter) {
         usleep(100);
@@ -71,8 +114,26 @@ void WriterThread::output(moodycamel::ReaderWriterQueue<pair<char *, int>> *Q) {
     while (mOutputCounter < mInputCounter) {
 //        mWriter1->write(mRingBuffer[mOutputCounter], mRingBufferSizes[mOutputCounter]);
 //        delete mRingBuffer[mOutputCounter];
-        while (Q->try_enqueue({mRingBuffer[mOutputCounter], mRingBufferSizes[mOutputCounter]}) == 0) {
-//            printf("waiting to push a chunk to pigz queue\n");
+
+        auto pos = mRingBuffer[mOutputCounter];
+        auto size = mRingBufferSizes[mOutputCounter];
+        auto tag = mRingBufferTags[mOutputCounter];
+        int nowSS = min(10, int(size));
+        printf("print before pigz %d from tag %d\n", nowSS, tag);
+
+        for (int i = 0; i < nowSS; i++) {
+            printf("%c", pos[i]);
+        }
+        printf("\n");
+        fflush(stdout);
+        for (int i = nowSS - 1; i >= 0; i--) {
+            printf("%c", pos[size - i - 1]);
+        }
+        printf("\n");
+        fflush(stdout);
+
+        while (Q->try_enqueue({tag, {mRingBuffer[mOutputCounter], mRingBufferSizes[mOutputCounter]}}) == 0) {
+            printf("waiting to push a chunk to pigz queue\n");
             usleep(100);
         }
         wSum += mRingBufferSizes[mOutputCounter];
@@ -81,14 +142,33 @@ void WriterThread::output(moodycamel::ReaderWriterQueue<pair<char *, int>> *Q) {
         mOutputCounter++;
         //cout << "Writer thread: " <<  mFilename <<  " mOutputCounter: " << mOutputCounter << " mInputCounter: " << mInputCounter << endl;
     }
+}
 
+
+void WriterThread::inputFromMerge(char *data, size_t size) {
+    mRingBuffer[mInputCounter] = data;
+    mRingBufferSizes[mInputCounter] = size;
+    mRingBufferTags[mInputCounter] = 2;
+//    loginfo("processor " + to_string(mOptions->myRank) + " mInputCounter " + to_string(mInputCounter) + " " +
+//            to_string(size));
+    mInputCounter++;
 
 }
 
 void WriterThread::input(char *data, size_t size) {
     mRingBuffer[mInputCounter] = data;
     mRingBufferSizes[mInputCounter] = size;
+    mRingBufferTags[mInputCounter] = 1;
+//    printf("mInputCounter %ld\n", mInputCounter.load());
+//    loginfo("processor " + to_string(mOptions->myRank) + " mInputCounter " + to_string(mInputCounter) + " " +
+//            to_string(size));
     mInputCounter++;
+//    cout << "mInputCounter " << mInputCounter << endl;
+
+//    if (mInputCounter >= PACK_NUM_LIMIT) {
+//        printf("gg0\n");
+//        exit(0);
+//    }
 }
 
 void WriterThread::cleanup() {
