@@ -722,13 +722,18 @@ void BarcodeToPositionMulti::producerTask() {
     int whoTurn = 0;
     int mps[whoNumber];
     if (mOptions->numPro == 1) {
-        mps[0] = 0;
-        mps[1] = 0;
-        mps[2] = 0;
+        for (int i=0;i<whoNumber;i++){
+            mps[i] = 0;
+        }
     } else {
-        mps[0] = 0;
-        mps[1] = 1;
-        mps[2] = 1;
+        mps[0] = 0 ;
+        mps[1] = 1 ;
+        mps[2] = 1 ;
+//        mps[3] = 1 ;
+//        mps[4] = 1 ;
+//        mps[5] = 1 ;
+//        mps[6] = 1 ;
+
     }
     printf("mps\n");
     for (int i = 0; i < whoNumber; i++)
