@@ -1015,8 +1015,6 @@ local size_t
 readFromQueue(moodycamel::ReaderWriterQueue<std::pair<int, std::pair<char *, int>>> *Q, std::atomic_int *wDone,
               std::pair<char *, int> &L, unsigned char *buf, size_t len) {
 
-    int nowAdd = 0;
-    int canAdd = len;
     ssize_t ret;
     size_t got;
 
@@ -1043,7 +1041,6 @@ readFromQueue(moodycamel::ReaderWriterQueue<std::pair<int, std::pair<char *, int
             memcpy(buf, L.first, L.second);
             ret = L.second;
             L.second = 0;
-            nowAdd += ret;
             buf += ret;
             len -= (size_t) ret;
             got += (size_t) ret;
@@ -1077,63 +1074,11 @@ readFromQueue(moodycamel::ReaderWriterQueue<std::pair<int, std::pair<char *, int
             ret = getSize;
         } else {
             int move_last = getSize - len;
-//            printf("00 move_last is %d, 01 len is %zu\n", move_last, len);
-//            int nowSS = len;
-//            if (10 < nowSS)nowSS = 10;
-//            printf("print getPos %d\n", nowSS);
-//            for (int i = 0; i < nowSS; i++) {
-//                printf("%c", getPos[i]);
-//            }
-//            printf("\n");
-//            fflush(stdout);
-//
-//            for (int i = nowSS - 1; i >= 0; i--) {
-//                printf("%c", getPos[len - i - 1]);
-//            }
-//            printf("\n");
-//            fflush(stdout);
-//            printf("print pre buf %d\n", nowSS);
-//            for (int i = 0; i < nowSS; i++) {
-//                printf("%c", buf[i]);
-//            }
-//            printf("\n");
-//            for (int i = nowSS - 1; i >= 0; i--) {
-//                printf("%c", buf[len - i - 1]);
-//            }
-//            printf("\n");
-//            fflush(stdout);
-
             memcpy(buf, getPos, len);
-//            printf("print buf %d\n", nowSS);
-//            for (int i = 0; i < nowSS; i++) {
-//                printf("%c", buf[i]);
-//            }
-//            printf("\n");
-//            fflush(stdout);
-//
-//            for (int i = nowSS - 1; i >= 0; i--) {
-//                printf("%c", buf[len - i - 1]);
-//            }
-//            printf("\n");
-//            fflush(stdout);
-//
-//
-//            printf("memcpy1 done\n");
-//            fflush(stdout);
-
-//            if (move_last > (1 << 23)) {
-//                printf("got it!!!!!\n");
-//                exit(0);
-//            }
             memcpy(L.first, getPos + len, move_last);
-//            printf("memcpy2 done\n");
-//            fflush(stdout);
-
-
             L.second = move_last;
             delete[] getPos;
-//            printf("delete done\n");
-//            fflush(stdout);
+
 
 
             ret = len;
@@ -1147,15 +1092,9 @@ readFromQueue(moodycamel::ReaderWriterQueue<std::pair<int, std::pair<char *, int
             break;
 
         buf += ret;
-        nowAdd += ret;
         len -= (size_t) ret;
         got += (size_t) ret;
 //        printf("ret is %zd, len is %zu, got is %zu\n", ret, len, got);
-    }
-
-    if (nowAdd > canAdd) {
-        printf("nmsl\n");
-        exit(0);
     }
 
     return got;

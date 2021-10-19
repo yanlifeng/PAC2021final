@@ -79,8 +79,6 @@ private:
 public:
     int GetCSum() const;
 
-    vector<pair<long long, int>> mSizes;
-
 
 private:
 

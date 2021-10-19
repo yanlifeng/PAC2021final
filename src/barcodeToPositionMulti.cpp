@@ -145,49 +145,24 @@ void BarcodeToPositionMulti::mergeWrite() {
     long long totSize = 0;
     int cntEnd = 0;
     while (!endTag) {
-//        printf("continue while\n");
-//        for (int ii = 1; ii < mOptions->numPro; ii++) {
-//            MPI_Recv(&tmpSize, 1, MPI_INT, ii, 0, mOptions->communicator, MPI_STATUS_IGNORE);
-//        usleep(100);
         MPI_Recv(&tmpSize, 1, MPI_INT, 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        MPI_Barrier(MPI_COMM_WORLD);
-
-//        printf("processor 0 get size %d\n", tmpSize);
-//        loginfo("processor " + to_string(mOptions->myRank) + " get size " + to_string(tmpSize));
-//        usleep(100);
-
-//            cout << "processor 0 get size " << tmpSize << endl;
+//        MPI_Barrier(MPI_COMM_WORLD);
         if (tmpSize == -1) {
             cntEnd++;
             printf("processor 0 get -1 %d %d\n", mOptions->numPro - 1, cntEnd);
-//                cout << "processor 0 get -1 " << tmpSize << endl;
-
             if (cntEnd == mOptions->numPro - 1)
                 endTag = 1;
         } else {
-//            printf("ready to new...\n");
             tmpData = new char[tmpSize + 1];
-            memset(tmpData, 0, (tmpSize + 1) * sizeof(char));
-//            printf("new buff %d\n", tmpSize + 1);
-//                cout << "new buff " << tmpSize + 1 << endl;
-//              MPI_Recv(tmpData, tmpSize, MPI_CHAR, ii, 0, mOptions->communicator, MPI_STATUS_IGNORE);
-//            usleep(100);
+//            memset(tmpData, 0, (tmpSize + 1) * sizeof(char));
 
             MPI_Recv(tmpData, tmpSize, MPI_CHAR, 1, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-            MPI_Barrier(MPI_COMM_WORLD);
-//            printf("processor 0 get data %d\n", tmpSize);
-//            loginfo("processor " + to_string(mOptions->myRank) + " get data " + to_string(tmpSize));
-//            usleep(100);
-
-//                cout << "processor 0 get data " << tmpSize << endl;
-
+//            MPI_Barrier(MPI_COMM_WORLD);
             totSize += tmpSize;
+            mOutputMtx.lock();
             mWriter->inputFromMerge(tmpData, tmpSize);
-//            printf("processor 0 input data\n");
-//                cout << "processor 0 input data " << tmpSize << endl;
-
+            mOutputMtx.unlock();
         }
-//        }
     }
     printf("processor merge get %lld data\n", totSize);
     printf("processor 0 get data done\n");
@@ -329,17 +304,6 @@ bool BarcodeToPositionMulti::process() {
         printf("processor %d writer done, cost %.4f\n", mOptions->myRank, GetTime() - t0);
 
 
-//        printf("processor %d pigz start\n", mOptions->myRank);
-
-//        if (mOptions->outGzSpilt) {
-//            pigzThread = new thread(bind(&BarcodeToPositionMulti::pigzWrite, this));
-//        } else {
-//            if (mOptions->usePigz && mOptions->myRank == 0) {
-//                pigzThread = new thread(bind(&BarcodeToPositionMulti::pigzWrite, this));
-//            }
-//        }
-
-
         if (mOptions->outGzSpilt) {
             pigzThread->join();
             printf("processor %d pigz done, cost %.4f\n", mOptions->myRank, GetTime() - t0);
@@ -378,7 +342,6 @@ bool BarcodeToPositionMulti::process() {
 
     } else {
         printf("watind barrier\n");
-//        MPI_Barrier(mOptions->communicator);
         MPI_Barrier(MPI_COMM_WORLD);
 
         printf("all merge done\n");
@@ -891,10 +854,10 @@ void BarcodeToPositionMulti::consumerTask(Result *result) {
             mUnmappedWriter->setInputCompleted();
     }
 
-//    if (mOptions->verbose) {
-    string msg = "finished one thread";
-    loginfo(msg);
-//    }
+    if (mOptions->verbose) {
+        string msg = "finished one thread";
+        loginfo(msg);
+    }
 }
 
 
@@ -919,21 +882,6 @@ void BarcodeToPositionMulti::writeTask(WriterThread *config) {
                     }
                     config->output(pigzQueue);
                 }
-
-//                long long tmpSum = 0;
-//                sort(config->mSizes.begin(), config->mSizes.end());
-//                if (config->mSizes.size() != 1653) {
-//                    printf("readl mSize size is %lu 1653\b", config->mSizes.size());
-//                    printf("less error!\n");
-//                }
-//                printf("sizes are:\n\n");
-//                for (auto it:config->mSizes) {
-//                    printf("%lld %d\n", it.first, it.second);
-//                    tmpSum += it.first;
-//                }
-//                cout << "config end is " << config->GetMInputCounter() << endl;
-//                cout << "config end is " << config->GetMOutputCounter() << endl;
-//                printf("\ntmpSum is %lld\n", tmpSum);
                 printf("processor %d wSum is %lld\n", mOptions->myRank, config->GetWSum());
                 printf("processor %d cSum is %d\n", mOptions->myRank, config->GetCSum());
 
@@ -948,7 +896,7 @@ void BarcodeToPositionMulti::writeTask(WriterThread *config) {
                 int tag = -1;
                 printf("processor 1 send data done, now send -1\n");
                 MPI_Send(&(tag), 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
-                MPI_Barrier(MPI_COMM_WORLD);
+//                MPI_Barrier(MPI_COMM_WORLD);
                 printf("processor 1 send -1 done\n");
             }
         } else {
@@ -960,20 +908,6 @@ void BarcodeToPositionMulti::writeTask(WriterThread *config) {
                     }
                     config->output();
                 }
-//                long long tmpSum = 0;
-//                sort(config->mSizes.begin(), config->mSizes.end());
-//                if (config->mSizes.size() != 1653) {
-//                    printf("readl mSize size is %lu 1653\b", config->mSizes.size());
-//                    printf("less error!\n");
-//                }
-//                printf("sizes are:\n\n");
-//                for (auto it:config->mSizes) {
-//                    printf("%lld %d\n", it.first, it.second);
-//                    tmpSum += it.first;
-//                }
-//                cout << "config end is " << config->GetMInputCounter() << endl;
-//                cout << "config end is " << config->GetMOutputCounter() << endl;
-//                printf("\ntmpSum is %lld\n", tmpSum);
                 printf("processor %d wSum is %lld\n", mOptions->myRank, config->GetWSum());
                 printf("processor %d cSum is %d\n", mOptions->myRank, config->GetCSum());
             } else {
@@ -987,7 +921,7 @@ void BarcodeToPositionMulti::writeTask(WriterThread *config) {
                 int tag = -1;
                 printf("processor 1 send data done, now send -1\n");
                 MPI_Send(&(tag), 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
-                MPI_Barrier(MPI_COMM_WORLD);
+//                MPI_Barrier(MPI_COMM_WORLD);
                 printf("processor 1 send -1 done\n");
             }
         }
