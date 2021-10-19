@@ -5,7 +5,6 @@
 #include <hdf5.h>
 #include <unordered_map>
 #include "common.h"
-#include <libdeflate.h>
 //#include "robin_hood.h"
 #include "util.h"
 #include "bloomFilter.h"
