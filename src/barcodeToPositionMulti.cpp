@@ -117,7 +117,7 @@ BarcodeToPositionMulti::BarcodeToPositionMulti(Options *opt) {
     }
     if (mOptions->usePigz) {
         pigzQueue = new moodycamel::ReaderWriterQueue<std::pair<int, std::pair<char *, int>>>(1 << 20);
-        pigzLast.first = new char[1 << 23];
+        pigzLast.first = new char[1 << 24];
         pigzLast.second = 0;
     }
     pugz1Done = 0;
@@ -299,13 +299,13 @@ bool BarcodeToPositionMulti::process() {
     }
 
     thread *pigzThread;
-//    if (mOptions->outGzSpilt) {
-//        pigzThread = new thread(bind(&BarcodeToPositionMulti::pigzWrite, this));
-//    } else {
-//        if (mOptions->usePigz && mOptions->myRank == 0) {
-//            pigzThread = new thread(bind(&BarcodeToPositionMulti::pigzWrite, this));
-//        }
-//    }
+    if (mOptions->outGzSpilt) {
+        pigzThread = new thread(bind(&BarcodeToPositionMulti::pigzWrite, this));
+    } else {
+        if (mOptions->usePigz && mOptions->myRank == 0) {
+            pigzThread = new thread(bind(&BarcodeToPositionMulti::pigzWrite, this));
+        }
+    }
 
 
     producer->join();
@@ -331,13 +331,13 @@ bool BarcodeToPositionMulti::process() {
 
 //        printf("processor %d pigz start\n", mOptions->myRank);
 
-        if (mOptions->outGzSpilt) {
-            pigzThread = new thread(bind(&BarcodeToPositionMulti::pigzWrite, this));
-        } else {
-            if (mOptions->usePigz && mOptions->myRank == 0) {
-                pigzThread = new thread(bind(&BarcodeToPositionMulti::pigzWrite, this));
-            }
-        }
+//        if (mOptions->outGzSpilt) {
+//            pigzThread = new thread(bind(&BarcodeToPositionMulti::pigzWrite, this));
+//        } else {
+//            if (mOptions->usePigz && mOptions->myRank == 0) {
+//                pigzThread = new thread(bind(&BarcodeToPositionMulti::pigzWrite, this));
+//            }
+//        }
 
 
         if (mOptions->outGzSpilt) {
@@ -772,13 +772,15 @@ void BarcodeToPositionMulti::producerTask() {
         printf("%d ", mps[i]);
     printf("\n");
 
-
+    long long p1Sum = 0;
+    long long p2Sum = 0;
     if (mOptions->usePugz) {
         //TODO is this enough?
         last1.first = new char[1 << 20];
         last1.second = 0;
         last2.first = new char[1 << 20];
         last2.second = 0;
+
 
         while ((chunk_pair = pairReader->readNextChunkPair(pugzQueue1, pugzQueue2, &pugz1Done, &pugz2Done,
                                                            last1, last2)) != NULL) {
@@ -789,6 +791,9 @@ void BarcodeToPositionMulti::producerTask() {
 //                   chunk_pair->leftpart->size, chunk_pair->rightpart->size);
 //            cout << "read " << (cnt++) << " chunk done, size is " << chunk_pair->leftpart->size << " "
 //                 << chunk_pair->rightpart->size << endl;
+            p1Sum += chunk_pair->leftpart->size;
+            p2Sum += chunk_pair->rightpart->size;
+
             if (mps[whoTurn] == mOptions->myRank) {
                 producePack(chunk_pair);
                 cnt++;
@@ -806,6 +811,7 @@ void BarcodeToPositionMulti::producerTask() {
             }
 
         }
+
     } else {
         while ((chunk_pair = pairReader->readNextChunkPair()) != NULL) {
             //cerr << (char*)chunk_pair->leftpart->data.Pointer();
@@ -813,6 +819,8 @@ void BarcodeToPositionMulti::producerTask() {
                 loginfo("producer read one chunk");
 //            printf("read %d chunk done, size is %lld %lld\n", cnt++,
 //                   chunk_pair->leftpart->size, chunk_pair->rightpart->size);
+            p1Sum += chunk_pair->leftpart->size;
+            p2Sum += chunk_pair->rightpart->size;
             if (mps[whoTurn] == mOptions->myRank) {
                 producePack(chunk_pair);
                 cnt++;
@@ -830,7 +838,8 @@ void BarcodeToPositionMulti::producerTask() {
 
         }
     }
-
+    printf("processor %d  producer get1 %lld data\n", mOptions->myRank, p1Sum);
+    printf("processor %d  producer get2 %lld data\n", mOptions->myRank, p2Sum);
 
     mProduceFinished = true;
     if (mOptions->verbose)
@@ -882,19 +891,16 @@ void BarcodeToPositionMulti::consumerTask(Result *result) {
             mUnmappedWriter->setInputCompleted();
     }
 
-    if (mOptions->verbose) {
-        string msg = "finished one thread";
-        loginfo(msg);
-    }
+//    if (mOptions->verbose) {
+    string msg = "finished one thread";
+    loginfo(msg);
+//    }
 }
 
 
 void BarcodeToPositionMulti::writeTask(WriterThread *config) {
-
-    //deflate in gz file and use pigz
     if (mOptions->outGzSpilt) {
         while (true) {
-            //loginfo("writeTask running: " + config->getFilename());
             if (config->isCompleted()) {
                 config->output(pigzQueue);
                 break;
@@ -907,19 +913,32 @@ void BarcodeToPositionMulti::writeTask(WriterThread *config) {
         if (mOptions->usePigz) {
             if (mOptions->myRank == 0) {
                 while (true) {
-                    //loginfo("writeTask running: " + config->getFilename());
                     if (config->isCompleted() && mergeDone) {
                         config->output(pigzQueue);
                         break;
                     }
                     config->output(pigzQueue);
                 }
-                printf("processor %d wSum is %ld\n", mOptions->myRank, config->GetWSum());
-//                printf("now pigz queue size is %zu\n", pigzQueue->size_approx());
+
+//                long long tmpSum = 0;
+//                sort(config->mSizes.begin(), config->mSizes.end());
+//                if (config->mSizes.size() != 1653) {
+//                    printf("readl mSize size is %lu 1653\b", config->mSizes.size());
+//                    printf("less error!\n");
+//                }
+//                printf("sizes are:\n\n");
+//                for (auto it:config->mSizes) {
+//                    printf("%lld %d\n", it.first, it.second);
+//                    tmpSum += it.first;
+//                }
+//                cout << "config end is " << config->GetMInputCounter() << endl;
+//                cout << "config end is " << config->GetMOutputCounter() << endl;
+//                printf("\ntmpSum is %lld\n", tmpSum);
+                printf("processor %d wSum is %lld\n", mOptions->myRank, config->GetWSum());
+                printf("processor %d cSum is %d\n", mOptions->myRank, config->GetCSum());
+
             } else {
-                //processor 0 done != all done
                 while (true) {
-                    //loginfo("writeTask running: " + config->getFilename());
                     if (config->isCompleted()) {
                         config->output(mOptions->communicator);
                         break;
@@ -928,32 +947,37 @@ void BarcodeToPositionMulti::writeTask(WriterThread *config) {
                 }
                 int tag = -1;
                 printf("processor 1 send data done, now send -1\n");
-//                cout << "processor 1 send data done, now send -1" << endl;
-
-//                        MPI_Send(&(tag), 1, MPI_INT, 0, 0, mOptions->communicator);
                 MPI_Send(&(tag), 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
                 MPI_Barrier(MPI_COMM_WORLD);
-
                 printf("processor 1 send -1 done\n");
-//                cout << "processor 1 send -1 done" << endl;
-
             }
         } else {
             if (mOptions->myRank == 0) {
                 while (true) {
-                    //loginfo("writeTask running: " + config->getFilename());
                     if (config->isCompleted() && mergeDone) {
                         config->output();
                         break;
                     }
                     config->output();
                 }
-                printf("processor %d wSum is %ld\n", mOptions->myRank, config->GetWSum());
-
+//                long long tmpSum = 0;
+//                sort(config->mSizes.begin(), config->mSizes.end());
+//                if (config->mSizes.size() != 1653) {
+//                    printf("readl mSize size is %lu 1653\b", config->mSizes.size());
+//                    printf("less error!\n");
+//                }
+//                printf("sizes are:\n\n");
+//                for (auto it:config->mSizes) {
+//                    printf("%lld %d\n", it.first, it.second);
+//                    tmpSum += it.first;
+//                }
+//                cout << "config end is " << config->GetMInputCounter() << endl;
+//                cout << "config end is " << config->GetMOutputCounter() << endl;
+//                printf("\ntmpSum is %lld\n", tmpSum);
+                printf("processor %d wSum is %lld\n", mOptions->myRank, config->GetWSum());
+                printf("processor %d cSum is %d\n", mOptions->myRank, config->GetCSum());
             } else {
-                //processor 0 done != all done
                 while (true) {
-                    //loginfo("writeTask running: " + config->getFilename());
                     if (config->isCompleted()) {
                         config->output(mOptions->communicator);
                         break;
@@ -961,17 +985,10 @@ void BarcodeToPositionMulti::writeTask(WriterThread *config) {
                     config->output(mOptions->communicator);
                 }
                 int tag = -1;
-//                printf("processor 1 send data done, now send -1\n");
-//                MPI_Send(&(tag), 1, MPI_INT, 0, 0, mOptions->communicator);
-                cout << "processor 1 send data done, now send -1" << endl;
-
+                printf("processor 1 send data done, now send -1\n");
                 MPI_Send(&(tag), 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
                 MPI_Barrier(MPI_COMM_WORLD);
-
-
-//                printf("processor 1 send -1 done\n");
-                cout << "processor 1 send -1 done" << endl;
-
+                printf("processor 1 send -1 done\n");
             }
         }
     }

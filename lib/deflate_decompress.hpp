@@ -1350,6 +1350,7 @@ private:
 };
 
 struct OutputConsumer {
+
     //    void operator()(span<const uint8_t> data) const { write(STDOUT_FILENO, data.begin(), data.size()); }
     void operator()(span<const uint8_t> data) const {
         if (*pDone == 1) {
@@ -1358,7 +1359,6 @@ struct OutputConsumer {
 //        printf("ready to put data to memory111\n");
         char *utmp = new char[data.size()];
         memcpy(utmp, data.begin(), data.size());
-
 
 //        printf("ready to put data to memory222\n");
 //        int cntt = 0;

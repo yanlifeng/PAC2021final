@@ -10,6 +10,7 @@ WriterThread::WriterThread(string filename, int compressionLevel) {
     mInputCompleted = false;
     mFilename = filename;
     wSum = 0;
+    cSum = 0;
 
     mRingBuffer = new char *[PACK_NUM_LIMIT];
     memset(mRingBuffer, 0, sizeof(char *) * PACK_NUM_LIMIT);
@@ -31,6 +32,7 @@ WriterThread::WriterThread(string filename, Options *options, int compressionLev
     mInputCompleted = false;
     mFilename = filename;
     wSum = 0;
+    cSum = 0;
 
     mRingBuffer = new char *[PACK_NUM_LIMIT];
     memset(mRingBuffer, 0, sizeof(char *) * PACK_NUM_LIMIT);
@@ -63,7 +65,10 @@ void WriterThread::output() {
         mWriter1->write(mRingBuffer[mOutputCounter], mRingBufferSizes[mOutputCounter]);
         delete mRingBuffer[mOutputCounter];
         wSum += mRingBufferSizes[mOutputCounter];
-
+        int nows = mSizes.size();
+        if (mRingBufferTags[mOutputCounter] == 1)
+            mSizes.push_back({mRingBufferSizes[mOutputCounter], nows});
+        cSum++;
         mRingBuffer[mOutputCounter] = NULL;
         mOutputCounter++;
         //cout << "Writer thread: " <<  mFilename <<  " mOutputCounter: " << mOutputCounter << " mInputCounter: " << mInputCounter << endl;
@@ -119,24 +124,28 @@ void WriterThread::output(moodycamel::ReaderWriterQueue<std::pair<int, std::pair
         auto size = mRingBufferSizes[mOutputCounter];
         auto tag = mRingBufferTags[mOutputCounter];
         int nowSS = min(10, int(size));
-        printf("print before pigz %d from tag %d\n", nowSS, tag);
-
-        for (int i = 0; i < nowSS; i++) {
-            printf("%c", pos[i]);
-        }
-        printf("\n");
-        fflush(stdout);
-        for (int i = nowSS - 1; i >= 0; i--) {
-            printf("%c", pos[size - i - 1]);
-        }
-        printf("\n");
-        fflush(stdout);
+//        printf("print before pigz %d from tag %d\n", nowSS, tag);
+//
+//        for (int i = 0; i < nowSS; i++) {
+//            printf("%c", pos[i]);
+//        }
+//        printf("\n");
+//        fflush(stdout);
+//        for (int i = nowSS - 1; i >= 0; i--) {
+//            printf("%c", pos[size - i - 1]);
+//        }
+//        printf("\n");
+//        fflush(stdout);
 
         while (Q->try_enqueue({tag, {mRingBuffer[mOutputCounter], mRingBufferSizes[mOutputCounter]}}) == 0) {
             printf("waiting to push a chunk to pigz queue\n");
             usleep(100);
         }
         wSum += mRingBufferSizes[mOutputCounter];
+        int nows = mSizes.size();
+        if (mRingBufferTags[mOutputCounter] == 1)
+            mSizes.push_back({mRingBufferSizes[mOutputCounter], nows});
+        cSum++;
 //        printf("push a chunk to pigz queue, queue size %d\n", Q->size_approx());
         mRingBuffer[mOutputCounter] = NULL;
         mOutputCounter++;
@@ -146,19 +155,27 @@ void WriterThread::output(moodycamel::ReaderWriterQueue<std::pair<int, std::pair
 
 
 void WriterThread::inputFromMerge(char *data, size_t size) {
+    mtx.lock();
     mRingBuffer[mInputCounter] = data;
     mRingBufferSizes[mInputCounter] = size;
     mRingBufferTags[mInputCounter] = 2;
+//    int pos = mInputCounter;
+//    printf("input2 a data, size is %zu, pos is %d\n", size, pos);
+//    fflush(stdout);
 //    loginfo("processor " + to_string(mOptions->myRank) + " mInputCounter " + to_string(mInputCounter) + " " +
 //            to_string(size));
     mInputCounter++;
-
+    mtx.unlock();
 }
 
 void WriterThread::input(char *data, size_t size) {
+    mtx.lock();
     mRingBuffer[mInputCounter] = data;
     mRingBufferSizes[mInputCounter] = size;
     mRingBufferTags[mInputCounter] = 1;
+//    int pos = mInputCounter;
+//    printf("input1 a data, size is %zu, pos is %d\n", size, pos);
+//    fflush(stdout);
 //    printf("mInputCounter %ld\n", mInputCounter.load());
 //    loginfo("processor " + to_string(mOptions->myRank) + " mInputCounter " + to_string(mInputCounter) + " " +
 //            to_string(size));
@@ -169,6 +186,7 @@ void WriterThread::input(char *data, size_t size) {
 //        printf("gg0\n");
 //        exit(0);
 //    }
+    mtx.unlock();
 }
 
 void WriterThread::cleanup() {
@@ -201,6 +219,18 @@ long WriterThread::bufferLength() {
     return mInputCounter - mOutputCounter;
 }
 
-long WriterThread::GetWSum() const {
+long long WriterThread::GetWSum() const {
     return wSum;
+}
+
+int WriterThread::GetCSum() const {
+    return cSum;
+}
+
+const atomic_long &WriterThread::GetMInputCounter() const {
+    return mInputCounter;
+}
+
+const atomic_long &WriterThread::GetMOutputCounter() const {
+    return mOutputCounter;
 }

@@ -47,6 +47,7 @@ TODOs
 - [ ] why sometimes gz version be killed(segmentation fault)
 - [ ] optimize pugz(2 threads -> 4 threads)
 - [ ] optimize pigz write disk problem
+- [ ] why size-=1
 
 
 
@@ -1749,3 +1750,60 @@ all merge done
 
 直接yue了，好像psum wsum经常出错啊？？？？？？算了 不太配回宿舍睡觉了
 
+in out fq好像没啥问题
+
+最新版光用pugz就gg了，感觉进程0少了一个块22253530289。
+
+现在回退到e5085d6a636c3762ce2b1fb56a9223c51aa2775d试试pugz会不会出错。22253581457？？？我他妈
+
+再回退一个22c159e6d656dcf6eaf8ed79a4d36fb869f4cfb8 -- 22249186189？？？
+
+processor 1 get results done,cost 0.0008
+processor 0  producer get1 20754231334 data
+processor 0  producer get2 20754944810 data
+processor 0 producer get 1653 chunk done, cost 32.57374
+processor 0 consumer cost 32.8174
+processor 1  producer get1 20754231334 data
+processor 1  producer get2 20754944810 data
+processor 1 producer get 3305 chunk done, cost 33.75462
+processor 1 consumer cost 34.0031
+processor 1 send data done, now send -1
+processor 1 send -1 done
+processor 0 get -1 1 1
+processor merge get 14832036611 data
+processor 0 get data done
+merge done, cost 34.7669
+processor 1 writer done, cost 34.0040
+###processor 1 wait cost 1.013396
+###processor 1 format cost 2.649212
+###processor 1 new cost 0.132881
+###processor 1 pe cost 30.223167
+###processor 1 all cost 33.379192
+watind barrier
+processor 0 wSum is 22253458630
+processor 0 writer done, cost 34.7691
+###processor 0 wait cost 18.218757
+###processor 0 format cost 1.678114
+###processor 0 new cost 0.082381
+###processor 0 pe cost 14.598178
+###processor 0 all cost 31.640586
+watind barrier
+all merge done
+=======================print ans from process 0=========================
+all merge done
+total_query_cnt:        0
+after_filter_query_cnt: 0
+find_query_cnt: 0
+total_reads:    195794682
+fixed_sequence_contianing_reads:        0       0.00%
+pass_filter_reads:      195794682
+mapped_reads:   144646378       73.88%
+barcode_exactlyOverlap_reads:   118394902       60.47%
+barcode_misOverlap_reads:       26251476        13.41%
+barcode_withN_reads:    0       0.00%
+
+
+
+好啊，最终pugz -2 V34，基本上不会错（～15）
+
+但是pigz就gg了，不过输出的行数信息啥的都是对的，就是wSum大小上少了几Mb，现在准备把要输出的4000多个chunk的size打印一下，看看到底是哪里g了。merge get的size是对的，也就是说，是本节点的那1/3的chunk出错了，

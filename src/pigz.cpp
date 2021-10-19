@@ -1024,9 +1024,9 @@ readFromQueue(moodycamel::ReaderWriterQueue<std::pair<int, std::pair<char *, int
     std::pair<int, std::pair<char *, int>> now;
 
     if (L.second > 0) {
-        printf("put last data to buf, size is %d\n", L.second);
+//        printf("put last data to buf, size is %d\n", L.second);
         if (L.second >= len) {
-            printf("L.second > len\n");
+//            printf("L.second > len\n");
             memcpy(buf, L.first, len);
             char *tmp = new char[L.second - len];
             memcpy(tmp, L.first + len, L.second - len);
@@ -1039,7 +1039,7 @@ readFromQueue(moodycamel::ReaderWriterQueue<std::pair<int, std::pair<char *, int
             got += (size_t) ret;
             return got;
         } else {
-            printf("L.second < len\n");
+//            printf("L.second < len\n");
             memcpy(buf, L.first, L.second);
             ret = L.second;
             L.second = 0;
@@ -1066,74 +1066,74 @@ readFromQueue(moodycamel::ReaderWriterQueue<std::pair<int, std::pair<char *, int
             ret = 0;
             break;
         }
-        printf("get a chunk from pigz queue, now queue size is %zu\n", Q->size_approx());
+//        printf("get a chunk from pigz queue, now queue size is %zu\n", Q->size_approx());
         int tag = now.first;
         int getSize = now.second.second;
         char *getPos = now.second.first;
-        printf("getSize is %d, len is %zu, tag is %d\n", getSize, len, tag);
+//        printf("getSize is %d, len is %zu, tag is %d\n", getSize, len, tag);
         if (getSize <= len) {
             memcpy(buf, getPos, getSize);
             delete[] getPos;
             ret = getSize;
         } else {
             int move_last = getSize - len;
-            printf("00 move_last is %d, 01 len is %zu\n", move_last, len);
-            int nowSS = len;
-            if (10 < nowSS)nowSS = 10;
-            printf("print getPos %d\n", nowSS);
-            for (int i = 0; i < nowSS; i++) {
-                printf("%c", getPos[i]);
-            }
-            printf("\n");
-            fflush(stdout);
-
-            for (int i = nowSS - 1; i >= 0; i--) {
-                printf("%c", getPos[len - i - 1]);
-            }
-            printf("\n");
-            fflush(stdout);
-            printf("print pre buf %d\n", nowSS);
-            for (int i = 0; i < nowSS; i++) {
-                printf("%c", buf[i]);
-            }
-            printf("\n");
-            for (int i = nowSS - 1; i >= 0; i--) {
-                printf("%c", buf[len - i - 1]);
-            }
-            printf("\n");
-            fflush(stdout);
+//            printf("00 move_last is %d, 01 len is %zu\n", move_last, len);
+//            int nowSS = len;
+//            if (10 < nowSS)nowSS = 10;
+//            printf("print getPos %d\n", nowSS);
+//            for (int i = 0; i < nowSS; i++) {
+//                printf("%c", getPos[i]);
+//            }
+//            printf("\n");
+//            fflush(stdout);
+//
+//            for (int i = nowSS - 1; i >= 0; i--) {
+//                printf("%c", getPos[len - i - 1]);
+//            }
+//            printf("\n");
+//            fflush(stdout);
+//            printf("print pre buf %d\n", nowSS);
+//            for (int i = 0; i < nowSS; i++) {
+//                printf("%c", buf[i]);
+//            }
+//            printf("\n");
+//            for (int i = nowSS - 1; i >= 0; i--) {
+//                printf("%c", buf[len - i - 1]);
+//            }
+//            printf("\n");
+//            fflush(stdout);
 
             memcpy(buf, getPos, len);
-            printf("print buf %d\n", nowSS);
-            for (int i = 0; i < nowSS; i++) {
-                printf("%c", buf[i]);
-            }
-            printf("\n");
-            fflush(stdout);
-
-            for (int i = nowSS - 1; i >= 0; i--) {
-                printf("%c", buf[len - i - 1]);
-            }
-            printf("\n");
-            fflush(stdout);
-
-
-            printf("memcpy1 done\n");
-            fflush(stdout);
+//            printf("print buf %d\n", nowSS);
+//            for (int i = 0; i < nowSS; i++) {
+//                printf("%c", buf[i]);
+//            }
+//            printf("\n");
+//            fflush(stdout);
+//
+//            for (int i = nowSS - 1; i >= 0; i--) {
+//                printf("%c", buf[len - i - 1]);
+//            }
+//            printf("\n");
+//            fflush(stdout);
+//
+//
+//            printf("memcpy1 done\n");
+//            fflush(stdout);
 
 //            if (move_last > (1 << 23)) {
 //                printf("got it!!!!!\n");
 //                exit(0);
 //            }
             memcpy(L.first, getPos + len, move_last);
-            printf("memcpy2 done\n");
-            fflush(stdout);
+//            printf("memcpy2 done\n");
+//            fflush(stdout);
 
 
             L.second = move_last;
             delete[] getPos;
-            printf("delete done\n");
-            fflush(stdout);
+//            printf("delete done\n");
+//            fflush(stdout);
 
 
             ret = len;
@@ -1150,7 +1150,7 @@ readFromQueue(moodycamel::ReaderWriterQueue<std::pair<int, std::pair<char *, int
         nowAdd += ret;
         len -= (size_t) ret;
         got += (size_t) ret;
-        printf("ret is %zd, len is %zu, got is %zu\n", ret, len, got);
+//        printf("ret is %zd, len is %zu, got is %zu\n", ret, len, got);
     }
 
     if (nowAdd > canAdd) {
@@ -1609,7 +1609,7 @@ local void new_pool(struct pool *pool, size_t size, int limit) {
 // Get a space from a pool. The use count is initially set to one, so there is
 // no need to call use_space() for the first use.
 local struct space *get_space(struct pool *pool) {
-    printf("now get a space...\n");
+//    printf("now get a space...\n");
     struct space *space;
 
     // if can't create any more, wait for a space to show up
@@ -1625,7 +1625,7 @@ local struct space *get_space(struct pool *pool) {
         possess_pigz(space->use);
         twist_pigz(space->use, TO, 1);       // initially one user
         space->len = 0;
-        printf("get from pool\n");
+//        printf("get from pool\n");
         return space;
     }
 
@@ -1641,7 +1641,7 @@ local struct space *get_space(struct pool *pool) {
     space->size = pool->size;
     space->len = 0;
     space->pool = pool;                 // remember the pool this belongs to
-    printf("get from new\n");
+//    printf("get from new\n");
     return space;
 }
 
@@ -2248,9 +2248,9 @@ parallel_compress(moodycamel::ReaderWriterQueue<std::pair<int, std::pair<char *,
     seq = 0;
     next = get_space(&in_pool);
     long pSum = 0;
-    printf("---0readFromQueue\n");
+//    printf("---0readFromQueue\n");
     next->len = readFromQueue(Q, wDone, L, next->buf, next->size);
-    printf("---1readFromQueue\n");
+//    printf("---1readFromQueue\n");
     pSum += next->len;
 //    next->len = readn(g.ind, next->buf, next->size);
     hold = NULL;
@@ -2276,9 +2276,9 @@ parallel_compress(moodycamel::ReaderWriterQueue<std::pair<int, std::pair<char *,
         if (next == NULL) {
             next = get_space(&in_pool);
 //            next->len = readn(g.ind, next->buf, next->size);
-            printf("---0readFromQueue\n");
+//            printf("---0readFromQueue\n");
             next->len = readFromQueue(Q, wDone, L, next->buf, next->size);
-            printf("---1readFromQueue\n");
+//            printf("---1readFromQueue\n");
             pSum += next->len;
 
         }

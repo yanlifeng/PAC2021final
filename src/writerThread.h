@@ -68,10 +68,25 @@ private:
     char **mRingBuffer;
     size_t *mRingBufferSizes;
     int *mRingBufferTags;
-
-    long wSum;
 public:
-    long GetWSum() const;
+    const atomic_long &GetMInputCounter() const;
+
+    const atomic_long &GetMOutputCounter() const;
+
+private:
+
+    int cSum;
+public:
+    int GetCSum() const;
+
+    vector<pair<long long, int>> mSizes;
+
+
+private:
+
+    long long wSum;
+public:
+    long long GetWSum() const;
 
 private:
 
