@@ -36,18 +36,20 @@ TODOs
 - [x] add mpi pigz
 - [x] merge hashHead hashMap
 - [ ] check asm to find out why gcc11 has a good perfermance
-- [ ] check pugz&producer and writer&pigz part
+- [x] check pugz&producer and writer&pigz part
 - [ ] inline query function by 👋
-- [ ] fix pugz size bug？？
-- [ ] make pigz not flush to disk
+- [x] fix pugz size bug？？
+- [x] make pigz not flush to disk
 - [ ] vectorization in while misxx
 - [ ] optmize chunk format paty
 - [ ] optimize add position to name part
 - [ ] use rabbit io
-- [ ] why sometimes gz version be killed(segmentation fault)
+- [x] why sometimes gz version be killed(segmentation fault)
 - [ ] optimize pugz(2 threads -> 4 threads)
-- [ ] optimize pigz write disk problem
-- [ ] why size-=1
+- [x] optimize pigz write disk problem
+- [x] why size-=1
+- [ ] test other compile para
+- [ ] change pugz compile para
 
 
 
@@ -1807,3 +1809,54 @@ barcode_withN_reads:    0       0.00%
 好啊，最终pugz -2 V34，基本上不会错（～15）
 
 但是pigz就gg了，不过输出的行数信息啥的都是对的，就是wSum大小上少了几Mb，现在准备把要输出的4000多个chunk的size打印一下，看看到底是哪里g了。merge get的size是对的，也就是说，是本节点的那1/3的chunk出错了，
+
+## 1019
+
+昨晚简直是他妈的至暗时刻，好在天亮的时候找到bug了，现在一切都好起来了，hashMap构建掩盖在read h5里面了，初始化9s，1：1fq查询的话30s左右，整个程序现在40s，也就是说，32线程1:1查询能28+2查询完成，测测28的，41s，26->43  24->45 基本上输出gz的话分24+8，分开输出，整个程序能到45s，还可以。
+
+现在开始搞搞pugz
+
+|           |             |      |
+| --------- | ----------- | ---- |
+| 30+2/30+2 | 56/56/57/57 | 57   |
+| 30+4/30+4 | 36/38/39/40 | 44   |
+| 30+8/30+8 | 31/33/33/36 | 45   |
+
+👆的测试方法pugz线程被查询抢了，不太准，现在试试只开pugz。
+
+|          | pugz in pac                                                  | pugz to shm |
+| -------- | ------------------------------------------------------------ | ----------- |
+| p1.fq.gz |                                                              | 34          |
+| p2.fq.gz |                                                              | 37          |
+| V3       | 47（no out 41，out 1 byte 41，out half btye 44，only new no memcpy 42） | 41          |
+| V4       |                                                              | 44          |
+
+gg memcpy就是慢。。。。木得办法，现在先想想稳定4个线程的事
+
+
+
+## 1020
+
+## 1021
+
+```
+../ST_BarcodeMap-0.0.1 --in /users/ylf/DP8400016231TR_D1.barcodeToPos.h5 --in1 /users/ylf/p1.fq --in2 /users/ylf/p2.fq --out /dev/shm/combine_read.fq.gz --mismatch 2 --thread 16 --thread2 32 --usePigz --pigzThread 16
+spatialRNADrawMap, time used: 44 seconds
+
+
+../ST_BarcodeMap-0.0.1 --in /users/ylf/DP8400016231TR_D1.barcodeToPos.h5 --in1 /users/ylf/p1.fq.gz --in2 /users/ylf/p2.fq.gz --out /users/ylf/combine_read.fq.gz --mismatch 2 --thread 14 --thread2 32 --usePigz --pigzThread 18 --usePugz --pugzThread 4
+spatialRNADrawMap, time used: 49 seconds
+
+
+
+../ST_BarcodeMap-0.0.1 --in /users/ylf/DP8400016231TR_D1.barcodeToPos.h5 --in1 /users/ylf/p1.fq.gz --in2 /users/ylf/p2.fq.gz --out /users/ylf/combine_read.fq.gz --mismatch 2 --thread 15 --thread2 32 --usePigz --pigzThread 18 --usePugz --pugzThread 3
+spatialRNADrawMap, time used: 49 seconds
+
+
+mpigxx -c src/prog_util.cpp -o obj/prog_util.o -std=c++11 -I. -Icommon -w -Wextra -Weffc++ -Wpedantic -Wundef -Wuseless-cast -Wconversion -Wshadow -Wdisabled-optimization -Wparentheses -Wpointer-arith -O2 -flto=jobserver -march=native -mtune=native -g -D_POSIX_C_SOURCE=200809L -D_FILE_OFFSET_BITS=64 -fopenmp
+
+mpigxx -c src/tgetopt.cpp -o obj/tgetopt.o -std=c++11 -I. -Icommon -w -Wextra -Weffc++ -Wpedantic -Wundef -Wuseless-cast -Wconversion -Wshadow -Wdisabled-optimization -Wparentheses -Wpointer-arith -O2 -flto=jobserver -march=native -mtune=native -g -D_POSIX_C_SOURCE=200809L -D_FILE_OFFSET_BITS=64 -fopenmp
+
+mpigxx ./obj/chipMaskHDF5.o ./obj/barcodeProcessor.o ./obj/FastqStream.o ./obj/sequence.o ./obj/barcodePositionMap.o ./obj/pigz.o ./obj/FastqIo.o ./obj/writerThread.o ./obj/barcodePositionConfig.o ./obj/chipMaskMerge.o ./obj/read.o ./obj/bloomFilter.o ./obj/htmlreporter.o ./obj/writer.o ./obj/result.o ./obj/chipMaskFormatChange.o ./obj/tgetopt.o ./obj/prog_util.o ./obj/barcodeToPositionMulti.o ./obj/main.o ./obj/fixedfilter.o ./obj/fastqreader.o ./obj/barcodeToPositionMultiPE.o ./obj/options.o ./obj/barcodeListMerge.o ./obj/deflate.o ./obj/try.o ./obj/symbols.o ./obj/yarn.o ./obj/squeeze.o ./obj/lz77.o ./obj/katajainen.o ./obj/hash.o ./obj/cache.o ./obj/utilPigz.o ./obj/blocksplitter.o ./obj/tree.o -o ST_BarcodeMap-0.0.1 -std=c++11 -I. -Icommon -w -Wextra -Weffc++ -Wpedantic -Wundef -Wuseless-cast -Wconversion -Wshadow -Wdisabled-optimization -Wparentheses -Wpointer-arith   -O2 -flto=jobserver -march=native -mtune=native -g -D_POSIX_C_SOURCE=200809L -D_FILE_OFFSET_BITS=64 -lz -lpthread -lhdf5 -lboost_serialization -fopenmp -lrt -lm  -lrt -ldeflate
+```
+

@@ -42,16 +42,19 @@ endif
 
 
 CXX = mpigxx
-CXXFLAGS := -std=c++11 -g -O2   -I./ -I./common $(foreach includedir,$(INCLUDE_DIRS),-I$(includedir)) ${CXXFLAGS} \
+
+#CXXFLAGS := -std=c++11 -I./ -I./common -march=native -mtune=native -g -O3 -w -fopenmp
+
+#CXXFLAGS := -std=c++11 -g -O3   -I./ -I./common $(foreach includedir,$(INCLUDE_DIRS),-I$(includedir)) ${CXXFLAGS} \
 $(call cc-option,-flto=jobserver,-flto) -march=native -mtune=native -fopenmp
+CXXFLAGS := -std=c++11 -I. -Icommon -w -Wextra -Weffc++ -Wpedantic -Wundef -Wuseless-cast -Wconversion -Wshadow -Wdisabled-optimization -Wparentheses -Wpointer-arith   -O3 -flto=jobserver -march=native -mtune=native -g -D_POSIX_C_SOURCE=200809L -D_FILE_OFFSET_BITS=64 -fopenmp
 
-#CXXFLAGS := -w -std=c++11 -g -O2   -I./ -I./common  -fopenmp -Wall -Wextra -Weffc++ -Wpedantic -Wundef -Wuseless-cast -Wconversion -Wshadow -Wdisabled-optimization -Wparentheses -Wpointer-arith   -O2 -flto=jobserver -march=native -mtune=native -g -D_POSIX_C_SOURCE=200809L -D_FILE_OFFSET_BITS=64
 CXX2 = mpigcc
-CXXFLAGS2 := -g  -O2 -w -Wall -Wextra -Wno-unknown-pragmas -Wcast-qual
+CXXFLAGS2 := -g -O3 -w -Wextra -Wno-unknown-pragmas -Wcast-qual
 
-#LIBS := -Wall -Wextra -Weffc++ -Wpedantic -Wundef -Wuseless-cast -Wconversion -Wshadow -Wdisabled-optimization -Wparentheses -Wpointer-arith   -O2 -flto=jobserver -march=native -mtune=native -g -D_POSIX_C_SOURCE=200809L -D_FILE_OFFSET_BITS=64 -lz -lpthread -lhdf5 -lboost_serialization -fopenmp -lrt -lm
+LIBS := -std=c++11 -I. -Icommon -w -Wextra -Weffc++ -Wpedantic -Wundef -Wuseless-cast -Wconversion -Wshadow -Wdisabled-optimization -Wparentheses -Wpointer-arith   -O3 -flto=jobserver -march=native -mtune=native -g -D_POSIX_C_SOURCE=200809L -D_FILE_OFFSET_BITS=64 -lz -lpthread -lhdf5 -lboost_serialization -fopenmp -lrt -lm  -lrt -ldeflate
 
-LIBS := -lz -lpthread -lhdf5 -lboost_serialization -fopenmp -lrt -lm
+#LIBS := -lz -lpthread -lhdf5 -lboost_serialization -fopenmp -lrt -lm -ldeflate
 #LD_FLAGS := $(foreach librarydir,$(LIBRARY_DIRS),-L$(librarydir)) $(LIBS) $(LD_FLAGS)
 LD_FLAGS := $(LIBS)
 

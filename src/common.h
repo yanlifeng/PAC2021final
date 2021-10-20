@@ -53,7 +53,8 @@ static const int PACK_SIZE = 1000;
 // if one pack is produced, but not consumed, it will be kept in the memory
 // this number limit the number of in memory packs
 // if the number of in memory packs is full, the producer thread should sleep
-static const int PACK_IN_MEM_LIMIT = 500;
+//static const int PACK_IN_MEM_LIMIT = 500;
+static const int PACK_IN_MEM_LIMIT = 1 << 20;
 
 // if read number is more than this, warn it
 static const int WARN_STANDALONE_READ_LIMIT = 10000;
@@ -164,10 +165,10 @@ typedef struct node {
 } node;
 
 
-typedef struct bpmap_key_value{
+typedef struct bpmap_key_value {
     uint64 key;
     Position1 value;
-}bpmap_key_value;
+} bpmap_key_value;
 
 
 

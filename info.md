@@ -189,7 +189,7 @@ ConcurrentQueue不是有序的，麻了。换成了同一个人搞得ReaderWrite
 | bgzip thread 2 -1 | 200    |      |
 | bgzip thread 4 -1 | 100    |      |
 | bgzip thread 8 -1 | 52     |      |
-|                   |        |      |
+| 16                | 26     |      |
 |                   |        |      |
 | pigz thread 1 -4  | 420    |      |
 | pigz thread 2 -4  | 210    |      |
