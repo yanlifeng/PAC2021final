@@ -61,7 +61,7 @@
 #include "input_stream.hpp"
 #include "decompressor.hpp"
 
-#include "libdeflate.h"
+#include "libdeflatePugz.h"
 
 #include "immintrin.h"
 #include "emmintrin.h"

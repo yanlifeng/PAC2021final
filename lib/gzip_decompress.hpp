@@ -29,7 +29,7 @@
 
 #include "gzip_constants.h"
 
-#include "libdeflate.h"
+#include "libdeflatePugz.h"
 #include <exception>
 #include <vector>
 #include <thread>
