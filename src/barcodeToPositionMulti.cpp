@@ -218,15 +218,16 @@ bool BarcodeToPositionMulti::process() {
     initOutput();
     initPackRepositoey();
 
-    thread *getMbp;
-    getMbp = new thread(bind(&BarcodeToPositionMulti::getMbpmap, this));
-
     thread *pugzer1;
     thread *pugzer2;
     if (mOptions->usePugz) {
         pugzer1 = new thread(bind(&BarcodeToPositionMulti::pugzTask1, this));
         pugzer2 = new thread(bind(&BarcodeToPositionMulti::pugzTask2, this));
     }
+
+
+    thread *getMbp;
+    getMbp = new thread(bind(&BarcodeToPositionMulti::getMbpmap, this));
 
 
     getMbp->join();
@@ -252,10 +253,11 @@ bool BarcodeToPositionMulti::process() {
     }
     printf("processor %d get results done,cost %.4f\n", mOptions->myRank, GetTime() - t0);
 
-
+    int threadsNowNumber = mOptions->thread - mOptions->pugzThread * 2;
     t0 = GetTime();
+    printf("now start %d\n", threadsNowNumber);
     thread **threads = new thread *[mOptions->thread];
-    for (int t = 0; t < mOptions->thread; t++) {
+    for (int t = 0; t < threadsNowNumber; t++) {
         threads[t] = new thread(bind(&BarcodeToPositionMulti::consumerTask, this, results[t]));
     }
 
@@ -281,17 +283,24 @@ bool BarcodeToPositionMulti::process() {
             pigzThread = new thread(bind(&BarcodeToPositionMulti::pigzWrite, this));
         }
     }
-
-
-    producer->join();
     if (mOptions->usePugz) {
         pugzer1->join();
         pugzer2->join();
     }
+    double tt0 = GetTime();
+    printf("now start another %d threads\n", mOptions->thread - threadsNowNumber);
+
+    for (int t = threadsNowNumber; t < mOptions->thread; t++) {
+        threads[t] = new thread(bind(&BarcodeToPositionMulti::consumerTask, this, results[t]));
+    }
+
+
+    producer->join();
 
     for (int t = 0; t < mOptions->thread; t++) {
         threads[t]->join();
     }
+    printf("another threads cost %.6f\n", GetTime() - tt0);
     printf("processor %d consumer cost %.4f\n", mOptions->myRank, GetTime() - t0);
 
     if (writerThread) {
@@ -662,6 +671,7 @@ void BarcodeToPositionMulti::pugzTask1() {
 
     pugz1Done = 1;
     std::cout << "pugz0 done, cost " << GetTime() - t0 << std::endl;
+//    xclose(&in);
 }
 
 void BarcodeToPositionMulti::pugzTask2() {
@@ -701,6 +711,7 @@ void BarcodeToPositionMulti::pugzTask2() {
     libdeflate_gzip_decompress(in_p, in.mmap_size, mOptions->pugzThread, output, &sync);
     pugz2Done = 1;
     std::cout << "pugz1 done, cost " << GetTime() - t0 << std::endl;
+//    xclose(&in);
 }
 
 #define whoNumber 3
@@ -722,13 +733,13 @@ void BarcodeToPositionMulti::producerTask() {
     int whoTurn = 0;
     int mps[whoNumber];
     if (mOptions->numPro == 1) {
-        for (int i=0;i<whoNumber;i++){
+        for (int i = 0; i < whoNumber; i++) {
             mps[i] = 0;
         }
     } else {
-        mps[0] = 0 ;
-        mps[1] = 1 ;
-        mps[2] = 1 ;
+        mps[0] = 0;
+        mps[1] = 1;
+        mps[2] = 1;
 //        mps[3] = 1 ;
 //        mps[4] = 1 ;
 //        mps[5] = 1 ;

@@ -1858,5 +1858,9 @@ mpigxx -c src/prog_util.cpp -o obj/prog_util.o -std=c++11 -I. -Icommon -w -Wextr
 mpigxx -c src/tgetopt.cpp -o obj/tgetopt.o -std=c++11 -I. -Icommon -w -Wextra -Weffc++ -Wpedantic -Wundef -Wuseless-cast -Wconversion -Wshadow -Wdisabled-optimization -Wparentheses -Wpointer-arith -O2 -flto=jobserver -march=native -mtune=native -g -D_POSIX_C_SOURCE=200809L -D_FILE_OFFSET_BITS=64 -fopenmp
 
 mpigxx ./obj/chipMaskHDF5.o ./obj/barcodeProcessor.o ./obj/FastqStream.o ./obj/sequence.o ./obj/barcodePositionMap.o ./obj/pigz.o ./obj/FastqIo.o ./obj/writerThread.o ./obj/barcodePositionConfig.o ./obj/chipMaskMerge.o ./obj/read.o ./obj/bloomFilter.o ./obj/htmlreporter.o ./obj/writer.o ./obj/result.o ./obj/chipMaskFormatChange.o ./obj/tgetopt.o ./obj/prog_util.o ./obj/barcodeToPositionMulti.o ./obj/main.o ./obj/fixedfilter.o ./obj/fastqreader.o ./obj/barcodeToPositionMultiPE.o ./obj/options.o ./obj/barcodeListMerge.o ./obj/deflate.o ./obj/try.o ./obj/symbols.o ./obj/yarn.o ./obj/squeeze.o ./obj/lz77.o ./obj/katajainen.o ./obj/hash.o ./obj/cache.o ./obj/utilPigz.o ./obj/blocksplitter.o ./obj/tree.o -o ST_BarcodeMap-0.0.1 -std=c++11 -I. -Icommon -w -Wextra -Weffc++ -Wpedantic -Wundef -Wuseless-cast -Wconversion -Wshadow -Wdisabled-optimization -Wparentheses -Wpointer-arith   -O2 -flto=jobserver -march=native -mtune=native -g -D_POSIX_C_SOURCE=200809L -D_FILE_OFFSET_BITS=64 -lz -lpthread -lhdf5 -lboost_serialization -fopenmp -lrt -lm  -lrt -ldeflate
+
+
+../ST_BarcodeMap-0.0.1 --in /users/ylf/DP8400016231TR_D1.barcodeToPos.h5 --in1 /users/ylf/V300091300_L03_read_1.fq.gz --in2 /users/ylf/V300091300_L04_read_1.fq.gz --out /users/ylf/combine_read.fq.gz --mismatch 2 --thread 15 --thread2 32 --usePigz --pigzThread 18 --usePugz --pugzThread 4
+spatialRNADrawMap, time used: 51 seconds
 ```
 

@@ -320,7 +320,7 @@ FastqChunkReaderPair::FastqChunkReaderPair(string leftName, string rightName, bo
         : swapBuffer_left(1 << 13), swapBuffer_right(1 << 13), bufferSize_left(0), bufferSize_right(0), eof(false),
           usesCrlf(false) {
     mInterleaved = interleaved;
-    fastqPool_left = new dsrc::fq::FastqDataPool(1 << 20, 1 << 22);
+    fastqPool_left = new dsrc::fq::FastqDataPool(128, 1 << 22);
     fileReader_left = new dsrc::fq::FastqFileReader(leftName);
     mLeft = new dsrc::fq::FastqReader(*fileReader_left, *fastqPool_left);
     if (mInterleaved) {
@@ -328,7 +328,7 @@ FastqChunkReaderPair::FastqChunkReaderPair(string leftName, string rightName, bo
         fastqPool_right = NULL;
         fileReader_right = NULL;
     } else {
-        fastqPool_right = new dsrc::fq::FastqDataPool(1 << 20, 1 << 22);
+        fastqPool_right = new dsrc::fq::FastqDataPool(128, 1 << 22);
         fileReader_right = new dsrc::fq::FastqFileReader(rightName);
         mRight = new dsrc::fq::FastqReader(*fileReader_right, *fastqPool_left);
     }
