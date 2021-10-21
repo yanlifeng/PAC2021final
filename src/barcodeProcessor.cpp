@@ -524,6 +524,49 @@ pair<int, int> BarcodeProcessor::getMisOverlap(uint64 barcodeInt) {
     return {0, -1};
 }
 
+Position1 *BarcodeProcessor::getNOverlapZZ(string &barcodeString, uint8 Nindex) {
+    //N has the same encode (11) with G
+    int misCount = 0;
+    uint64 barcodeInt = seqEncode(barcodeString.c_str(), 0, barcodeString.length());
+    Position1 *iter = nullptr;
+    Position1 *overlapIter = nullptr;
+
+    uint32 mapKey = barcodeInt % MOD;
+    for (int i = bpmap_head[mapKey]; i != -1; i = bpmap_nxt[i]) {
+//        MAPNUM++;
+        if (position_all[i].key == barcodeInt) {
+            iter = &position_all[i].value;
+        }
+    }
+
+    if (iter != nullptr) {
+        misCount++;
+        overlapIter = iter;
+    }
+    for (uint64 j = 1; j < 4; j++) {
+        uint64 misBarcodeInt = barcodeInt ^ (j << Nindex * 2);
+        uint32 mapKey = misBarcodeInt % MOD;
+        iter = nullptr;
+        for (int i = bpmap_head[mapKey]; i != -1; i = bpmap_nxt[i]) {
+            if (position_all[i].key == misBarcodeInt) {
+                iter = &position_all[i].value;
+            }
+        }
+        if (iter != nullptr) {
+            misCount++;
+            if (misCount > 1) {
+                return nullptr;
+            }
+            overlapIter = iter;
+        }
+    }
+    if (misCount == 1) {
+        overlapReadsWithN++;
+        return overlapIter;
+    }
+    return nullptr;
+}
+
 
 int BarcodeProcessor::getNOverlap(string &barcodeString, uint8 Nindex) {
     //N has the same encode (11) with G
@@ -669,8 +712,8 @@ Position1 *BarcodeProcessor::getPositionHashTableOneArrayWithBloomFiler(string &
     } else if (Nindex == -2) {
         return nullptr;
     } else if (mismatch > 0) {
-        printf("In this !!!!\n");
-//        return getNOverlap(barcodeString, Nindex);
+//        printf("In this !!!!\n");
+        return getNOverlapZZ(barcodeString, Nindex);
     }
     return nullptr;
 }

@@ -106,6 +106,52 @@ namespace dsrc {
 //
 //            return seq_count;
 //        }
+//        int chunkFormat(FastqDataChunk *&chunk, std::vector<Read *> &data, bool mHasQuality) {
+//            //format a whole chunk and return number of reads
+//            int seq_count = 0;
+//            int line_count = 0;
+//            int pos_ = 0;
+//            while (true) {
+//                Read *read = new Read("", "", "", "");
+//                pair<char *, int> res = getLineFast(chunk, pos_);
+//                //TODO
+//                if (res.second == -1) break;
+//                //dsrc guarantees that read are completed!
+//                read->mName = string(res.first, res.second);
+////                std::cerr << read->mName << std::endl;
+//                res = getLineFast(chunk, pos_);
+//                if (res.second == -1) break;
+//
+//
+//                read->mSeq.mStr = string(res.first, res.second);
+////                std::cerr << read->mSeq.mStr << std::endl;
+//                res = getLineFast(chunk, pos_);
+//                if (res.second == -1) break;
+//
+//
+//                read->mStrand = string(res.first, res.second);
+////                std::cerr << read->mStrand << std::endl;
+//                if (!mHasQuality) {
+//                    read->mQuality = string(read->mSeq.mStr.length(), 'K');
+////                    std::cerr << read->mQuality << std::endl;
+//                    data.push_back(read);
+//                    seq_count++;
+//
+//                } else {
+//                    res = getLineFast(chunk, pos_);
+//                    if (res.second == -1) break;
+//
+//
+//                    read->mQuality = string(res.first, res.second);
+////                    std::cerr << read->mQuality << std::endl;
+//                    data.push_back(read);
+//                    seq_count++;
+//                }
+//            }
+//
+//            return seq_count;
+//        }
+
 
         int chunkFormat(FastqDataChunk *&chunk, std::vector<Read *> &data, bool mHasQuality) {
             //format a whole chunk and return number of reads
@@ -212,7 +258,6 @@ namespace dsrc {
             }
         }
 
-
         string getLine(FastqDataChunk *&chunk, int &pos) {
             int start_pos = pos;
             char *data = (char *) chunk->data.Pointer();
@@ -227,6 +272,22 @@ namespace dsrc {
                 }
             }
             return "";
+        }
+
+        pair<char *, int> getLineFast(FastqDataChunk *&chunk, int &pos) {
+            int start_pos = pos;
+            char *data = (char *) chunk->data.Pointer();
+
+            while (pos <= (chunk->size + 1)) {
+                if (data[pos] == '\n' || data[pos] == '\r' || pos == (chunk->size + 1)) {
+                    //find a line
+                    pos++;
+                    return {data + start_pos, pos - start_pos - 1};
+                } else {
+                    pos++;
+                }
+            }
+            return {NULL, -1};
         }
 
     } // namesapce fq

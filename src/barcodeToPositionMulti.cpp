@@ -126,7 +126,7 @@ BarcodeToPositionMulti::BarcodeToPositionMulti(Options *opt) {
     writerDone = 0;
     mergeDone = 0;
     if (mOptions->numPro == 1)mergeDone = 1;
-    cout << "mergeDone " << mergeDone << endl;
+//    cout << "mergeDone " << mergeDone << endl;
 }
 
 BarcodeToPositionMulti::~BarcodeToPositionMulti() {
@@ -149,7 +149,10 @@ void BarcodeToPositionMulti::mergeWrite() {
 //        MPI_Barrier(MPI_COMM_WORLD);
         if (tmpSize == -1) {
             cntEnd++;
+#ifdef PRINT_INFO
+
             printf("processor 0 get -1 %d %d\n", mOptions->numPro - 1, cntEnd);
+#endif
             if (cntEnd == mOptions->numPro - 1)
                 endTag = 1;
         } else {
@@ -164,9 +167,12 @@ void BarcodeToPositionMulti::mergeWrite() {
             mOutputMtx.unlock();
         }
     }
+#ifdef PRINT_INFO
+
     printf("processor merge get %lld data\n", totSize);
     printf("processor 0 get data done\n");
     printf("merge done, cost %.4f\n", GetTime() - t0);
+#endif
 }
 
 void BarcodeToPositionMulti::pigzWrite() {
@@ -231,7 +237,9 @@ bool BarcodeToPositionMulti::process() {
 
 
     getMbp->join();
+#ifdef PRINT_INFO
     printf("processor %d get map thread done,cost %.4f\n", mOptions->myRank, GetTime() - t0);
+#endif
     t0 = GetTime();
 
     thread *producer;
@@ -251,11 +259,14 @@ bool BarcodeToPositionMulti::process() {
                                                                         mbpmap->getBloomFilter());
 
     }
+#ifdef PRINT_INFO
     printf("processor %d get results done,cost %.4f\n", mOptions->myRank, GetTime() - t0);
-
+#endif
     int threadsNowNumber = mOptions->thread - mOptions->pugzThread * 2;
     t0 = GetTime();
+#ifdef PRINT_INFO
     printf("now start %d\n", threadsNowNumber);
+#endif
     thread **threads = new thread *[mOptions->thread];
     for (int t = 0; t < threadsNowNumber; t++) {
         threads[t] = new thread(bind(&BarcodeToPositionMulti::consumerTask, this, results[t]));
@@ -288,8 +299,10 @@ bool BarcodeToPositionMulti::process() {
         pugzer2->join();
     }
     double tt0 = GetTime();
-    printf("now start another %d threads\n", mOptions->thread - threadsNowNumber);
+#ifdef PRINT_INFO
 
+    printf("now start another %d threads\n", mOptions->thread - threadsNowNumber);
+#endif
     for (int t = threadsNowNumber; t < mOptions->thread; t++) {
         threads[t] = new thread(bind(&BarcodeToPositionMulti::consumerTask, this, results[t]));
     }
@@ -300,9 +313,11 @@ bool BarcodeToPositionMulti::process() {
     for (int t = 0; t < mOptions->thread; t++) {
         threads[t]->join();
     }
+#ifdef PRINT_INFO
+
     printf("another threads cost %.6f\n", GetTime() - tt0);
     printf("processor %d consumer cost %.4f\n", mOptions->myRank, GetTime() - t0);
-
+#endif
     if (writerThread) {
         if (mOptions->outGzSpilt == 0 && mOptions->numPro > 1 && mOptions->myRank == 0) {
             mergeThread->join();
@@ -310,16 +325,21 @@ bool BarcodeToPositionMulti::process() {
         }
         writerThread->join();
         writerDone = 1;
+#ifdef PRINT_INFO
         printf("processor %d writer done, cost %.4f\n", mOptions->myRank, GetTime() - t0);
-
+#endif
 
         if (mOptions->outGzSpilt) {
             pigzThread->join();
+#ifdef PRINT_INFO
             printf("processor %d pigz done, cost %.4f\n", mOptions->myRank, GetTime() - t0);
+#endif
         } else {
             if (mOptions->usePigz && mOptions->myRank == 0) {
                 pigzThread->join();
+#ifdef PRINT_INFO
                 printf("pigz done, cost %.4f\n", GetTime() - t0);
+#endif
             }
         }
     }
@@ -336,28 +356,39 @@ bool BarcodeToPositionMulti::process() {
         resultList.push_back(results[t]);
     }
     Result *finalResult = Result::merge(resultList);
+#ifdef PRINT_INFO
 
     printf("###processor %d wait cost %f\n", mOptions->myRank, finalResult->GetCostWait());
     printf("###processor %d format cost %f\n", mOptions->myRank, finalResult->GetCostFormat());
     printf("###processor %d new cost %f\n", mOptions->myRank, finalResult->GetCostNew());
     printf("###processor %d pe cost %f\n", mOptions->myRank, finalResult->GetCostPe());
     printf("###processor %d all cost %f\n", mOptions->myRank, finalResult->GetCostAll());
-
+#endif
     if (mOptions->numPro == 1) {
+#ifdef PRINT_INFO
+
         printf("=======================print ans from process 0=========================\n");
-
+#endif
         finalResult->print();
-        printf("========================================================================\n");
+#ifdef PRINT_INFO
 
+        printf("========================================================================\n");
+#endif
     } else {
+#ifdef PRINT_INFO
+
         printf("watind barrier\n");
+#endif
         MPI_Barrier(MPI_COMM_WORLD);
+#ifdef PRINT_INFO
 
         printf("all merge done\n");
-
+#endif
         if (mOptions->myRank == 0) {
-            printf("=======================print ans from process 0=========================\n");
+#ifdef PRINT_INFO
 
+            printf("=======================print ans from process 0=========================\n");
+#endif
             vector<Result *> newResList;
             newResList.push_back(finalResult);
             for (int ii = 1; ii < mOptions->numPro; ii++) {
@@ -435,8 +466,10 @@ bool BarcodeToPositionMulti::process() {
             }
             finalResult = Result::merge(newResList);
             finalResult->print();
+#ifdef PRINT_INFO
 
             printf("========================================================================\n");
+#endif
         } else {
             MPI_Send(&(finalResult->mTotalRead), 1, MPI_LONG_LONG, 0, 1, mOptions->communicator);
             MPI_Send(&(finalResult->mFxiedFilterRead), 1, MPI_LONG_LONG, 0, 1, mOptions->communicator);
@@ -495,9 +528,10 @@ bool BarcodeToPositionMulti::process() {
         delete unMappedWriterThread;
 
     closeOutput();
+#ifdef PRINT_INFO
     if (mOptions->myRank == 0)
         printf("final and delete cost %.4f\n", GetTime() - t0);
-
+#endif
     return true;
 }
 
@@ -635,7 +669,10 @@ void BarcodeToPositionMulti::consumePack(Result *result) {
 
 
 void BarcodeToPositionMulti::pugzTask1() {
+#ifdef PRINT_INFO
+
     printf("now use pugz0 to decompress(%d threads)\n", mOptions->pugzThread);
+#endif
     double t0 = GetTime();
     struct file_stream in;
     stat_t stbuf;
@@ -670,12 +707,18 @@ void BarcodeToPositionMulti::pugzTask1() {
     libdeflate_gzip_decompress(in_p, in.mmap_size, mOptions->pugzThread, output, &sync);
 
     pugz1Done = 1;
+#ifdef PRINT_INFO
+
     std::cout << "pugz0 done, cost " << GetTime() - t0 << std::endl;
+#endif
 //    xclose(&in);
 }
 
 void BarcodeToPositionMulti::pugzTask2() {
+#ifdef PRINT_INFO
+
     printf("now use pugz1 to decompress(%d threads)\n", mOptions->pugzThread);
+#endif
     double t0 = GetTime();
     struct file_stream in;
     stat_t stbuf;
@@ -710,7 +753,10 @@ void BarcodeToPositionMulti::pugzTask2() {
     ConsumerSync sync{};
     libdeflate_gzip_decompress(in_p, in.mmap_size, mOptions->pugzThread, output, &sync);
     pugz2Done = 1;
+#ifdef PRINT_INFO
+
     std::cout << "pugz1 done, cost " << GetTime() - t0 << std::endl;
+#endif
 //    xclose(&in);
 }
 
@@ -746,11 +792,13 @@ void BarcodeToPositionMulti::producerTask() {
 //        mps[6] = 1 ;
 
     }
+#ifdef PRINT_INFO
+
     printf("mps\n");
     for (int i = 0; i < whoNumber; i++)
         printf("%d ", mps[i]);
     printf("\n");
-
+#endif
     long long p1Sum = 0;
     long long p2Sum = 0;
     if (mOptions->usePugz) {
@@ -810,21 +858,26 @@ void BarcodeToPositionMulti::producerTask() {
             whoTurn++;
             whoTurn %= whoNumber;
             while (mRepo.writePos - mRepo.readPos > PACK_IN_MEM_LIMIT) {
+#ifdef PRINT_INFO
                 printf("producer waiting...\n");
+#endif
                 slept++;
                 usleep(100);
             }
 
         }
     }
+#ifdef PRINT_INFO
     printf("processor %d  producer get1 %lld data\n", mOptions->myRank, p1Sum);
     printf("processor %d  producer get2 %lld data\n", mOptions->myRank, p2Sum);
-
+#endif
     mProduceFinished = true;
     if (mOptions->verbose)
         loginfo("all reads loaded, start to monitor thread status");
     //lock.unlock();
+#ifdef PRINT_INFO
     printf("processor %d producer get %d chunk done, cost %.5f\n", mOptions->myRank, cnt, GetTime() - t0);
+#endif
     producerDone = 1;
 }
 
@@ -886,8 +939,10 @@ void BarcodeToPositionMulti::writeTask(WriterThread *config) {
             }
             config->output(pigzQueue);
         }
-        printf("processor %d wSum is %ld\n", mOptions->myRank, config->GetWSum());
+#ifdef PRINT_INFO
 
+        printf("processor %d wSum is %ld\n", mOptions->myRank, config->GetWSum());
+#endif
     } else {
         if (mOptions->usePigz) {
             if (mOptions->myRank == 0) {
@@ -898,9 +953,11 @@ void BarcodeToPositionMulti::writeTask(WriterThread *config) {
                     }
                     config->output(pigzQueue);
                 }
+#ifdef PRINT_INFO
+
                 printf("processor %d wSum is %lld\n", mOptions->myRank, config->GetWSum());
                 printf("processor %d cSum is %d\n", mOptions->myRank, config->GetCSum());
-
+#endif
             } else {
                 while (true) {
                     if (config->isCompleted()) {
@@ -910,10 +967,16 @@ void BarcodeToPositionMulti::writeTask(WriterThread *config) {
                     config->output(mOptions->communicator);
                 }
                 int tag = -1;
+#ifdef PRINT_INFO
+
                 printf("processor 1 send data done, now send -1\n");
+#endif
                 MPI_Send(&(tag), 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
 //                MPI_Barrier(MPI_COMM_WORLD);
+#ifdef PRINT_INFO
+
                 printf("processor 1 send -1 done\n");
+#endif
             }
         } else {
             if (mOptions->myRank == 0) {
@@ -924,8 +987,11 @@ void BarcodeToPositionMulti::writeTask(WriterThread *config) {
                     }
                     config->output();
                 }
+#ifdef PRINT_INFO
+
                 printf("processor %d wSum is %lld\n", mOptions->myRank, config->GetWSum());
                 printf("processor %d cSum is %d\n", mOptions->myRank, config->GetCSum());
+#endif
             } else {
                 while (true) {
                     if (config->isCompleted()) {
@@ -935,10 +1001,16 @@ void BarcodeToPositionMulti::writeTask(WriterThread *config) {
                     config->output(mOptions->communicator);
                 }
                 int tag = -1;
+#ifdef PRINT_INFO
+
                 printf("processor 1 send data done, now send -1\n");
+#endif
                 MPI_Send(&(tag), 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
 //                MPI_Barrier(MPI_COMM_WORLD);
+#ifdef PRINT_INFO
+
                 printf("processor 1 send -1 done\n");
+#endif
             }
         }
     }

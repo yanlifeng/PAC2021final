@@ -25,7 +25,8 @@ public:
 
 //    BarcodeProcessor(Options *opt, int mhashNum, int *mhashHead, node *mhashMap, uint64 *mBloomFilter);
 
-    BarcodeProcessor(Options* opt, int* mbpmap_head, int* mbpmap_nxt,bpmap_key_value* mposition_all,BloomFilter *mbloomFilter);
+    BarcodeProcessor(Options *opt, int *mbpmap_head, int *mbpmap_nxt, bpmap_key_value *mposition_all,
+                     BloomFilter *mbloomFilter);
 
     BarcodeProcessor();
 
@@ -36,9 +37,9 @@ public:
     void dumpDNBmap(string &dnbMapFile);
 
 private:
-    void addPositionToName(Read *r, Position1* position, pair<string, string> *umi = NULL);
+    void addPositionToName(Read *r, Position1 *position, pair<string, string> *umi = NULL);
 
-    void addPositionToNames(Read *r1, Read *r2, Position1* position, pair<string, string> *umi = NULL);
+    void addPositionToNames(Read *r1, Read *r2, Position1 *position, pair<string, string> *umi = NULL);
 
     void getUMI(Read *r, pair<string, string> &umi, bool isRead2 = false);
 
@@ -57,6 +58,7 @@ private:
     int getPosition(string &barcodeString);
 
     void misMaskGenerate();
+
     void misMaskGenerateSegment();
 
     string positionToString(int position);
@@ -68,6 +70,8 @@ private:
     pair<int, int> getMisOverlap(uint64 barcodeInt);
 
     int getNOverlap(string &barcodeString, uint8 Nindex);
+
+    Position1 *getNOverlapZZ(string &barcodeString, uint8 Nindex);
 
     int getNindex(string &barcodeString);
 
@@ -81,9 +85,11 @@ private:
 
     pair<int, int> queryMap(uint64 barcodeInt);
 
-    int getMisOverlapHashTableOneArrayWithBloomFiler(uint64 barcodeInt,Position1 *&result_value);
-    Position1* getPositionHashTableOneArrayWithBloomFiler(string& barcodeString);
-    Position1* getPositionHashTableOneArrayWithBloomFiler(uint64 barcodeInt);
+    int getMisOverlapHashTableOneArrayWithBloomFiler(uint64 barcodeInt, Position1 *&result_value);
+
+    Position1 *getPositionHashTableOneArrayWithBloomFiler(string &barcodeString);
+
+    Position1 *getPositionHashTableOneArrayWithBloomFiler(uint64 barcodeInt);
 
 
 private:
@@ -91,10 +97,10 @@ private:
     int misMaskLen;
     int *misMaskLens;
     int misMaskClassificationNumber;
-    int* misMaskClassification;
-    uint64* misMaskLensSegmentL;
-    uint64* misMaskLensSegmentR;
-    uint64* misMaskHash;
+    int *misMaskClassification;
+    uint64 *misMaskLensSegmentL;
+    uint64 *misMaskLensSegmentR;
+    uint64 *misMaskHash;
     const char q10 = '+';
     const char q20 = '5';
     const char q30 = '?';
@@ -111,16 +117,15 @@ public:
     //******************************************//
 
 
-    BloomFilter* bloomFilter;
+    BloomFilter *bloomFilter;
 
 
-    int* bpmap_head;
-    int* bpmap_nxt;
-    uint64* bpmap_key;
-    int* bpmap_value;
-    int* bpmap_len;
+    int *bpmap_head;
+    int *bpmap_nxt;
+    uint64 *bpmap_key;
+    int *bpmap_value;
+    int *bpmap_len;
     bpmap_key_value *position_all;
-
 
 
     long totQuery = 0;

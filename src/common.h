@@ -9,6 +9,8 @@
 #include <boost/serialization/unordered_map.hpp>
 #include <mpi.h>
 
+//#define PRINT_INFO
+
 typedef long long int int64;
 typedef unsigned long long int uint64;
 

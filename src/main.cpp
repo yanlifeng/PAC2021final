@@ -35,8 +35,9 @@ int main(int argc, char *argv[]) {
     MPI_Comm_size(MPI_COMM_WORLD, &num_procs);
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
     MPI_Get_processor_name(processor_name, &proc_len);
+#ifdef PRINT_INFO
     printf("Process %d of %d ,processor name is %s\n", my_rank, num_procs, processor_name);
-
+#endif
 
     cmdline::parser cmd;
     // input/output
@@ -148,26 +149,34 @@ int main(int argc, char *argv[]) {
         opt.out = out_name.substr(0, pos) + to_string(my_rank) + sifx;
         opt.transBarcodeToPos.out1 = out_name.substr(0, pos) + to_string(my_rank) + sifx;
     }
+#ifdef PRINT_INFO
+
     if (my_rank == 0)printf("processor num is %d\n", opt.numPro);
     printf("processor %d thread is %d\n", opt.myRank, opt.thread);
     if (my_rank == 0)printf("outGzSpilt is %d\n", opt.outGzSpilt);
-
     if (opt.usePugz) {
         if (my_rank == 0)printf("now use pugz, %d threads\n", opt.pugzThread);
     }
+#endif
+
     if (opt.usePigz) {
         if (opt.pigzThread == 1) {
             if (my_rank == 0)printf("pigz thread number must >1\n");
             exit(0);
         }
+#ifdef PRINT_INFO
+
         if (my_rank == 0)printf("now use pigz, %d threads\n", opt.pigzThread);
+#endif
         string out_name = opt.transBarcodeToPos.out1;
 //        printf("ori out name is %s\n", out_name.c_str());
 //        printf(".gz pos is %lu\n", out_name.find(".gz"));
         opt.transBarcodeToPos.out1 = out_name.substr(0, out_name.find(".gz"));
         opt.out = opt.transBarcodeToPos.out1;
     }
+#ifdef PRINT_INFO
     printf("now out name is %s\n", opt.transBarcodeToPos.out1.c_str());
+#endif
 
     if (ends_with(opt.transBarcodeToPos.in1, ".gz") == 0) {
         opt.usePugz = 0;
@@ -194,8 +203,8 @@ int main(int argc, char *argv[]) {
             BarcodeToPositionMulti barcodeToPosMulti(&opt);
             t0 = MainGetTime();
             barcodeToPosMulti.process();
-            cout << opt.myRank << " work done" << endl;
-            if (opt.myRank == 0)cout << "process cost " << MainGetTime() - t0 << endl;
+//            cout << opt.myRank << " work done" << endl;
+//            if (opt.myRank == 0)cout << "process cost " << MainGetTime() - t0 << endl;
         }
     } else if (opt.actionInt == 2) {
         BarcodeListMerge barcodeListMerge(&opt);

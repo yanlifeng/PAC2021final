@@ -74,6 +74,8 @@ namespace dsrc {
 //end single pe file
         string getLine(FastqDataChunk *&chunk, int &pos);
 
+        pair<char *, int> getLineFast(FastqDataChunk *&chunk, int &pos);
+
     } // namespace fq
 
 } // namespace dsrc

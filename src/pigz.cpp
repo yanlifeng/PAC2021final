@@ -1070,17 +1070,14 @@ readFromQueue(moodycamel::ReaderWriterQueue<std::pair<int, std::pair<char *, int
 //        printf("getSize is %d, len is %zu, tag is %d\n", getSize, len, tag);
         if (getSize <= len) {
             memcpy(buf, getPos, getSize);
-            delete[] getPos;
+//            delete[] getPos;
             ret = getSize;
         } else {
             int move_last = getSize - len;
             memcpy(buf, getPos, len);
             memcpy(L.first, getPos + len, move_last);
             L.second = move_last;
-            delete[] getPos;
-
-
-
+//            delete[] getPos;
             ret = len;
         }
 
@@ -2343,7 +2340,7 @@ parallel_compress(moodycamel::ReaderWriterQueue<std::pair<int, std::pair<char *,
     drop_space(next);
 
 
-    printf("pigz pSum is %ld\n", pSum);
+//    printf("pigz pSum is %ld\n", pSum);
     // wait for the write threadPigz to complete (we leave the compress threads out
     // there and waiting in case there is another stream to compress)
     join_pigz(writeth);
@@ -4002,7 +3999,7 @@ process(char *path, moodycamel::ReaderWriterQueue<std::pair<int, std::pair<char 
     static char *sufs[] = {".z", "-z", "_z", ".Z", ".gz", "-gz", ".zz", "-zz",
                            ".zip", ".ZIP", ".tgz", NULL};
 
-    printf("path is %s\n", path);
+//    printf("path is %s\n", path);
 
     // open input file with name in, descriptor ind -- set name and mtime
     if (path == NULL) {
@@ -4251,7 +4248,7 @@ process(char *path, moodycamel::ReaderWriterQueue<std::pair<int, std::pair<char 
         fprintf(stderr, "%s to %s ", g.inf, g.outf);
 //    printf("-----------------in pigz init cost %.7f\n", PigzGetTime() - t0);
     t0 = PigzGetTime();
-    printf("start compress...\n");
+//    printf("start compress...\n");
 
     if (g.decode) {
         try
@@ -4285,7 +4282,7 @@ process(char *path, moodycamel::ReaderWriterQueue<std::pair<int, std::pair<char 
         single_compress(0);
 //    printf("-----------------in pigz compress cost %.7f\n", PigzGetTime() - t0);
     t0 = PigzGetTime();
-    printf("compress done\n");
+//    printf("compress done\n");
 
     if (g.verbosity > 1) {
         putc('\n', stderr);
@@ -4309,7 +4306,7 @@ process(char *path, moodycamel::ReaderWriterQueue<std::pair<int, std::pair<char 
             touch(g.outf, g.stamp);
     }
     RELEASE(g.outf);
-    printf("-----------------in pigz finish cost %.7f\n", PigzGetTime() - t0);
+//    printf("-----------------in pigz finish cost %.7f\n", PigzGetTime() - t0);
 
 }
 

@@ -415,7 +415,7 @@ void ChipMaskHDF5::readDataSet(int &hashNum, int *&hashHead, node *&hashMap, int
 
 
 
-void ChipMaskHDF5::readDataSetHashListOneArrayWithBloomFilter(int *&bpmap_head, int *&bpmap_nxt,
+void ChipMaskHDF5::readDataSetHashListOneArrayWithBloomFilter(uint32 &mapSize, int *&bpmap_head, int *&bpmap_nxt,
                                                               bpmap_key_value *&position_all, BloomFilter *&bloomFilter,
                                                               int index) {
 
@@ -531,8 +531,10 @@ void ChipMaskHDF5::readDataSetHashListOneArrayWithBloomFilter(int *&bpmap_head, 
         bpmap_head[i] = -1;
     }
 
+#ifdef PRINT_INFO
 
     printf("new and hdf5 pre cost %.6f\n", HD5GetTime() - t0);
+#endif
     t0 = HD5GetTime();
 
     int chunk_num = 0;
@@ -556,8 +558,11 @@ void ChipMaskHDF5::readDataSetHashListOneArrayWithBloomFilter(int *&bpmap_head, 
                                                          chunk_len * sizeof(uint64), &actual_out);
                 chunk_num++;
             }
+#ifdef PRINT_INFO
+
             printf("chunk num is %d   nchunks is %d\n", chunk_num, nchunks);
             printf("read and close hdf5 cost %.6f\n", HD5GetTime() - t0);
+#endif
             is_complete_hdf5 = true;
             libdeflate_free_decompressor(decompressor);
 
@@ -664,6 +669,7 @@ void ChipMaskHDF5::readDataSetHashListOneArrayWithBloomFilter(int *&bpmap_head, 
         }
 
     }
+    mapSize = bpmap_num;
 
 
 //        for(int chunk_index=0;chunk_index<nchunks;chunk_index++){
@@ -687,7 +693,7 @@ void ChipMaskHDF5::readDataSetHashListOneArrayWithBloomFilter(int *&bpmap_head, 
 //    status = H5Aclose(attributeID);
 //    status = H5Dclose(datasetID);
 //    status = H5Fclose(fileID);
-    printf("read and close hdf5 cost %.6f\n", HD5GetTime() - t0);
+//    printf("read and close hdf5 cost %.6f\n", HD5GetTime() - t0);
 //    t0 = HD5GetTime();
 //
 //

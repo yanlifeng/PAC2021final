@@ -85,9 +85,9 @@ Result *Result::merge(vector<Result *> &list) {
 void Result::print() {
 
     cout << fixed << setprecision(2);
-    cout << "total_query_cnt:\t" << mBarcodeProcessor->totQuery << endl;
-    cout << "after_filter_query_cnt:\t" << mBarcodeProcessor->filterQuery << endl;
-    cout << "find_query_cnt:\t" << mBarcodeProcessor->queryYes << endl;
+//    cout << "total_query_cnt:\t" << mBarcodeProcessor->totQuery << endl;
+//    cout << "after_filter_query_cnt:\t" << mBarcodeProcessor->filterQuery << endl;
+//    cout << "find_query_cnt:\t" << mBarcodeProcessor->queryYes << endl;
     cout << "total_reads:\t" << mTotalRead << endl;
     cout << "fixed_sequence_contianing_reads:\t" << mFxiedFilterRead << "\t"
          << (double) mFxiedFilterRead / (double) mTotalRead * 100 << "%" << endl;

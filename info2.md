@@ -1864,3 +1864,6 @@ mpigxx ./obj/chipMaskHDF5.o ./obj/barcodeProcessor.o ./obj/FastqStream.o ./obj/s
 spatialRNADrawMap, time used: 51 seconds
 ```
 
+来不及写记录了
+
+明天一切顺利，吃饭不长肉冲！

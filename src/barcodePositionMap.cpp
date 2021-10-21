@@ -80,8 +80,10 @@ void BarcodePositionMap::loadbpmap() {
         cerr << "barcodePositionMapFile does not exists: " << barcodePositionMapFile << endl;
         exit(1);
     }
+    uint32 mapSize = 0;
 
-    cout << "###############load barcodeToPosition map begin..." << endl;
+    if (mOptions->myRank == 0)
+        cout << "###############load barcodeToPosition map begin..." << endl;
     //cout << "###############barcode map file: " << barcodePositionMapFile << endl;
     if (ends_with(barcodePositionMapFile, ".bin")) {
         ifstream mapReader(barcodePositionMapFile, ios::in | ios::binary);
@@ -104,7 +106,8 @@ void BarcodePositionMap::loadbpmap() {
         ChipMaskHDF5 chipMaskH5(barcodePositionMapFile);
         chipMaskH5.openFile();
 //        chipMaskH5.readDataSet(hashNum, hashHead, hashMap, dims1, bloomFilter);
-        chipMaskH5.readDataSetHashListOneArrayWithBloomFilter(bpmap_head, bpmap_nxt,position_all,bloomFilter);
+        chipMaskH5.readDataSetHashListOneArrayWithBloomFilter(mapSize, bpmap_head, bpmap_nxt, position_all,
+                                                              bloomFilter);
     } else {
         uint64 barcodeInt;
         Position1 position;
@@ -137,10 +140,12 @@ void BarcodePositionMap::loadbpmap() {
         //cout << "bpmap load suceessfully." << endl;
         mapReader.close();
     }
-    cout << "###############load barcodeToPosition map finished, time used: " << time(NULL) - start << " seconds"
-         << endl;
-    cout << resetiosflags(ios::fixed) << setprecision(2);
-    cout << "getBarcodePositionMap_uniqBarcodeTypes: " << bpmap.size() << endl;
+    if (mOptions->myRank == 0) {
+        cout << "###############load barcodeToPosition map finished, time used: " << time(NULL) - start << " seconds"
+             << endl;
+        cout << resetiosflags(ios::fixed) << setprecision(2);
+        cout << "getBarcodePositionMap_uniqBarcodeTypes: " << mapSize << endl;
+    }
 }
 
 int *BarcodePositionMap::GetHashHead() const {
