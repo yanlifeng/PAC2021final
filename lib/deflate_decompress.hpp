@@ -1352,14 +1352,16 @@ private:
 struct OutputConsumer {
 
     //    void operator()(span<const uint8_t> data) const { write(STDOUT_FILENO, data.begin(), data.size()); }
-    void operator()(span<const uint8_t> data) const {
+    void operator()(span<const uint8_t> data) {
         if (*pDone == 1) {
             return;
         }
 //        printf("ready to put data to memory111\n");
-        char *utmp = new char[data.size()];
+//        char *utmp = new char[data.size()];
+//        memcpy(utmp, data.begin(), data.size());
+        char *utmp = pos + nowPos;
         memcpy(utmp, data.begin(), data.size());
-
+        nowPos += data.size();
 //        printf("ready to put data to memory222\n");
 //        int cntt = 0;
         while (P->try_enqueue({utmp, data.size()}) == 0) {
@@ -1380,6 +1382,8 @@ struct OutputConsumer {
     moodycamel::ReaderWriterQueue<std::pair<char *, int>> *P;
     int num;
     atomic_int *pDone;
+    char *pos;
+    long long nowPos;
 //    std::vector<std::pair<char *, int>> *G;
 };
 

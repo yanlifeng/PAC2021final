@@ -262,7 +262,8 @@ bool BarcodeToPositionMulti::process() {
 #ifdef PRINT_INFO
     printf("processor %d get results done,cost %.4f\n", mOptions->myRank, GetTime() - t0);
 #endif
-    int threadsNowNumber = mOptions->thread - mOptions->pugzThread * 2;
+//    int threadsNowNumber = mOptions->thread - mOptions->pugzThread * 2;
+    int threadsNowNumber = mOptions->thread;
     t0 = GetTime();
 #ifdef PRINT_INFO
     printf("now start %d\n", threadsNowNumber);
@@ -303,9 +304,9 @@ bool BarcodeToPositionMulti::process() {
 
     printf("now start another %d threads\n", mOptions->thread - threadsNowNumber);
 #endif
-    for (int t = threadsNowNumber; t < mOptions->thread; t++) {
-        threads[t] = new thread(bind(&BarcodeToPositionMulti::consumerTask, this, results[t]));
-    }
+//    for (int t = threadsNowNumber; t < mOptions->thread; t++) {
+//        threads[t] = new thread(bind(&BarcodeToPositionMulti::consumerTask, this, results[t]));
+//    }
 
 
     producer->join();
@@ -700,6 +701,18 @@ void BarcodeToPositionMulti::pugzTask1() {
 
     in_p = static_cast<const byte *>(in.mmap_mem);
     OutputConsumer output{};
+
+    auto ttp = GetTime();
+
+    long long nN = 22ll * (1ll << 30);
+    output.pos = new char[nN];
+    output.nowPos = 0;
+#pragma omp parallel for num_threads(8)
+    for (long long i = 0; i < nN; i++) {
+        output.pos[i] = 0;
+    }
+    printf("new cost %.6f\n", GetTime() - ttp);
+
     output.P = pugzQueue1;
     output.num = 1;
     output.pDone = &producerDone;
@@ -747,6 +760,16 @@ void BarcodeToPositionMulti::pugzTask2() {
     in_p = static_cast<const byte *>(in.mmap_mem);
 
     OutputConsumer output{};
+    auto ttp = GetTime();
+
+    long long nN = 22ll * (1ll << 30);
+    output.pos = new char[nN];
+    output.nowPos = 0;
+#pragma omp parallel for num_threads(8)
+    for (long long i = 0; i < nN; i++) {
+        output.pos[i] = 0;
+    }
+    printf("new cost %.6f\n", GetTime() - ttp);
     output.P = pugzQueue2;
     output.num = 2;
     output.pDone = &producerDone;
