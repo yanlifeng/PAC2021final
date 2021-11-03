@@ -471,9 +471,9 @@ void ChipMaskHDF5::readDataSetHashListOneArrayWithBloomFilter(uint32 &mapSize, i
         }
     }
     */
-
+    status = H5Sselect_all(dspaceID);
     hsize_t nchunks;
-    status = H5Dget_num_chunks(datasetID, H5S_ALL, &nchunks);
+    status = H5Dget_num_chunks(datasetID, dspaceID, &nchunks);
     size_t chunk_dims[rank];
     int flag = 0;
     for (int r = 0; r < rank; r++) {
@@ -487,7 +487,7 @@ void ChipMaskHDF5::readDataSetHashListOneArrayWithBloomFilter(uint32 &mapSize, i
     }
     hsize_t offset_next[rank];
     for (int cid = 1; cid < nchunks; cid++) {
-        H5Dget_chunk_info(datasetID, H5S_ALL, cid, offset_next, NULL, NULL, NULL);
+        H5Dget_chunk_info(datasetID, dspaceID, cid, offset_next, NULL, NULL, NULL);
         for (int r = 0; r < rank; r++) {
             if (!chunk_dims[r] && offset_next[r]) {
                 chunk_dims[r] = offset_next[r];
@@ -548,7 +548,7 @@ void ChipMaskHDF5::readDataSetHashListOneArrayWithBloomFilter(uint32 &mapSize, i
             for (int chunk_index = 0; chunk_index < nchunks; chunk_index++) {
                 uint32_t filter = 0;
                 size_t actual_out = 0;
-                H5Dget_chunk_info(datasetID, H5S_ALL, chunk_index, offset[chunk_index], &filter, NULL,
+                H5Dget_chunk_info(datasetID, dspaceID, chunk_index, offset[chunk_index], &filter, NULL,
                                   &chunk_size[chunk_index]);
                 status = H5Dread_chunk(datasetID, H5P_DEFAULT, offset[chunk_index], &filter,
                                        compressed_buffer[chunk_index]);
