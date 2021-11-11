@@ -1070,14 +1070,14 @@ readFromQueue(moodycamel::ReaderWriterQueue<std::pair<int, std::pair<char *, int
 //        printf("getSize is %d, len is %zu, tag is %d\n", getSize, len, tag);
         if (getSize <= len) {
             memcpy(buf, getPos, getSize);
-//            delete[] getPos;
+            delete[] getPos;
             ret = getSize;
         } else {
             int move_last = getSize - len;
             memcpy(buf, getPos, len);
             memcpy(L.first, getPos + len, move_last);
             L.second = move_last;
-//            delete[] getPos;
+            delete[] getPos;
             ret = len;
         }
 

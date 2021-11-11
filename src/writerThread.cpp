@@ -102,7 +102,7 @@ void WriterThread::output(moodycamel::ReaderWriterQueue<std::pair<int, std::pair
         auto tag = mRingBufferTags[mOutputCounter];
 
         while (Q->try_enqueue({tag, {mRingBuffer[mOutputCounter], mRingBufferSizes[mOutputCounter]}}) == 0) {
-            printf("waiting to push a chunk to pigz queue\n");
+           // printf("waiting to push a chunk to pigz queue\n");
             usleep(100);
         }
         wSum += mRingBufferSizes[mOutputCounter];
@@ -116,6 +116,9 @@ void WriterThread::output(moodycamel::ReaderWriterQueue<std::pair<int, std::pair
 
 
 void WriterThread::inputFromMerge(char *data, size_t size) {
+    while(mInputCounter - mOutputCounter >= 256){
+        usleep(100);
+    }
 //    mtx.lock();
     mRingBuffer[mInputCounter] = data;
     mRingBufferSizes[mInputCounter] = size;
@@ -125,6 +128,9 @@ void WriterThread::inputFromMerge(char *data, size_t size) {
 }
 
 void WriterThread::input(char *data, size_t size) {
+    while(mInputCounter - mOutputCounter >= 256){
+        usleep(100);
+    }
 //    mtx.lock();
     mRingBuffer[mInputCounter] = data;
     mRingBufferSizes[mInputCounter] = size;

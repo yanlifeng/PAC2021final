@@ -57,6 +57,8 @@
 #   define FTELL    ftello64
 #   define FCLOSE   fclose
 #endif
+static const uint32 SwapBufferSize = 1 << 22;
+static const uint32 tmpSwapBufferSize = 1 << 20;
 
 namespace dsrc {
 
@@ -64,8 +66,6 @@ namespace dsrc {
 
         class FastqFileReader {
         private:
-            static const uint32 SwapBufferSize = 1 << 20;
-            //static const uint32 SwapBufferSize = 1 << 13;
 
         public:
             FastqFileReader(const std::string &fileName_)

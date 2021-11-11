@@ -112,11 +112,11 @@ BarcodeToPositionMulti::BarcodeToPositionMulti(Options *opt) {
         filterFixedSequence = true;
     }
     if (mOptions->usePugz) {
-        pugzQueue1 = new moodycamel::ReaderWriterQueue<pair<char *, int>>(1 << 20);
-        pugzQueue2 = new moodycamel::ReaderWriterQueue<pair<char *, int>>(1 << 20);
+        pugzQueue1 = new moodycamel::ReaderWriterQueue<pair<char *, int>>(256);
+        pugzQueue2 = new moodycamel::ReaderWriterQueue<pair<char *, int>>(256);
     }
     if (mOptions->usePigz) {
-        pigzQueue = new moodycamel::ReaderWriterQueue<std::pair<int, std::pair<char *, int>>>(1 << 20);
+        pigzQueue = new moodycamel::ReaderWriterQueue<std::pair<int, std::pair<char *, int>>>(256);
         pigzLast.first = new char[1 << 24];
         pigzLast.second = 0;
     }

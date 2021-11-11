@@ -51,8 +51,7 @@ bool FastqFileReader::ReadNextChunk(FastqDataChunk* chunk_)
 	{
 		if (r == toRead)	// somewhere before end
 		{
-		    uint64 chunkEnd = cbufSize - SwapBufferSize; // Swapbuffersize: 1 << 13
-			//std::cout << "chunkend  cbufsize Swapbuffersize: " << chunkEnd <<" "<< cbufSize << " " << SwapBufferSize << std::endl;
+		    uint64 chunkEnd = cbufSize - tmpSwapBufferSize;
 			chunkEnd = GetNextRecordPos(data, chunkEnd, cbufSize);
 			chunk_->size = chunkEnd - 1;
 			if (usesCrlf)

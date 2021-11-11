@@ -225,7 +225,8 @@ int main(int argc, char *argv[]) {
         cerr << endl << command << endl;
         cerr << "spatialRNADrawMap" << ", time used: " << (t2 - t1) << " seconds" << endl;
     }
+    printf("tag\n");
     MPI_Finalize();
-
+    printf("end\n");
     return 0;
 }
